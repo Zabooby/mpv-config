@@ -13,10 +13,13 @@ Custom key bindings can be added from `input.conf` file. Refer to the [manual](h
 
 ## Scripts and Shaders
 - [uosc](https://github.com/darsain/uosc) Adds a minimalist customizable gui 
-- [webtorrent-mpv-hook](https://github.com/mrxdst/webtorrent-mpv-hook) Adds a hook that allows mpv to stream torrents. It also provides a osd overlay to show info/progress.
+- [cycle-denoise](https://gist.github.com/myfreeer/d744c445aa71c0eeb165ca39cf6c0511) Cycle between lavfi's denoise filters
 - [autoload](https://github.com/mpv-player/mpv/blob/master/TOOLS/lua/autoload.lua) Automatically load playlist entries before and after the currently playing file, by scanning the directory.
-- [sview](https://github.com/he2a/mpv-scripts/blob/main/sview.lua) A simple script to show multiple shaders running, in a clean list. Triggered on shader activation or by toggle button. 
-- [cycle-denoise](https://gist.github.com/myfreeer/d744c445aa71c0eeb165ca39cf6c0511) Cycle between lavfi's denoise filters 
+- [sview](https://github.com/he2a/mpv-scripts/blob/main/sview.lua) A simple script to show multiple shaders running, in a clean list. Triggered on shader activation or by toggle button.
+- [webtorrent-mpv-hook](https://github.com/mrxdst/webtorrent-mpv-hook) Adds a hook that allows mpv to stream torrents. It also provides a osd overlay to show info/progress.
+
+ 
+ 
 
 - [Anime4k](https://github.com/bloc97/Anime4K) Shaders designed to scale and enhance anime. Includes shaders for line sharpening, artefact removal, denoising, upscaling, and more.
 - [FSRCNN](FSRCNN) Very resource intensive upscaler that uses a neural network to uspscale very accurately.
