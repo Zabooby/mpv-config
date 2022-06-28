@@ -1,4 +1,4 @@
-# Personal mpv Configuration for Windows
+# Personal MPV Configuration for Windows
 
 <p align="center"><img width=100% src="https://raw.githubusercontent.com/he2a/mpv-config/master/images/preview.jpg" alt="mpv screenshot"></p>
 
