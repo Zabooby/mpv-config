@@ -27,7 +27,7 @@ Custom key bindings can be added from `input.conf` file. Refer to the [manual](h
 - [FidelityFX FSR](https://gist.github.com/agyild/82219c545228d70c5604f865ce0b0ce5) AMD FidelityFX Super Resolution is a spatial upscaler: it works by taking the current anti-aliased frame and upscaling it to display resolution without relying on other data such as frame history or motion vectors. At the heart of FSR is a cutting-edge algorithm that detects and recreates high-resolution edges from the source image. Those high-resolution edges are a critical element required for turning the current frame into a “super resolution” image. FSR provides consistent upscaling quality regardless of whether the frame is in movement, which can provide quality advantages compared to other types of upscalers.
 - [NVIDIA Image Scaling/Sharpening](https://gist.github.com/agyild/7e8951915b2bf24526a9343d951db214) NVIDIA Image Scaling is a spatial scaling and sharpening algorithm. In addition, an adaptive-directional sharpening-only algorithm is available. The directional scaling and sharpening algorithm is named NVScaler while the adaptive-directional-sharpening-only algorithm is named NVSharpen.
 - [SSimDownscaler, SSimSuperRes, Krig, Adaptive Sharpen, etc.](https://gist.github.com/igv) 
-    SSimDownscaler: Perceptually based downscaler. More information is here.
-    SSimSuperRes: The aim of this shader is to make corrections to the image upscaled by mpv built-in scaler (removes ringing artifacts, restores original  sharpness, etc).
-    Krig: Chroma scaler that uses luma information for high quality upscaling.
+    -SSimDownscaler: Perceptually based downscaler. More information is here.
+    -SSimSuperRes: The aim of this shader is to make corrections to the image upscaled by mpv built-in scaler (removes ringing artifacts, restores original  sharpness, etc).
+    -Krig: Chroma scaler that uses luma information for high quality upscaling.
 
