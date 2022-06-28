@@ -5,15 +5,9 @@
 ## Overview
 Just my personal config files for use in MPV. Contains custom keybindings, a GUI menu, multiple scripts and various shaders for animated and live action media. Note that some shaders won't run well with low end computers, but excluding those shaders this config should run fine on most computers.
 
-## Usage
-Download the latest windows build of MPV from [here](https://mpv.io/installation/) and extract its contents into a folder called mpv. MPV is portable so you can put this folder anywhere you want. Download and copy `portable_config` folder from this repo to the extracted folder and you are good to go.
-
-## Key Bindings
-Custom key bindings can be added from `input.conf` file. Refer to the [manual](https://mpv.io/manual/master/) for making any changes. Default key bindings can be seen from the `input.conf` file but most of the player functions can be used through the menu accessed by <kbd>Right Click</kbd>.
-
 ## Scripts and Shaders
-- [uosc](https://github.com/darsain/uosc) Adds a minimalist customizable gui 
-- [cycle-denoise](https://gist.github.com/myfreeer/d744c445aa71c0eeb165ca39cf6c0511) Cycle between lavfi's denoise filters
+- [uosc](https://github.com/darsain/uosc) Adds a minimalist customizable gui.
+- [cycle-denoise](https://gist.github.com/myfreeer/d744c445aa71c0eeb165ca39cf6c0511) Cycle between lavfi's denoise filters.
 - [autoload](https://github.com/mpv-player/mpv/blob/master/TOOLS/lua/autoload.lua) Automatically load playlist entries before and after the currently playing file, by scanning the directory.
 - [sview](https://github.com/he2a/mpv-scripts/blob/main/sview.lua) A simple script to show multiple shaders running, in a clean list. Triggered on shader activation or by toggle button.
 - [webtorrent-mpv-hook](https://github.com/mrxdst/webtorrent-mpv-hook) Adds a hook that allows mpv to stream torrents. It also provides a osd overlay to show info/progress.
@@ -24,6 +18,12 @@ Custom key bindings can be added from `input.conf` file. Refer to the [manual](h
 - [NVIDIA Image Scaling/Sharpening](https://gist.github.com/agyild/7e8951915b2bf24526a9343d951db214) NVIDIA Image Scaling is a spatial scaling and sharpening algorithm. In addition, an adaptive-directional sharpening-only algorithm is available. The directional scaling and sharpening algorithm is named NVScaler while the adaptive-directional-sharpening-only algorithm is named NVSharpen.
 - [SSimDownscaler, SSimSuperRes, Krig, Adaptive Sharpen](https://gist.github.com/igv) 
     -SSimDownscaler: Perceptually based downscaler. More information is here.
-    -SSimSuperRes: The aim of this shader is to make corrections to the image upscaled by mpv built-in scaler (removes ringing artifacts, restores original  sharpness, etc).
+    -SSimSuperRes: make corrections to the image upscaled by MPV built-in scaler (removes ringing artifacts, restores original  sharpness, etc).
     -Krig: Chroma scaler that uses luma information for high quality upscaling.
+    
+## Usage
+Download the latest windows build of MPV from [here](https://mpv.io/installation/) and extract its contents into a folder called mpv. MPV is portable so you can put this folder anywhere you want. Download and copy `portable_config` folder from this repo to the extracted folder and you are good to go.
+
+## Key Bindings
+Custom key bindings can be added from `input.conf` file. Refer to the [manual](https://mpv.io/manual/master/) for making any changes. Default key bindings can be seen from the `input.conf` file but most of the player functions can be used through the menu accessed by <kbd>Right Click</kbd>.
 
