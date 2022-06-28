@@ -3,7 +3,7 @@
 <p align="center"><img width=100% src="https://raw.githubusercontent.com/he2a/mpv-config/master/images/preview.jpg" alt="mpv screenshot"></p>
 
 ## Overview
-Just my personal config files for use in MPV. Contains custom keybindings, a GUI menu and various shaders for animated and live action media. Note that multiple shaders won't run well with low end computers, but excluding those shaders this config should run fine on most computers.
+Just my personal config files for use in MPV. Contains custom keybindings, a GUI menu, multiple scripts and various shaders for animated and live action media. Note that some shaders won't run well with low end computers, but excluding those shaders this config should run fine on most computers.
 
 ## Usage
 Download the latest windows build of MPV from [here](https://mpv.io/installation/) and extract its contents into a folder called mpv. MPV is portable so you can put this folder anywhere you want. Download and copy `portable_config` folder from this repo to the extracted folder and you are good to go.
