@@ -1,0 +1,5 @@
+start=262.471000
+af=lavfi=graph=%28%loudnorm=I=-22:LRA=2:TP=-1.5
+aid=1
+sid=1
+sub-scale=0.500000
