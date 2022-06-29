@@ -1,2 +1,0 @@
-start=3.837000
-af=lavfi=graph=%28%loudnorm=I=-22:LRA=2:TP=-1.5
