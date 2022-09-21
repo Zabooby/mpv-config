@@ -7,6 +7,7 @@ Just my personal config files for use in MPV aiming to get the highest quality. 
 
 ## Scripts and Shaders
 - [uosc](https://github.com/darsain/uosc) Adds a minimalist customizable gui.
+- [thumbfast](https://github.com/po5/thumbfast) High-performance on-the-fly thumbnailer for mpv.
 - [cycle-denoise](https://gist.github.com/myfreeer/d744c445aa71c0eeb165ca39cf6c0511) Cycle between lavfi's denoise filters.
 - [autoload](https://github.com/mpv-player/mpv/blob/master/TOOLS/lua/autoload.lua) Automatically load playlist entries before and after the currently playing file, by scanning the directory.
 - [sview](https://github.com/he2a/mpv-scripts/blob/main/sview.lua) A simple script to show multiple shaders running, in a clean list. Triggered on shader activation or by toggle button.
