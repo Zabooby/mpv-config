@@ -17,7 +17,7 @@ Huge shoutout to [@he2a](https://github.com/he2a) for their [config](https://git
 - [Anime4k](https://github.com/bloc97/Anime4K) Shaders designed to scale and enhance anime. Includes shaders for line sharpening, artefact removal, denoising, upscaling, and more.
 - [FSRCNN](https://github.com/igv/FSRCNN-TensorFlow/releases) Very resource intensive upscaler that uses a neural network to upscale very accurately.
 - [FidelityFX CAS](https://gist.github.com/agyild/bbb4e58298b2f86aa24da3032a0d2ee6) Provides a mixed ability to sharpen and optionally scale an image. 
-- [FidelityFX FSR](https://gist.github.com/agyild/82219c545228d70c5604f865ce0b0ce5) AMD FidelityFX Super Resolution is a spatial upscaler: it works by taking the current anti-aliased frame and upscaling it to display resolution without relying on other data such as frame history or motion vectors.
+- [FidelityFX FSR](https://gist.github.com/agyild/82219c545228d70c5604f865ce0b0ce5) A spatial upscaler, it works by taking the current anti-aliased frame and upscaling it to display resolution without relying on other data such as frame history or motion vectors.
 - [NVIDIA Image Scaling/Sharpening](https://gist.github.com/agyild/7e8951915b2bf24526a9343d951db214) 
     - NVIDIA Image Scaling is a spatial scaling and sharpening algorithm. 
     - In addition, an adaptive-directional sharpening-only algorithm is available. The directional scaling and sharpening algorithm is named NVScaler while the adaptive-directional-sharpening-only algorithm is named NVSharpen.
