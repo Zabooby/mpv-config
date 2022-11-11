@@ -25,10 +25,10 @@ Huge shoutout to [@he2a](https://github.com/he2a) for their [config](https://git
     - SSimDownscaler: Perceptually based downscaler.
     - SSimSuperRes: Make corrections to the image upscaled by MPV built-in scaler (removes ringing artifacts, restores original  sharpness, etc).
     - Krig: Chroma scaler that uses luma information for high quality upscaling.
-    - Adaptive Sharpen: 
+    - Adaptive Sharpen: Another sharpening shader
     
 ## Usage
-Download the latest windows build of MPV from [here](https://mpv.io/installation/) and extract its contents into a folder called mpv. MPV is portable so you can put this folder anywhere you want. Download and extract the `portable_config` folder from this repo to the mpv folder and you are good to go. Adjust any settings in mpv.conf to fit your system. 
+Download the latest windows build of MPV from [here](https://mpv.io/installation/) and extract its contents into a folder called mpv. MPV is portable so you can put this folder anywhere you want. Download and extract the `portable_config` folder from this repo to the mpv folder and you are good to go. Adjust any settings in mpv.conf to fit your system's specs.
 
 ## Key Bindings
 Custom key bindings can be added from `input.conf` file. Refer to the [manual](https://mpv.io/manual/master/) for making any changes. Default key bindings can be seen from the `input.conf` file but most of the player functions can be used through the menu accessed by <kbd>Right Click</kbd>.
