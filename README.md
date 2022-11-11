@@ -31,5 +31,5 @@ Huge shoutout to [@he2a](https://github.com/he2a) for their [config](https://git
 Download the latest windows build of MPV from [here](https://mpv.io/installation/) and extract its contents into a folder called mpv. MPV is portable so you can put this folder anywhere you want. Download and extract the `portable_config` folder from this repo to the mpv folder and you are good to go. Adjust any settings in mpv.conf to fit your system's specs.
 
 ## Key Bindings
-Custom key bindings can be added from `input.conf` file. Refer to the [manual](https://mpv.io/manual/master/) for making any changes. Default key bindings can be seen from the `input.conf` file but most of the player functions can be used through the menu accessed by <kbd>Right Click</kbd>.
+Custom key bindings can be added from `input.conf` file. Refer to the [manual](https://mpv.io/manual/master/) for making any changes. Default key bindings can be seen from the `input.conf` file but most of the player functions can be used through the menu accessed by <kbd>Right Click</kbd> and the buttons above the timeline.
 
