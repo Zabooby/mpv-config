@@ -5,6 +5,8 @@
 ## Overview
 Just my personal config files for use in MPV aiming to get the highest quality. Contains custom keybindings, a GUI menu, multiple scripts and various shaders for animated and live action media. Note that some shaders won't run well with low end computers, but excluding those shaders this config should run fine on most computers.
 
+Huge shoutout to [@he2a](https://github.com/he2a) for their [config](https://github.com/he2a/mpv-config), most of my setup is inspired by it.
+
 ## Scripts and Shaders
 - [uosc](https://github.com/darsain/uosc) Adds a minimalist customizable gui.
 - [thumbfast](https://github.com/po5/thumbfast) High-performance on-the-fly thumbnailer for mpv.
