@@ -1,6 +1,6 @@
 # Personal MPV Configuration for Windows
 
-<p align="center"><img width=100% src="https://raw.githubusercontent.com/zabooby/mpv-config/master/images/image.png" alt="mpv screenshot"></p>
+<p align="center"><img width=100% src="https://raw.githubusercontent.com/Zabooby/mpv-config/main/images/image.png" alt="mpv screenshot"></p>
 
 ## Overview
 Just my personal config files for use in MPV aiming to get the highest quality. Contains custom keybindings, a GUI menu, multiple scripts and various shaders for animated and live action media. Note that some shaders won't run well with low end computers, but excluding those shaders this config should run fine on most computers.
