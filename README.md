@@ -3,7 +3,7 @@
 <p align="center"><img width=100% src="https://raw.githubusercontent.com/Zabooby/mpv-config/main/images/image.png" alt="mpv screenshot"></p>
 
 ## Overview
-Just my personal config files for use in [MPV](https://mpv.io/) aiming to get the highest quality. Contains custom keybindings, a GUI menu, multiple scripts serving different functions and various shaders for animated and live action media. Note that some shaders won't run well with low end computers, but excluding those shaders this config should run fine on most computers. Also note there will be a few files in the [script-opts](https://github.com/Zabooby/mpv-config/tree/main/portable_config/script-opts) folder, which you will have to change file paths to point to where the files exist on your pc. 
+Just my personal config files for use in [MPV](https://mpv.io/) aiming to get the highest quality. Contains custom keybindings, a GUI menu, multiple scripts & filters serving different functions and various shaders for animated and live action media. Note that some shaders won't run well with low end computers, but excluding those shaders this config should run fine on most computers. Also note there will be a few files in the [script-opts](https://github.com/Zabooby/mpv-config/tree/main/portable_config/script-opts) folder, which you will have to change file paths to point to where the files exist on your pc. 
 
 Huge shoutout to [@he2a](https://github.com/he2a) for their [config](https://github.com/he2a/mpv-config), most of my setup is inspired by it.
 
