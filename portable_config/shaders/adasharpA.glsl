@@ -31,10 +31,10 @@
 
 //--------------------------------------- Settings ------------------------------------------------
 
-#define curve_height    1.0                  // Main control of sharpening strength [>0]
+#define curve_height    0.6                  // Main control of sharpening strength [>0]
                                              // 0.3 <-> 2.0 is a reasonable range of values
 
-#define overshoot_ctrl  false                // Allow for higher overshoot if the current edge pixel
+#define overshoot_ctrl  true                 // Allow for higher overshoot if the current edge pixel
                                              // is surrounded by similar edge pixels
 
 // Defined values under this row are "optimal" DO NOT CHANGE IF YOU DO NOT KNOW WHAT YOU ARE DOING!
