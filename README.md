@@ -13,7 +13,9 @@ Huge shoutout to [@he2a](https://github.com/he2a) for their [config](https://git
 - [cycle-denoise](https://gist.github.com/myfreeer/d744c445aa71c0eeb165ca39cf6c0511) - Cycle between lavfi's denoise filters.
 - [autoload](https://github.com/mpv-player/mpv/blob/master/TOOLS/lua/autoload.lua) - Automatically load playlist entries before and after the currently playing file, by scanning the directory.
 - [sview](https://github.com/he2a/mpv-scripts/blob/main/scripts/sview.lua) - A simple script to show multiple shaders running, in a clean list. Triggered on shader activation or by toggle button.
-- [webtorrent-mpv-hook](https://github.com/mrxdst/webtorrent-mpv-hook) - Adds a hook that allows mpv to stream torrents. It also provides a osd overlay to show info/progress. (Requires [node.js](https://nodejs.org/en/download/) to be installed)
+- [webtorrent-mpv-hook](https://github.com/mrxdst/webtorrent-mpv-hook) - Adds a hook that allows mpv to stream torrents. 
+    - **This scrpit needs to be setup to work follow installation steps [here](https://github.com/mrxdst/webtorrent-mpv-hook#install)**.
+    - **It also provides a osd overlay to show info/progress.** **(Requires [node.js](https://nodejs.org/en/download/) to be installed)**.
 - [Anime4k](https://github.com/bloc97/Anime4K) - Shaders designed to scale and enhance anime. Includes shaders for line sharpening, artefact removal, denoising, upscaling, and more.
 - [FSRCNN](https://github.com/igv/FSRCNN-TensorFlow/releases) - Very resource intensive upscaler that uses a neural network to upscale very accurately.
 - [FidelityFX CAS](https://gist.github.com/agyild/bbb4e58298b2f86aa24da3032a0d2ee6) - Provides a mixed ability to sharpen and optionally scale an image. 
@@ -27,8 +29,16 @@ Huge shoutout to [@he2a](https://github.com/he2a) for their [config](https://git
     - Krig: Chroma scaler that uses luma information for high quality upscaling.
     - Adaptive Sharpen: Another sharpening shader
     
-## Usage
-Download the latest windows build of MPV from [here](https://mpv.io/installation/) and extract its contents into a folder called mpv. MPV is portable so you can put this folder anywhere you want. Download and extract the `portable_config` folder from this repo to the mpv folder and you are good to go. Adjust any settings in [mpv.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/mpv.conf) to fit your system's specs.
+## Installation (on Windows)
+
+* Download the latest 64bit (or 64bit-v3 if you have good hardware) mpv Windows build by shinchiro from [here](https://mpv.io/installation/) or directly from [here](https://sourceforge.net/projects/mpv-player-windows/files/) and extract its contents into a folder called mpv. MPV is portable so you can put this folder anywhere you want. 
+* Run `mpv-install.bat`, which is located in `installer` folder, with administrator priviledges by right-clicking and selecting Run as administrator
+* Download and extract the `portable_config` folder from this repo to the mpv folder and you are good to go. 
+* Adjust any settings in [mpv.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/mpv.conf) to fit your system's specs.
+* You're done. Go watch some videos!
+
+After following the steps above (without any optional steps), your mpv folder should have this structure (on Windows):
+
 
 ## File Structure (on Windows)
 
@@ -56,9 +66,9 @@ MPV
 |   |   └── uosc-textures.ttf
 │   │
 │   ├── script-opts                           # Contains configuration files for scripts
-│   │   ├── thumbfast.conf
-│   │   ├── uosc.conf
-│   │   └── webtorrent.conf
+│   │   ├── thumbfast.conf                    
+│   │   ├── uosc.conf                         # Change line 185 to desired default directory 
+│   │   └── webtorrent.conf                   # Choose where to save donwloaded videos here
 │   │
 │   ├── scripts      
 │   │   ├── uosc_shared                       # Contains ui elements for the uosc gui
@@ -126,3 +136,14 @@ MPV
 
 ## Key Bindings
 Custom key bindings can be added/edited in the [input.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/input.conf) file. Refer to the [manual](https://mpv.io/manual/master/) and uosc [commands](https://github.com/tomasklaen/uosc) for making any changes. Default key bindings can be seen from the input.conf file but most of the player functions can be used through the menu accessed by <kbd>Right Click</kbd> and the buttons above the timeline.
+
+## Useful Links
+
+* [mpv manual](https://mpv.io/manual/master/)\
+  Extremely useful for knowing what certain options do and what to put in `mpv.conf`
+* [mpv user scripts](https://github.com/mpv-player/mpv/wiki/User-Scripts)\
+  Compilation of useful community-published scripts to be used with mpv
+* [mpv FAQ](https://github.com/mpv-player/mpv/wiki/FAQ)
+  Official frequently asked questions
+* [mpv wiki](https://github.com/mpv-player/mpv/wiki)
+  Official wiki with even more useful links
