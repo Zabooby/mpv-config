@@ -37,7 +37,7 @@ Huge shoutout to [@he2a](https://github.com/he2a) for their [config](https://git
 * Adjust any settings in [mpv.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/mpv.conf) to fit your system's specs.
 * You're done. Go watch some videos!
 
-After following the steps above (without any optional steps), your mpv folder should have this structure (on Windows):
+After following the steps above (without any optional steps), your mpv folder should have the following structure:
 
 
 ## File Structure (on Windows)
@@ -139,11 +139,7 @@ Custom key bindings can be added/edited in the [input.conf](https://github.com/Z
 
 ## Useful Links
 
-* [mpv manual](https://mpv.io/manual/master/)\
-  Extremely useful for knowing what certain options do and what to put in `mpv.conf`
-* [mpv user scripts](https://github.com/mpv-player/mpv/wiki/User-Scripts)\
-  Compilation of useful community-published scripts to be used with mpv
-* [mpv FAQ](https://github.com/mpv-player/mpv/wiki/FAQ)
-  Official frequently asked questions
-* [mpv wiki](https://github.com/mpv-player/mpv/wiki)
-  Official wiki with even more useful links
+* [mpv manual](https://mpv.io/manual/master/) Extremely useful for knowing what certain options do and what to put in `mpv.conf`
+* [mpv user scripts](https://github.com/mpv-player/mpv/wiki/User-Scripts) Compilation of useful community-published scripts to be used with mpv
+* [mpv FAQ](https://github.com/mpv-player/mpv/wiki/FAQ) Official frequently asked questions
+* [mpv wiki](https://github.com/mpv-player/mpv/wiki) Official wiki with even more useful links
