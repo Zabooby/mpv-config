@@ -44,8 +44,8 @@ MPV
 ├── installer
 │   ├── configure-opengl-hq.bat
 │   ├── mpv-icon.ico
-│   ├── mpv-install.bat                       # Run this with administrator priviledges to install mpv
-│   ├── mpv-uninstall.bat                     # Run this with administrator priviledges to uninstall mpv
+│   ├── mpv-install.bat                       # Run with administrator priviledges to install mpv
+│   ├── mpv-uninstall.bat                     # Run with administrator priviledges to uninstall mpv
 │   └── updater.ps1
 │
 │
@@ -110,7 +110,7 @@ MPV
 │   │   ├── ssimds.glsl
 │   │   └── ssimsr.glsl
 |   | 
-|   ├── watch_later                           # Video positions will be saved here, made automatically
+|   ├── watch_later                           # Video positions saved here (made automatically)
 │   │
 |   ├── fonts.conf
 │   ├── input.conf
