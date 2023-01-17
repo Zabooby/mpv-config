@@ -107,7 +107,7 @@ MPV
 │   ├── shaders                               # Contains external shaders
 │   │   ├── adasharp.glsl                     
 │   │   ├── adasharpA.glsl
-│   │   ├──                                    
+│   │   ├── add Anime 4k shaders here                                   
 │   │   ├──
 │   │   ├──
 │   │   ├── CAS.glsl
