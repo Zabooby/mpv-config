@@ -110,7 +110,7 @@ MPV
 │   │   ├── ssimds.glsl
 │   │   └── ssimsr.glsl
 |   | 
-|   ├── watch_later                           # Folder will be automatically, video positions will be saved here
+|   ├── watch_later                           # Video positions will be saved here, made automatically
 │   │
 |   ├── fonts.conf
 │   ├── input.conf
