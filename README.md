@@ -110,7 +110,7 @@ MPV
 │   │   ├── ssimds.glsl
 │   │   └── ssimsr.glsl
 |   | 
-|   ├── watch_later                           # Folder will be made once you start watching stuff, video positions will be saved here
+|   ├── watch_later                           # Folder will be automatically, video positions will be saved here
 │   │
 |   ├── fonts.conf
 │   ├── input.conf
@@ -121,7 +121,7 @@ MPV
 ├── d3dcompiler_43.dll
 ├── mpv.com
 ├── mpv.exe                                   # The mpv executable file
-└── updater.bat                               # Run this with administrator priviledges to update your mpv to the latest version
+└── updater.bat                               # Run this with administrator priviledges to update mpv
 ```
 
 ## Key Bindings
