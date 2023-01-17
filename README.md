@@ -14,7 +14,7 @@ Huge shoutout to [@he2a](https://github.com/he2a) for their [config](https://git
 - [autoload](https://github.com/mpv-player/mpv/blob/master/TOOLS/lua/autoload.lua) - Automatically load playlist entries before and after the currently playing file, by scanning the directory.
 - [sview](https://github.com/he2a/mpv-scripts/blob/main/scripts/sview.lua) - A simple script to show multiple shaders running, in a clean list. Triggered on shader activation or by toggle button.
 - [webtorrent-mpv-hook](https://github.com/mrxdst/webtorrent-mpv-hook) - Adds a hook that allows mpv to stream torrents. 
-    - **This scrpit needs to be setup to work follow installation steps [here](https://github.com/mrxdst/webtorrent-mpv-hook#install)**.
+    - **This script needs to be setup to work follow installation steps [here](https://github.com/mrxdst/webtorrent-mpv-hook#install)**.
     - **It also provides a osd overlay to show info/progress.** **(Requires [node.js](https://nodejs.org/en/download/) to be installed)**.
 - [Anime4k](https://github.com/bloc97/Anime4K) - Shaders designed to scale and enhance anime. Includes shaders for line sharpening, artefact removal, denoising, upscaling, and more.
 - [FSRCNN](https://github.com/igv/FSRCNN-TensorFlow/releases) - Very resource intensive upscaler that uses a neural network to upscale very accurately.
