@@ -30,5 +30,99 @@ Huge shoutout to [@he2a](https://github.com/he2a) for their [config](https://git
 ## Usage
 Download the latest windows build of MPV from [here](https://mpv.io/installation/) and extract its contents into a folder called mpv. MPV is portable so you can put this folder anywhere you want. Download and extract the `portable_config` folder from this repo to the mpv folder and you are good to go. Adjust any settings in mpv.conf to fit your system's specs.
 
+## File Structure (on Windows)
+
+```
+MPV
+│
+|
+├── doc
+│   ├── manual.pdf
+│   └── mpbindings.png
+│
+│
+├── installer
+│   ├── configure-opengl-hq.bat
+│   ├── mpv-icon.ico
+│   ├── mpv-install.bat                       # Run this with administrator priviledges to install mpv
+│   ├── mpv-uninstall.bat                     # Run this with administrator priviledges to uninstall mpv
+│   └── updater.ps1
+│
+│
+├── portable_config                           # This is where this repository goes
+│   ├── fonts
+│   │   ├── Ubuntu-Medium.ttf
+|   |   ├── uosc-icons.otf
+|   |   └── uosc-textures.ttf
+│   │
+│   ├── script-opts                           # Contains configuration files for scripts
+│   │   ├── thumbfast.conf
+│   │   ├── uosc.conf
+│   │   └── webtorrent.conf
+│   │
+│   ├── scripts      
+│   │   ├── uosc_shared                       # Contains ui elements for the uosc gui
+│   │       ├── elements 
+|   |           ├── BufferingIndicator.lua
+|   |           ├── Button.lua
+|   |           ├── Controls.lua
+|   |           ├── Curtain.lua
+|   |           ├── CycleButtons.lua
+|   |           ├── Element.lua
+|   |           ├── Elements.lua
+|   |           ├── Menu.lua
+|   |           ├── PauseIndicator.lua
+|   |           ├── Speed.lua
+|   |           ├── Timeline.lua
+|   |           ├── TopBar.lua
+|   |           ├── Volume.lua
+|   |           └── WindowBorder.lua
+|   |
+|   |       ├── lib
+|   |           ├── ass.lua
+|   |           ├── menus.lua
+|   |           ├── std.lua
+|   |           ├── text.lua
+|   |           └── utils.lua
+|   |
+|   |       └── main.lua
+|   |
+│   │   ├── autoload.lua                    
+|   |   ├── cycle-denoise.lua
+|   |   ├── sview.lua
+│   │   ├── thumbfast.lua                     
+│   │   ├── uosc.lua
+│   │   └── webtorrent.js
+│   │
+│   ├── shaders                               # Contains external shaders
+│   │   ├── adasharp.glsl                     
+│   │   ├── adasharpA.glsl
+│   │   ├──                                    
+│   │   ├──
+│   │   ├──
+│   │   ├── CAS.glsl
+│   │   ├── F8.glsl
+│   │   ├── F16.glsl
+│   │   ├── FSR.glsl
+│   │   ├── krigbl.glsl
+│   │   ├── NVScaler.glsl
+│   │   ├── NVSharpen.glsl
+│   │   ├── ssimds.glsl
+│   │   └── ssimsr.glsl
+|   | 
+|   ├── watch_later                           # Folder will be made once you start watching stuff, video positions will be saved here
+│   │
+|   ├── fonts.conf
+│   ├── input.conf
+│   ├── mpv.conf
+|   └── profiles.conf
+|   
+│
+├── d3dcompiler_43.dll
+├── mpv.com
+├── mpv.exe                                   # The mpv executable file
+└── updater.bat                               # Run this with administrator priviledges to update your mpv to the latest version
+```
+
 ## Key Bindings
 Custom key bindings can be added from `input.conf` file. Refer to the [manual](https://mpv.io/manual/master/) and uosc [commands](https://github.com/tomasklaen/uosc) for making any changes. Default key bindings can be seen from the `input.conf` file but most of the player functions can be used through the menu accessed by <kbd>Right Click</kbd> and the buttons above the timeline.
