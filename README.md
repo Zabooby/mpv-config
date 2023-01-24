@@ -31,7 +31,7 @@ Huge shoutout to [@he2a](https://github.com/he2a) for their [config](https://git
     
 ## Installation (on Windows)
 
-* Download the latest 64bit (or 64bit-v3 if you have good hardware) mpv Windows build by shinchiro from [here](https://mpv.io/installation/) or directly from [here](https://sourceforge.net/projects/mpv-player-windows/files/) and extract its contents into a folder called mpv. mpv is portable so you can put this folder anywhere you want. 
+* Download the latest 64bit (or 64bit-v3 for new CPUs) mpv Windows build by shinchiro [here](https://mpv.io/installation/) or directly from [here](https://sourceforge.net/projects/mpv-player-windows/files/) and extract its contents into a folder called mpv. mpv is portable so you can put this folder anywhere you want. 
 * Run `mpv-install.bat`, which is located in `installer` folder, with administrator privileges by right-clicking and selecting run as administrator, after it's done, you'll get a prompt to open Control Panel and set mpv as the default player.
 * Extract the `portable_config` folder from this repo to the mpv folder and you are good to go. 
 * Adjust any settings in [mpv.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/mpv.conf) to fit your system's specs.
