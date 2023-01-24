@@ -120,7 +120,7 @@ MPV
 │   │   ├── ssimds.glsl
 │   │   └── ssimsr.glsl
 |   | 
-|   ├── watch_later                           # Video positions saved here (made automatically)
+|   ├── watch_later                           # Video positions saved here (created automatically)
 │   │
 |   ├── fonts.conf
 │   ├── input.conf
