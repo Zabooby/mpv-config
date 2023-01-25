@@ -109,7 +109,6 @@ MPV
 │   │   ├── adasharpA.glsl
 │   │   ├── add Anime 4k shaders here                                   
 │   │   ├──
-│   │   ├──
 │   │   ├── CAS.glsl
 │   │   ├── F8.glsl
 │   │   ├── F16.glsl
