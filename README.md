@@ -139,5 +139,5 @@ Custom key bindings can be added/edited in the [input.conf](https://github.com/Z
 ## Useful Links
 
 * [mpv manual](https://mpv.io/manual/master/) Extremely useful for knowing what certain options do and what to put in `mpv.conf`
-* [mpv user scripts](https://github.com/mpv-player/mpv/wiki/User-Scripts) Compilation of useful community-published scripts to be used with mpv
+* [mpv user scripts](https://github.com/mpv-player/mpv/wiki/User-Scripts) Compilation of useful community-published scripts to extend mpv's capabilities 
 * [mpv wiki](https://github.com/mpv-player/mpv/wiki) Official wiki with even more useful links
