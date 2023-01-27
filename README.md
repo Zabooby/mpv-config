@@ -18,6 +18,7 @@ Huge shoutout to [@he2a](https://github.com/he2a) for their [config](https://git
     - **It provides a osd overlay to show info/progress.** **(Requires [node.js](https://nodejs.org/en/download/) to be installed)**.
 - - - 
 - [Anime4k](https://github.com/bloc97/Anime4K) - Shaders designed to scale and enhance anime. Includes shaders for line sharpening, artefact removal, denoising, upscaling, and more.
+    - **Currently deciding whether to keep all of these shaders, or only keep those that I use the most**
 - [FSRCNN](https://github.com/igv/FSRCNN-TensorFlow/releases) - Very resource intensive upscaler that uses a neural network to upscale very accurately.
 - [FidelityFX CAS](https://gist.github.com/agyild/bbb4e58298b2f86aa24da3032a0d2ee6) - Provides a mixed ability to sharpen and optionally scale an image. 
 - [FidelityFX FSR](https://gist.github.com/agyild/82219c545228d70c5604f865ce0b0ce5) - A spatial upscaler, it works by taking the current anti-aliased frame and upscaling it to display resolution without relying on other data such as frame history or motion vectors.
@@ -142,5 +143,5 @@ Custom key bindings can be added/edited in the [input.conf](https://github.com/Z
 
 * [mpv wiki](https://github.com/mpv-player/mpv/wiki) Official wiki with even more useful links
 * [mpv manual](https://mpv.io/manual/master/) Extremely useful for knowing what certain options do and what to put in `mpv.conf`
-* [Mathematical evaluation of various scalers](https://artoriuz.github.io/blog/mpv_upscaling.html) Only the best scalers from this evaluation are used in my config
+* [Mathematical evaluation of various scalers](https://artoriuz.github.io/blog/mpv_upscaling.html) Only the best scalers/settings from this evaluation are used in my config
 
