@@ -47,8 +47,6 @@ After following the steps above, your mpv folder should have the following struc
 
 ```
 mpv
-│
-|
 |
 ├── doc
 │   ├── manual.pdf
