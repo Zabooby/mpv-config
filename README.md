@@ -45,7 +45,7 @@ After following the steps above, your mpv folder should have the following struc
 ## File Structure (on Windows)
 
 ```
-MPV
+mpv
 │
 |
 |
