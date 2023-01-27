@@ -15,7 +15,8 @@ Huge shoutout to [@he2a](https://github.com/he2a) for their [config](https://git
 - [sview](https://github.com/he2a/mpv-scripts/blob/main/scripts/sview.lua) - A simple script to show multiple shaders running, in a clean list. Triggered on shader activation or by toggle button.
 - [webtorrent-mpv-hook](https://github.com/mrxdst/webtorrent-mpv-hook) - Adds a hook that allows mpv to stream torrents. 
     - **This script needs to be setup manually, follow installation steps [here](https://github.com/mrxdst/webtorrent-mpv-hook#install)**.
-    - **It also provides a osd overlay to show info/progress.** **(Requires [node.js](https://nodejs.org/en/download/) to be installed)**.
+    - **It provides a osd overlay to show info/progress.** **(Requires [node.js](https://nodejs.org/en/download/) to be installed)**.
+- - - 
 - [Anime4k](https://github.com/bloc97/Anime4K) - Shaders designed to scale and enhance anime. Includes shaders for line sharpening, artefact removal, denoising, upscaling, and more.
 - [FSRCNN](https://github.com/igv/FSRCNN-TensorFlow/releases) - Very resource intensive upscaler that uses a neural network to upscale very accurately.
 - [FidelityFX CAS](https://gist.github.com/agyild/bbb4e58298b2f86aa24da3032a0d2ee6) - Provides a mixed ability to sharpen and optionally scale an image. 
@@ -45,6 +46,7 @@ After following the steps above, your mpv folder should have the following struc
 ```
 MPV
 │
+|
 |
 ├── doc
 │   ├── manual.pdf
@@ -77,7 +79,7 @@ MPV
 |   |           ├── Button.lua
 |   |           ├── Controls.lua
 |   |           ├── Curtain.lua
-|   |           ├── CycleButtons.lua
+|   |           ├── CycleButton.lua
 |   |           ├── Element.lua
 |   |           ├── Elements.lua
 |   |           ├── Menu.lua
@@ -98,7 +100,7 @@ MPV
 |   |       └── main.lua
 |   |
 │   │   ├── autoload.lua                    
-|   |   ├── cycle-denoise.lua
+|   |   ├── cycle-denoise.lua                 # Change key binding here, not input.conf
 |   |   ├── sview.lua
 │   │   ├── thumbfast.lua                     
 │   │   ├── uosc.lua
@@ -106,7 +108,7 @@ MPV
 │   │
 │   ├── shaders                               # Contains external shaders
 │   │   ├── adasharp.glsl                     
-│   │   ├── adasharpA.glsl
+│   │   ├── adasharpA.glsl                    # Adjusted for anime
 │   │   ├── add Anime 4k shaders here                                   
 │   │   ├──
 │   │   ├── CAS.glsl
@@ -123,7 +125,7 @@ MPV
 │   │
 |   ├── fonts.conf
 │   ├── input.conf
-│   ├── mpv.conf
+│   ├── mpv.conf                              # Adjust most settings here 
 |   └── profiles.conf
 |   
 │
