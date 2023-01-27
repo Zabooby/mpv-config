@@ -143,5 +143,5 @@ Custom key bindings can be added/edited in the [input.conf](https://github.com/Z
 
 * [mpv wiki](https://github.com/mpv-player/mpv/wiki) Official wiki with even more useful links
 * [mpv manual](https://mpv.io/manual/master/) Extremely useful for knowing what certain options do and what to put in `mpv.conf`
-* [Mathematical evaluation of various scalers](https://artoriuz.github.io/blog/mpv_upscaling.html) Only the best scalers/settings from this evaluation are used in my config
+* [Mathematical evaluation of various scalers](https://artoriuz.github.io/blog/mpv_upscaling.html) My config uses the best scalers/settings from this analysis
 
