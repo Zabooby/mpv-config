@@ -1,7 +1,7 @@
 # Personal MPV Configuration for Windows
 
 <p align="center"><img width=100% src="https://user-images.githubusercontent.com/78969986/215202544-46421bfd-24bc-4d67-a641-861f9a1db34f.png" alt="mpv screenshot"></p>
-<p align="center"><img width=100% src="https://user-images.githubusercontent.com/78969986/215203674-4cca4bb1-f5f7-4cbc-8d58-3ed38f723642.png" alt="mpv screenshot"></p>
+<p align="center"><img width=100% src="https://user-images.githubusercontent.com/78969986/215260505-49362a5c-f904-4425-a0af-3033b8af7c88.png" alt="mpv screenshot"></p>
 
 ## Overview
 Just my personal config files for use in [mpv](https://mpv.io/) aiming to get the highest quality. Contains custom keybindings, a GUI menu, multiple scripts & filters serving different functions (specified below) and various shaders for animated and live action media. Note that some shaders/scalers won't run well with low end computers, but excluding those this config should run fine on most computers. Also note there will be a few files in the [script-opts](https://github.com/Zabooby/mpv-config/tree/main/portable_config/script-opts) folder, where you will have to change file paths to point to where the files exist on your pc (detailed below). 
