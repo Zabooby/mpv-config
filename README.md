@@ -98,6 +98,7 @@ mpv
 |   |
 |   |       └── main.lua
 |   |
+│   │   ├── autodeint.lua
 │   │   ├── autoload.lua                    
 |   |   ├── cycle-denoise.lua                 # Change key binding here, not input.conf
 |   |   ├── sview.lua
