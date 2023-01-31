@@ -17,6 +17,7 @@ Huge shoutout to [@he2a](https://github.com/he2a) for their [config](https://git
 - [sview](https://github.com/he2a/mpv-scripts/blob/main/scripts/sview.lua) - A simple script to show multiple shaders running, in a clean list. Triggered on shader activation or by toggle button.
 - [webtorrent-mpv-hook](https://github.com/mrxdst/webtorrent-mpv-hook) - Adds a hook that allows mpv to stream torrents. 
     - **This script needs to be setup manually, follow installation steps [here](https://github.com/mrxdst/webtorrent-mpv-hook#install)**.
+    - **Point to the same location in the file structure section below for the webtorrent.js file.**
     - **It provides a osd overlay to show info/progress.** **(Requires [node.js](https://nodejs.org/en/download/) to be installed)**.
 - - - 
 - [Anime4k](https://github.com/bloc97/Anime4K) - Shaders designed to scale and enhance anime. Includes shaders for line sharpening, artefact removal, denoising, upscaling, and more.
@@ -104,7 +105,7 @@ mpv
 |   |   ├── sview.lua
 │   │   ├── thumbfast.lua                     
 │   │   ├── uosc.lua
-│   │   └── webtorrent.js
+│   │   └── webtorrent.js                     # Created here when setting up webtorrent script
 │   │
 │   ├── shaders                               # Contains external shaders
 │   │   ├── adasharp.glsl                     
