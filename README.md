@@ -1,10 +1,10 @@
-# Personal MPV Configuration for Windows
+# Personal mpv Configuration for Windows
 
 <p align="center"><img width=100% src="https://user-images.githubusercontent.com/78969986/215202544-46421bfd-24bc-4d67-a641-861f9a1db34f.png" alt="mpv screenshot"></p>
 <p align="center"><img width=100% src="https://user-images.githubusercontent.com/78969986/215260505-49362a5c-f904-4425-a0af-3033b8af7c88.png" alt="mpv screenshot"></p>
 
 ## Overview
-Just my personal config files for use in [mpv](https://mpv.io/) aiming to get the highest quality and best viewing experience. Contains custom keybindings, a GUI menu, tuned profiles (for upscaling, downscaling and anime), multiple scripts & filters serving different functions and various shaders for animated and live action media (specified below). Note that some shaders/scalers won't run well with low end computers, but excluding those (along with some settings in [mpv.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/mpv.conf) this config should run fine on most computers. Also note there will be a few files in the [script-opts](https://github.com/Zabooby/mpv-config/tree/main/portable_config/script-opts) folder, where you will have to change file paths to point to where the files exist on your pc (detailed in File Structure section). 
+Just my personal config files for use in [mpv](https://mpv.io/) aiming to get the highest quality and best viewing experience. Contains custom keybindings, a GUI menu, tuned profiles (for upscaling, downscaling and anime), multiple scripts & filters serving different functions and various shaders for animated and live action media (specified below). Note that some shaders/scalers won't run well with low end computers, but excluding those (along with some settings in [mpv.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/mpv.conf)) this config should run fine on most computers. Also note there will be a few files in the [script-opts](https://github.com/Zabooby/mpv-config/tree/main/portable_config/script-opts) folder, where you will have to change file paths to point to where the files exist on your pc (detailed in File Structure section). 
 
 Huge shoutout to [@he2a](https://github.com/he2a) for their [config](https://github.com/he2a/mpv-config), most of my setup is inspired by it.
 
@@ -25,19 +25,19 @@ Huge shoutout to [@he2a](https://github.com/he2a) for their [config](https://git
 - [FSRCNN](https://github.com/igv/FSRCNN-TensorFlow/releases) - Very resource intensive upscaler that uses a neural network to upscale very accurately.
 - [FidelityFX CAS](https://gist.github.com/agyild/bbb4e58298b2f86aa24da3032a0d2ee6) - Provides a mixed ability to sharpen and optionally scale an image. 
 - [NVIDIA Image Sharpening](https://gist.github.com/agyild/7e8951915b2bf24526a9343d951db214) 
-    - An adaptive-directional sharpening-only algorithm is available. The directional scaling and sharpening algorithm is named NVScaler while the adaptive-directional-sharpening-only algorithm is named NVSharpen.
+    - An adaptive-directional sharpening algorithm shaders.
 - [SSimDownscaler, SSimSuperRes, Krig, Adaptive Sharpen](https://gist.github.com/igv) 
     - SSimDownscaler: Perceptually based downscaler.
-    - SSimSuperRes: Make corrections to the image upscaled by MPV built-in scaler (removes ringing artifacts, restores original  sharpness, etc).
+    - SSimSuperRes: Make corrections to the image upscaled by mpv built-in scaler (removes ringing artifacts, restores original  sharpness, etc).
     - Krig: Chroma scaler that uses luma information for high quality upscaling.
     - Adaptive Sharpen: Another sharpening shader
     
 ## Installation (on Windows)
 
 * Download the latest 64bit (or 64bit-v3 for new CPUs) mpv Windows build by shinchiro [here](https://mpv.io/installation/) or directly from [here](https://sourceforge.net/projects/mpv-player-windows/files/) and extract its contents into a folder called mpv. mpv is portable so you can put this folder anywhere you want. 
-* Run `mpv-install.bat`, which is located in `installer` folder, with administrator privileges by right-clicking and selecting run as administrator, after it's done, you'll get a prompt to open Control Panel and set mpv as the default player.
+* Run `mpv-install.bat`, which is located in the `installer` folder, with administrator privileges by right-clicking and selecting run as administrator, after it's done, you'll get a prompt to open Control Panel and set mpv as the default player.
 * Extract the `portable_config` folder from this repo to the mpv folder and you are good to go. 
-* Adjust any settings in [mpv.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/mpv.conf) to fit your system's specs.
+* Adjust any settings in [mpv.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/mpv.conf) to fit your system's specs, use the [manual](https://mpv.io/manual/master/) to find out what different options do. 
 * You're done. Go watch some videos!
 
 After following the steps above, your mpv folder should have the following structure:
@@ -69,7 +69,7 @@ mpv
 │   │
 │   ├── script-opts                           # Contains configuration files for scripts
 │   │   ├── thumbfast.conf                    
-│   │   ├── uosc.conf                         # Change line 185 to desired default directory 
+│   │   ├── uosc.conf                         # Set desired default directory for gui menu here
 │   │   └── webtorrent.conf                   # Choose where to save donwloaded videos here
 │   │
 │   ├── scripts      
@@ -135,7 +135,7 @@ mpv
 ```
 
 ## Key Bindings
-Custom key bindings can be added/edited in the [input.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/input.conf) file. Refer to the [manual](https://mpv.io/manual/master/) and uosc [commands](https://github.com/tomasklaen/uosc) for making any changes. Default key bindings can be seen from the [input.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/input.conf) file but most of the player functions can be used through the menu accessed by <kbd>Right Click</kbd> and the buttons above the timeline.
+Custom key bindings can be added/edited in the [input.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/input.conf) file. Refer to the [manual](https://mpv.io/manual/master/) and uosc [commands](https://github.com/tomasklaen/uosc) for making any changes. Default key bindings can be seen from the [input.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/input.conf) file but most of the player functions can be used through the menu accessed by <kbd>Right Click</kbd> and the buttons above the timeline as seen in the images above.
 
 ## Useful Links
 
