@@ -52,14 +52,12 @@ mpv
 │   ├── manual.pdf
 │   └── mpbindings.png
 │
-│
 ├── installer
 │   ├── configure-opengl-hq.bat
 │   ├── mpv-icon.ico
 │   ├── mpv-install.bat                       # Run with administrator priviledges to install mpv
 │   ├── mpv-uninstall.bat                     # Run with administrator priviledges to uninstall mpv
 │   └── updater.ps1
-│
 │
 ├── portable_config                           # This is where this repository goes
 │   ├── fonts
@@ -89,16 +87,16 @@ mpv
 |   |           ├── TopBar.lua
 |   |           ├── Volume.lua
 |   |           └── WindowBorder.lua
-|   |
+│   │
 |   |       ├── lib
 |   |           ├── ass.lua
 |   |           ├── menus.lua
 |   |           ├── std.lua
 |   |           ├── text.lua
 |   |           └── utils.lua
-|   |
+│   │
 |   |       └── main.lua
-|   |
+│   │
 │   │   ├── autodeint.lua
 │   │   ├── autoload.lua                    
 |   |   ├── cycle-denoise.lua                 # Change key binding here, not input.conf
@@ -119,15 +117,13 @@ mpv
 │   │   ├── NVSharpen.glsl
 │   │   ├── ssimds.glsl
 │   │   └── ssimsr.glsl
-|   | 
-|   ├── watch_later                           # Video positions saved here (created automatically)
 │   │
+|   ├── watch_later                           # Video positions saved here (created automatically)
 |   ├── fonts.conf
 │   ├── input.conf
 │   ├── mpv.conf                              # Adjust most settings here 
 |   └── profiles.conf
 |   
-│
 ├── d3dcompiler_43.dll
 ├── mpv.com
 ├── mpv.exe                                   # The mpv executable file
