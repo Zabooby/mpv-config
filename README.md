@@ -4,7 +4,7 @@
 <p align="center"><img width=100% src="https://user-images.githubusercontent.com/78969986/215260505-49362a5c-f904-4425-a0af-3033b8af7c88.png" alt="mpv screenshot"></p>
 
 ## Overview
-Just my personal config files for use in [mpv](https://mpv.io/) aiming to get the highest quality. Contains custom keybindings, a GUI menu, multiple scripts & filters serving different functions (specified below) and various shaders for animated and live action media. Note that some shaders/scalers won't run well with low end computers, but excluding those this config should run fine on most computers. Also note there will be a few files in the [script-opts](https://github.com/Zabooby/mpv-config/tree/main/portable_config/script-opts) folder, where you will have to change file paths to point to where the files exist on your pc (detailed below). 
+Just my personal config files for use in [mpv](https://mpv.io/) aiming to get the highest quality and best viewing experience. Contains custom keybindings, a GUI menu, tuned profiles (for upscaling, downscaling and anime), multiple scripts & filters serving different functions and various shaders for animated and live action media (specified below). Note that some shaders/scalers won't run well with low end computers, but excluding those (along with some settings in [mpv.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/mpv.conf) this config should run fine on most computers. Also note there will be a few files in the [script-opts](https://github.com/Zabooby/mpv-config/tree/main/portable_config/script-opts) folder, where you will have to change file paths to point to where the files exist on your pc (detailed in File Structure section). 
 
 Huge shoutout to [@he2a](https://github.com/he2a) for their [config](https://github.com/he2a/mpv-config), most of my setup is inspired by it.
 
@@ -135,11 +135,11 @@ mpv
 ```
 
 ## Key Bindings
-Custom key bindings can be added/edited in the [input.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/input.conf) file. Refer to the [manual](https://mpv.io/manual/master/) and uosc [commands](https://github.com/tomasklaen/uosc) for making any changes. Default key bindings can be seen from the input.conf file but most of the player functions can be used through the menu accessed by <kbd>Right Click</kbd> and the buttons above the timeline.
+Custom key bindings can be added/edited in the [input.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/input.conf) file. Refer to the [manual](https://mpv.io/manual/master/) and uosc [commands](https://github.com/tomasklaen/uosc) for making any changes. Default key bindings can be seen from the [input.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/input.conf) file but most of the player functions can be used through the menu accessed by <kbd>Right Click</kbd> and the buttons above the timeline.
 
 ## Useful Links
 
 * [mpv wiki](https://github.com/mpv-player/mpv/wiki) Official wiki with even more useful links
-* [mpv manual](https://mpv.io/manual/master/) Extremely useful for knowing what certain options do and what to put in `mpv.conf`
+* [mpv manual](https://mpv.io/manual/master/) Lists all the options and configuration options mpv understands, key bindings, scripting, and other customizations. 
 * [Mathematical evaluation of various scalers](https://artoriuz.github.io/blog/mpv_upscaling.html) My config uses the best scalers/settings from this analysis
 
