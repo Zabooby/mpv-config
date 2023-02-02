@@ -34,7 +34,7 @@ Huge shoutout to [@he2a](https://github.com/he2a) for their [config](https://git
     
 ## Installation (on Windows)
 
-* Download the latest 64bit (or 64bit-v3 for new CPUs) mpv Windows build by shinchiro [here](https://mpv.io/installation/) or directly from [here](https://sourceforge.net/projects/mpv-player-windows/files/) and extract its contents into a folder called mpv. mpv is portable so you can put this folder anywhere you want. 
+* Download the latest 64bit (or 64bit-v3 for new CPUs) mpv Windows build by shinchiro [here](https://mpv.io/installation/) or directly from [here](https://sourceforge.net/projects/mpv-player-windows/files/) and extract its contents into a folder called mpv (or anything you want). mpv is portable so you can put this folder anywhere you want. 
 * Run `mpv-install.bat`, which is located in the `installer` folder, with administrator privileges by right-clicking and selecting run as administrator, after it's done, you'll get a prompt to open Control Panel and set mpv as the default player.
 * Extract the `portable_config` folder from this repo to the mpv folder and you are good to go. 
 * Adjust any settings in [mpv.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/mpv.conf) to fit your system's specs, use the [manual](https://mpv.io/manual/master/) to find out what different options do. 
@@ -49,8 +49,8 @@ After following the steps above, your mpv folder should have the following struc
 mpv
 |
 ├── doc
-│   ├── manual.pdf
-│   └── mpbindings.png
+│   ├── manual.pdf                          
+│   └── mpbindings.png                        # Default keybings if your input.conf is empty
 │
 ├── installer
 │   ├── configure-opengl-hq.bat
@@ -122,7 +122,7 @@ mpv
 |   ├── fonts.conf
 │   ├── input.conf
 │   ├── mpv.conf                              # Adjust most settings here 
-|   └── profiles.conf
+|   └── profiles.conf                         # Up/downscale profiles here, anime profile in mpv.conf
 |   
 ├── d3dcompiler_43.dll
 ├── mpv.com
@@ -131,11 +131,11 @@ mpv
 ```
 
 ## Key Bindings
-Custom key bindings can be added/edited in the [input.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/input.conf) file. Refer to the [manual](https://mpv.io/manual/master/) and uosc [commands](https://github.com/tomasklaen/uosc) for making any changes. Default key bindings can be seen from the [input.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/input.conf) file but most of the player functions can be used through the menu accessed by <kbd>Right Click</kbd> and the buttons above the timeline as seen in the images above.
+Custom key bindings can be added/edited in the [input.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/input.conf) file. Refer to the [manual](https://mpv.io/manual/master/) and uosc [commands](https://github.com/tomasklaen/uosc) for making any changes. Default key bindings can be seen from the [input.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/input.conf) file but most of the player functions can be used through the menu accessed by `Right Click` and the buttons above the timeline as seen in the images above.
 
 ## Useful Links
 
-* [mpv wiki](https://github.com/mpv-player/mpv/wiki) Official wiki with even more useful links
-* [mpv manual](https://mpv.io/manual/master/) Lists all the options and configuration options mpv understands, key bindings, scripting, and other customizations. 
+* [mpv wiki](https://github.com/mpv-player/mpv/wiki) Official wiki with loads of useful links
+* [mpv manual](https://mpv.io/manual/master/) Lists all the options and configuration options mpv understands including key bindings, scripting, and other customizations. 
 * [Mathematical evaluation of various scalers](https://artoriuz.github.io/blog/mpv_upscaling.html) My config uses the best scalers/settings from this analysis
 
