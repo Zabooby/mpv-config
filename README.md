@@ -6,8 +6,6 @@
 ## Overview
 Just my personal config files for use in [mpv](https://mpv.io/), aiming to get the highest quality and best viewing experience. Contains custom keybindings, a GUI menu, tuned profiles (for upscaling, downscaling and anime), multiple scripts & filters serving different functions and various shaders for animated and live action media (specified below) suitable for both high and low end computers. Note there will be a few files in the [script-opts](https://github.com/Zabooby/mpv-config/tree/main/portable_config/script-opts) folder, where you will have to change file paths to point to where the files exist on your pc (detailed in File Structure section). 
 
-Huge shoutout to [@he2a](https://github.com/he2a) for their [config](https://github.com/he2a/mpv-config), most of my setup is inspired by it.
-
 ## Scripts and Shaders
 - [uosc](https://github.com/darsain/uosc) - Adds a minimalist customizable gui.
 - [cycle-denoise](https://gist.github.com/myfreeer/d744c445aa71c0eeb165ca39cf6c0511) - Cycle between lavfi's denoise filters.
@@ -135,7 +133,8 @@ Custom key bindings can be added/edited in the [input.conf](https://github.com/Z
 
 ## Useful Links
 
-* [mpv wiki](https://github.com/mpv-player/mpv/wiki) Official wiki with loads of useful links
+* [mpv wiki](https://github.com/mpv-player/mpv/wiki) Official wiki with links to user scripts, faq's and much more.
 * [mpv manual](https://mpv.io/manual/master/) Lists all the options and configuration options mpv understands including key bindings, scripting, and other customizations. 
 * [Mathematical evaluation of various scalers](https://artoriuz.github.io/blog/mpv_upscaling.html) My config uses the best scalers/settings from this analysis
 
+Huge shoutout to [@he2a](https://github.com/he2a) for their [config](https://github.com/he2a/mpv-config), most of my setup is inspired by it.
