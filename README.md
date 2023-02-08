@@ -118,7 +118,7 @@ mpv
 │   │
 |   ├── watch_later                           # Video positions saved here (created automatically)
 |   ├── fonts.conf
-│   ├── input.conf                            # Contains my custom keybindings also for uosc menu
+│   ├── input.conf                            # Change custom keybindings and uosc menu here
 │   ├── mpv.conf                              # Adjust most settings here 
 |   └── profiles.conf                         # Up/downscale profiles here, anime profile in mpv.conf
 |   
