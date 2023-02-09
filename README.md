@@ -1,7 +1,7 @@
 # Personal mpv Configuration for Windows
 
 <p align="center"><img width=100% src="https://user-images.githubusercontent.com/78969986/217233303-c7d31814-c58c-40a7-ab02-d42312c398ae.png" alt="mpv screenshot"></p>
-<p align="center"><img width=100% src="https://user-images.githubusercontent.com/78969986/215260505-49362a5c-f904-4425-a0af-3033b8af7c88.png" alt="mpv screenshot"></p>
+<p align="center"><img width=100% src="https://user-images.githubusercontent.com/78969986/217888283-b72140a0-233f-444f-aeba-6b8562a2bc11.png" alt="mpv screenshot"></p>
 
 ## Overview
 Just my personal config files for use in [mpv](https://mpv.io/), a free (as in freedom and free beer), open-source, and cross-platform media player, aiming to get the highest quality and best viewing experience. Contains custom keybindings, a GUI menu, tuned profiles (for upscaling, downscaling and anime), multiple scripts & filters serving different functions and various shaders for animated and live action media (specified below) suitable for both high and low end computers. Note there will be a few files in the [script-opts](https://github.com/Zabooby/mpv-config/tree/main/portable_config/script-opts) folder, where you will have to change file paths to point to where the files exist on your pc (detailed in File Structure section). 
