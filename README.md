@@ -4,7 +4,7 @@
 <p align="center"><img width=100% src="https://user-images.githubusercontent.com/78969986/217888283-b72140a0-233f-444f-aeba-6b8562a2bc11.png" alt="mpv screenshot"></p>
 
 ## Overview
-Just my personal config files for use in [mpv](https://mpv.io/), a free (as in freedom and free beer), open-source, and cross-platform media player, aiming to get the highest quality and best viewing experience. Contains custom keybindings, a GUI menu, tuned profiles (for upscaling, downscaling and anime), multiple scripts & filters serving different functions and various shaders for animated and live action media (specified below) suitable for both high and low end computers. Note there will be a few files in the [script-opts](https://github.com/Zabooby/mpv-config/tree/main/portable_config/script-opts) folder, where you will have to change file paths to point to where the files exist on your pc (detailed in File Structure section). 
+Just my personal config files for use in [mpv](https://mpv.io/), a free (as in freedom and free beer), open-source, and cross-platform media player, aiming to get the highest quality and best viewing experience. Contains custom keybindings, a GUI menu, tuned profiles (for upscaling, downscaling and anime), multiple scripts & filters serving different functions and various shaders & scalers for animated and live action media (specified below) suitable for both high and low end computers (with a few tweaks). Note there will be a few files in the [script-opts](https://github.com/Zabooby/mpv-config/tree/main/portable_config/script-opts) folder, where you will have to change file paths to point to where the files exist on your pc (detailed in File Structure section). 
 
 ## Scripts and Shaders
 - [uosc](https://github.com/darsain/uosc) - Adds a minimalist customizable gui.
@@ -19,21 +19,21 @@ Just my personal config files for use in [mpv](https://mpv.io/), a free (as in f
     - **It provides a osd overlay to show info/progress.** **(Requires [node.js](https://nodejs.org/en/download/) to be installed)**.
 - - - 
 - [Anime4k](https://github.com/bloc97/Anime4K) - Shaders designed to scale and enhance anime. Includes shaders for line sharpening, artefact removal, denoising, upscaling, and more.
-    - **Currently deciding whether to keep all of these shaders, or only keep those that I use the most**
+    - **Currently deciding whether to keep all of these shaders, or only keep those that I use the most**.
 - [FSRCNN](https://github.com/igv/FSRCNN-TensorFlow/releases) - Very resource intensive upscaler that uses a neural network to upscale very accurately.
 - [FidelityFX CAS](https://gist.github.com/agyild/bbb4e58298b2f86aa24da3032a0d2ee6) - Provides a mixed ability to sharpen and optionally scale an image. 
 - [NVIDIA Image Sharpening](https://gist.github.com/agyild/7e8951915b2bf24526a9343d951db214) 
     - An adaptive-directional sharpening algorithm shaders.
-- [SSimDownscaler, SSimSuperRes, Krig, Adaptive Sharpen](https://gist.github.com/igv) 
+- [SSimDownscaler, SSimSuperRes, KrigBilateral, Adaptive Sharpen](https://gist.github.com/igv) 
     - SSimDownscaler: Perceptually based downscaler.
     - SSimSuperRes: Make corrections to the image upscaled by mpv built-in scaler (removes ringing artifacts, restores original  sharpness, etc).
-    - Krig: Chroma scaler that uses luma information for high quality upscaling.
-    - Adaptive Sharpen: Another sharpening shader
+    - KrigBilateral: Chroma scaler that uses luma information for high quality upscaling.
+    - Adaptive Sharpen: Another sharpening shader.
     
 ## Installation (on Windows)
 
-* Download the latest 64bit (or 64bit-v3 for new CPUs) mpv Windows build by shinchiro [here](https://mpv.io/installation/) or directly from [here](https://sourceforge.net/projects/mpv-player-windows/files/) and extract its contents into a folder called mpv (or anything you want). mpv is portable so you can put this folder anywhere you want. 
-* Run `mpv-install.bat`, which is located in the `installer` folder, with administrator privileges by right-clicking and selecting run as administrator, after it's done, you'll get a prompt to open Control Panel and set mpv as the default player.
+* Download the latest 64bit (or 64bit-v3 for new CPUs) mpv Windows build by shinchiro [here](https://mpv.io/installation/) or directly from [here](https://sourceforge.net/projects/mpv-player-windows/files/) and extract its contents into a folder called mpv (or anything you want). mpv is portable so you can put this folder wherever you desire. 
+* Run `mpv-install.bat`, which is located in the `installer` folder (see section below), with administrator privileges by right-clicking and selecting run as administrator, after it's done, you'll get a prompt to open Control Panel and set mpv as the default player.
 * Extract the `portable_config` folder from this repo to the mpv folder and you are good to go. 
 * Adjust any settings in [mpv.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/mpv.conf) to fit your system's specs, use the [manual](https://mpv.io/manual/master/) to find out what different options do. 
 * You're done. Go watch some videos!
@@ -47,8 +47,8 @@ After following the steps above, your mpv folder should have the following struc
 mpv
 |
 ├── doc
-│   ├── manual.pdf                          
-│   └── mpbindings.png                        # Default keybings if your input.conf is empty
+│   ├── manual.pdf                            
+│   └── mpbindings.png                        # System default keybindings when input.conf is empty
 │
 ├── installer
 │   ├── configure-opengl-hq.bat
@@ -65,7 +65,7 @@ mpv
 │   │
 │   ├── script-opts                           # Contains configuration files for scripts
 │   │   ├── thumbfast.conf                    
-│   │   ├── uosc.conf                         # Set desired default directory for gui menu here
+│   │   ├── uosc.conf                         # Set desired default directory for uosc menu here
 │   │   └── webtorrent.conf                   # Choose where to save donwloaded videos here
 │   │
 │   ├── scripts      
@@ -97,7 +97,7 @@ mpv
 │   │
 │   │   ├── autodeint.lua
 │   │   ├── autoload.lua                    
-|   |   ├── cycle-denoise.lua                 # Change key binding here, not input.conf
+|   |   ├── cycle-denoise.lua                 # Change keybinding here, not input.conf
 |   |   ├── sview.lua
 │   │   ├── thumbfast.lua                     
 │   │   ├── uosc.lua
@@ -118,7 +118,7 @@ mpv
 │   │
 |   ├── watch_later                           # Video positions saved here (created automatically)
 |   ├── fonts.conf
-│   ├── input.conf                            # Change custom keybindings and uosc menu here
+│   ├── input.conf                            # Change uosc menu and buttons shown above here
 │   ├── mpv.conf                              # Adjust most settings here 
 |   └── profiles.conf                         # Up/downscale profiles here, anime profile in mpv.conf
 |   
