@@ -4,7 +4,10 @@
 <p align="center"><img width=100% src="https://user-images.githubusercontent.com/78969986/217888283-b72140a0-233f-444f-aeba-6b8562a2bc11.png" alt="mpv screenshot"></p>
 
 ## Overview
-Just my personal config files for use in [mpv](https://mpv.io/), a free (as in freedom and free beer), open-source, and cross-platform media player, aiming to get the highest quality and best viewing experience. Contains custom key bindings, a GUI menu, tuned profiles (for upscaling, downscaling and anime), multiple scripts & filters serving different functions and various shaders & scalers for animated and live action media (all specified below) suitable for both high and low end computers (with a few tweaks). Note there will be a few files in the [script-opts](https://github.com/Zabooby/mpv-config/tree/main/portable_config/script-opts) folder, where you will have to change file paths to point to where the files exist on your pc (detailed in File Structure section). 
+Just my personal config files for use in [mpv](https://mpv.io/), a free (as in freedom and free beer), open-source, and cross-platform media player, aiming to get the highest quality and best viewing experience. Contains custom key bindings, a GUI menu, tuned profiles (for upscaling, downscaling and anime), multiple scripts & filters serving different functions and various shaders & scalers for animated and live action media (all specified below) suitable for both high and low end computers (with some tweaks). Note there will be a few files in the [script-opts](https://github.com/Zabooby/mpv-config/tree/main/portable_config/script-opts) folder, where you will have to change file paths to point to where the files exist on your pc (detailed in File Structure section). 
+
+
+Click [here](https://github.com/users/Zabooby/projects/1/views/1) to see my to-do's. 
 
 ## Scripts and Shaders
 - [uosc](https://github.com/darsain/uosc) - Adds a minimalist customizable gui.
@@ -133,6 +136,7 @@ Custom key bindings can be added/edited in the [input.conf](https://github.com/Z
 
 ## Useful Links
 
+* [To-do's for this config] Just a list of things I plan to implement into my mpv config. 
 * [mpv wiki](https://github.com/mpv-player/mpv/wiki) Official wiki with links to user scripts, FAQ's and much more.
 * [mpv manual](https://mpv.io/manual/master/) Lists all the settings and configuration options mpv understands including key bindings, scripting, and other customizations. 
 * [Mathematical evaluation of various scalers](https://artoriuz.github.io/blog/mpv_upscaling.html) My config uses the best scalers/settings from this analysis.
