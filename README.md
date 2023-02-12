@@ -18,17 +18,17 @@ Just my personal config files for use in [mpv](https://mpv.io/), a free (as in f
     - **Point to the same location in the file structure section below for the webtorrent.js file.**
     - **It provides a osd overlay to show info/progress.** **(Requires [node.js](https://nodejs.org/en/download/) to be installed)**.
 - - - 
-- [Anime4k](https://github.com/bloc97/Anime4K) - Shaders designed to scale and enhance anime. Includes shaders for line sharpening, artefact removal, denoising, upscaling, and more.
-    - **Currently deciding whether to keep all of these shaders, or only keep those that I use the most**.
-- [FSRCNN](https://github.com/igv/FSRCNN-TensorFlow/releases) - Very resource intensive upscaler that uses a neural network to upscale very accurately.
-- [FidelityFX CAS](https://gist.github.com/agyild/bbb4e58298b2f86aa24da3032a0d2ee6) - Provides a mixed ability to sharpen and optionally scale an image. 
-- [NVIDIA Image Sharpening](https://gist.github.com/agyild/7e8951915b2bf24526a9343d951db214) 
-    - An adaptive-directional sharpening algorithm shaders.
 - [SSimDownscaler, SSimSuperRes, KrigBilateral, Adaptive Sharpen](https://gist.github.com/igv) 
     - SSimDownscaler: Perceptually based downscaler.
     - SSimSuperRes: Make corrections to the image upscaled by mpv built-in scaler (removes ringing artifacts, restores original  sharpness, etc).
     - KrigBilateral: Chroma scaler that uses luma information for high quality upscaling.
     - Adaptive Sharpen: Another sharpening shader.
+- [FSRCNN](https://github.com/igv/FSRCNN-TensorFlow/releases) - Very resource intensive upscaler that uses a neural network to upscale very accurately.
+- [FidelityFX CAS](https://gist.github.com/agyild/bbb4e58298b2f86aa24da3032a0d2ee6) - Provides a mixed ability to sharpen and optionally scale an image. 
+- [NVIDIA Image Sharpening](https://gist.github.com/agyild/7e8951915b2bf24526a9343d951db214) 
+    - An adaptive-directional sharpening algorithm shaders.
+- [Anime4k](https://github.com/bloc97/Anime4K) - Shaders designed to scale and enhance anime. Includes shaders for line sharpening, artefact removal, denoising, upscaling, and more.
+    - **Currently deciding whether to keep all of these shaders, or only keep those that I use the most**.
     
 ## Installation (on Windows)
 
