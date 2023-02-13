@@ -10,6 +10,7 @@ Just my personal config files for use in [mpv](https://mpv.io/), a free (as in f
 - [uosc](https://github.com/darsain/uosc) - Adds a minimalist customizable gui.
 - [cycle-denoise](https://gist.github.com/myfreeer/d744c445aa71c0eeb165ca39cf6c0511) - Cycle between lavfi's denoise filters.
 - [thumbfast](https://github.com/po5/thumbfast) - High-performance on-the-fly thumbnailer for mpv.
+- [recent-menu](https://github.com/natural-harmonia-gropius/recent-menu) - Recently played menu for mpv integrated with uosc.
 - [autodeint](https://github.com/mpv-player/mpv/blob/master/TOOLS/lua/autodeint.lua) - Automatically insert the appropriate deinterlacing filter based on a short section of the current video.
 - [autoload](https://github.com/mpv-player/mpv/blob/master/TOOLS/lua/autoload.lua) - Automatically load playlist entries before and after the currently playing file, by scanning the directory.
 - [sview](https://github.com/he2a/mpv-scripts/blob/main/scripts/sview.lua) - A simple script to show multiple shaders running, in a clean list. Triggered on shader activation or by toggle button.
@@ -133,7 +134,7 @@ Custom key bindings can be added/edited in the [input.conf](https://github.com/Z
 
 ## Useful Links
 
-* [To-do's for this config](https://github.com/users/Zabooby/projects/1/views/1) Just a list of things I plan to implement into my mpv config. 
+* [To-do's for this repo](https://github.com/users/Zabooby/projects/1/views/1) Just a list of things I plan to implement into my mpv config. 
 * [mpv wiki](https://github.com/mpv-player/mpv/wiki) Official wiki with links to user scripts, FAQ's and much more.
 * [mpv manual](https://mpv.io/manual/master/) Lists all the settings and configuration options mpv understands including key bindings, scripting, and other customizations. 
 * [Mathematical evaluation of various scalers](https://artoriuz.github.io/blog/mpv_upscaling.html) My config uses the best scalers/settings from this analysis.
