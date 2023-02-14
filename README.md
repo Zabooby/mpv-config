@@ -65,6 +65,7 @@ mpv
 |   |   └── uosc-textures.ttf
 │   │
 │   ├── script-opts                           # Contains configuration files for scripts
+|   |   ├── recentmenu.conf    
 │   │   ├── thumbfast.conf                    
 │   │   ├── uosc.conf                         # Set desired default directory for uosc menu here
 │   │   └── webtorrent.conf                   # Choose where to save donwloaded videos here
@@ -99,6 +100,7 @@ mpv
 │   │   ├── autodeint.lua
 │   │   ├── autoload.lua                    
 |   |   ├── cycle-denoise.lua                 # Change key binding here, not input.conf
+|   |   ├── recentmenu.lua
 |   |   ├── sview.lua
 │   │   ├── thumbfast.lua                     
 │   │   ├── uosc.lua
@@ -107,7 +109,7 @@ mpv
 │   ├── shaders                               # Contains external shaders
 │   │   ├── adasharp.glsl                     
 │   │   ├── adasharpA.glsl                    # Adjusted for anime
-│   │   ├── add Anime 4k shaders here                                   
+│   │   ├── Anime 4k shaders here                                 
 │   │   ├──
 │   │   ├── CAS.glsl
 │   │   ├── F8.glsl
