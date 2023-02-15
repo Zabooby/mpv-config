@@ -123,8 +123,8 @@ mpv
 |   ├── watch_later                           # Video positions saved here (created automatically)
 |   ├── fonts.conf
 │   ├── input.conf                            # Change uosc menu and buttons shown above here
-│   ├── mpv.conf                              # Adjust most settings here 
-|   └── profiles.conf                         # Up/downscale profiles here, anime profile in mpv.conf
+│   ├── mpv.conf                              # Alter settings here, (general anime profile here)
+|   └── profiles.conf                         # Up/downscale and more anime profiles here
 |   
 ├── d3dcompiler_43.dll
 ├── mpv.com
@@ -133,7 +133,7 @@ mpv
 ```
 
 ## Key Bindings
-Custom key bindings can be added/edited in the [input.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/input.conf) file. Refer to the [manual](https://mpv.io/manual/master/) and uosc [commands](https://github.com/tomasklaen/uosc) for making any changes. Default key bindings can be seen from the [input.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/input.conf) file but most of the player functions can be used through the menu accessed by `Right Click` and the buttons above the timeline as seen in the images above.
+Custom key bindings can be added/edited in the [input.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/input.conf) file. Refer to the [manual](https://mpv.io/manual/master/) and available [uosc](https://github.com/tomasklaen/uosc) commands for making any changes. Default key bindings can be seen from the [input.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/input.conf) file but most of the player functions can be used through the menu accessed by `Right Click` and the buttons above the timeline as seen in the images above.
 
 ## Useful Links
 
