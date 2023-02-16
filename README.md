@@ -29,6 +29,8 @@ Just my personal config files for use in [mpv](https://mpv.io/), a free (as in f
 - [NVIDIA Image Sharpening](https://gist.github.com/agyild/7e8951915b2bf24526a9343d951db214) - An adaptive-directional sharpening algorithm shaders.
 - [Anime4k](https://github.com/bloc97/Anime4K) - Shaders designed to scale and enhance anime. Includes shaders for line sharpening, artefact removal, denoising, upscaling, and more.
     - I have only kept the shaders that were useful to me.
+-  (Ravu) mpv-prescalers
+    - **COMING SOON**
    
 ## Installation (on Windows)
 
@@ -107,10 +109,14 @@ mpv
 │   │   └── webtorrent.js                     # Created here when setting up webtorrent script
 │   │
 │   ├── shaders                               # Contains external shaders
+│   │   ├── A4K_Dark.glsl                         
+│   │   ├── A4K_RestoreL.glsl
+│   │   ├── A4K_RestoreVL.glsl
+│   │   ├── A4K_Up_DeVL.glsl
+│   │   ├── A4K_UpscalVL.glsl
+│   │   ├── A4KThin.glsl 
 │   │   ├── adasharp.glsl                     
 │   │   ├── adasharpA.glsl                    # Adjusted for anime
-│   │   ├── Anime 4k shaders here                                 
-│   │   ├──
 │   │   ├── CAS.glsl
 │   │   ├── F8.glsl
 │   │   ├── F16.glsl
