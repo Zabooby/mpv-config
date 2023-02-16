@@ -29,7 +29,6 @@ Just my personal config files for use in [mpv](https://mpv.io/), a free (as in f
 - [NVIDIA Image Sharpening](https://gist.github.com/agyild/7e8951915b2bf24526a9343d951db214) 
     - An adaptive-directional sharpening algorithm shaders.
 - [Anime4k](https://github.com/bloc97/Anime4K) - Shaders designed to scale and enhance anime. Includes shaders for line sharpening, artefact removal, denoising, upscaling, and more.
-    - **Currently deciding whether to keep all of these shaders, or only keep those that I use the most**.
     
 ## Installation (on Windows)
 
