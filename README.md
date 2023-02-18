@@ -7,23 +7,23 @@
 Just my personal config files for use in [mpv](https://mpv.io/), a free (as in freedom and free beer), open-source, and cross-platform media player, aiming to get the highest quality and best viewing experience. Contains custom key bindings, a GUI menu, tuned profiles (for upscaling, downscaling and anime), multiple scripts & filters serving different functions and various shaders & scalers for animated and live action media (all specified below) suitable for both high and low end computers (with some tweaks). Note there will be a few files in the [script-opts](https://github.com/Zabooby/mpv-config/tree/main/portable_config/script-opts) folder, where you will have to change file paths to point to where the files exist on your pc (detailed in File Structure section). 
 
 ## Scripts and Shaders
-- [uosc](https://github.com/darsain/uosc) - Adds a minimalist customizable gui.
-- [cycle-denoise](https://gist.github.com/myfreeer/d744c445aa71c0eeb165ca39cf6c0511) - Cycle between lavfi's denoise filters.
+- [uosc](https://github.com/darsain/uosc) - Adds a minimalist but highly customizable gui.
 - [thumbfast](https://github.com/po5/thumbfast) - High-performance on-the-fly thumbnailer for mpv.
-- [recent-menu](https://github.com/natural-harmonia-gropius/recent-menu) - Recently played menu for mpv integrated with uosc.
+- [recent-menu](https://github.com/natural-harmonia-gropius/recent-menu) - Recently played menu for mpv, integrated with uosc menu.
+- [cycle-denoise](https://gist.github.com/myfreeer/d744c445aa71c0eeb165ca39cf6c0511) - Cycle between lavfi's denoise filters, triggered by toggle button. 
 - [autodeint](https://github.com/mpv-player/mpv/blob/master/TOOLS/lua/autodeint.lua) - Automatically insert the appropriate deinterlacing filter based on a short section of the current video.
 - [autoload](https://github.com/mpv-player/mpv/blob/master/TOOLS/lua/autoload.lua) - Automatically load playlist entries before and after the currently playing file, by scanning the directory.
 - [sview](https://github.com/he2a/mpv-scripts/blob/main/scripts/sview.lua) - A simple script to show multiple shaders running, in a clean list. Triggered on shader activation or by toggle button.
-- [webtorrent-mpv-hook](https://github.com/mrxdst/webtorrent-mpv-hook) - Adds a hook that allows mpv to stream torrents. 
+- [webtorrent-mpv-hook](https://github.com/mrxdst/webtorrent-mpv-hook) - Adds a hook that allows mpv to stream torrents. It provides an osd overlay to show info/progress.
+    - **Requires [node.js](https://nodejs.org/en/download/) to be installed**.
     - **This script needs to be setup manually, follow installation steps [here](https://github.com/mrxdst/webtorrent-mpv-hook#install)**.
     - **Point to the same location in the file structure section below for the webtorrent.js file.**
-    - **It provides a osd overlay to show info/progress.** **(Requires [node.js](https://nodejs.org/en/download/) to be installed)**.
 - - - 
 - [SSimDownscaler, SSimSuperRes, KrigBilateral, Adaptive Sharpen](https://gist.github.com/igv) 
-    - Adaptive Sharpen: Another sharpening shader.
+    - Adaptive Sharpen: A sharpening shader.
     - SSimDownscaler: Perceptually based downscaler.
     - KrigBilateral: Chroma scaler that uses luma information for high quality upscaling.
-    - SSimSuperRes: Make corrections to the image upscaled by mpv built-in scaler (removes ringing artifacts, restores original  sharpness, etc).
+    - SSimSuperRes: Make corrections to the image upscaled by mpv built-in scaler (removes ringing artifacts and restores original  sharpness).
 - [FidelityFX CAS](https://gist.github.com/agyild/bbb4e58298b2f86aa24da3032a0d2ee6) - Provides a mixed ability to sharpen and optionally scale an image. 
 - [NVIDIA Image Sharpening](https://gist.github.com/agyild/7e8951915b2bf24526a9343d951db214) - An adaptive-directional sharpening algorithm shaders.
 - [FSRCNN](https://github.com/igv/FSRCNN-TensorFlow/releases) - Very resource intensive upscaler that uses a neural network to upscale very accurately.
@@ -112,9 +112,9 @@ mpv
 │   │   ├── A4K_Dark.glsl                         
 │   │   ├── A4K_RestoreL.glsl
 │   │   ├── A4K_RestoreVL.glsl
-│   │   ├── A4K_Up_DeVL.glsl
-│   │   ├── A4K_UpscalVL.glsl
-│   │   ├── A4KThin.glsl 
+│   │   ├── A4K_Thin.glsl
+│   │   ├── A4K_UpDeVL.glsl
+│   │   ├── A4K_UpVL.glsl 
 │   │   ├── adasharp.glsl                     
 │   │   ├── adasharpA.glsl                    # Adjusted for anime
 │   │   ├── CAS.glsl
