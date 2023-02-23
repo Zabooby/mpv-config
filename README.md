@@ -4,7 +4,7 @@
 <p align="center"><img width=100% src="https://user-images.githubusercontent.com/78969986/217888283-b72140a0-233f-444f-aeba-6b8562a2bc11.png" alt="mpv screenshot"></p>
 
 ## Overview
-Just my personal config files for use in [mpv](https://mpv.io/), a free (freedom & free beer), open-source, and cross-platform media player, aiming to get the highest quality and best viewing experience. Contains custom key bindings, a GUI menu, tuned profiles (for upscaling, downscaling and anime), multiple scripts & filters serving different functions and various shaders & scalers for animated and live action media (all specified below). Suitable for both high and low end computers (with some tweaks). Note there will be a few files in the [script-opts](https://github.com/Zabooby/mpv-config/tree/main/portable_config/script-opts) folder, where you will have to change file paths to point to where the files exist on your pc (detailed in File Structure section). 
+Just my personal config files for use in [mpv](https://mpv.io/), a free (freedom & free beer), open-source, and cross-platform media player, aiming to get the highest quality and best viewing experience. Contains custom key bindings, a GUI menu, tuned profiles (for upscaling, downscaling, live action and anime), multiple scripts & filters serving different functions and various shaders & scalers for animated and live action media (all specified below). Suitable for both high and low end computers (with some tweaks). Note there will be a few files in the [script-opts](https://github.com/Zabooby/mpv-config/tree/main/portable_config/script-opts) folder, where you will have to change file paths to point to where the files exist on your pc (detailed in File Structure section). 
 
 ## Scripts and Shaders
 - [uosc](https://github.com/darsain/uosc) - Adds a minimalist but highly customizable gui.
@@ -30,7 +30,8 @@ Just my personal config files for use in [mpv](https://mpv.io/), a free (freedom
 - [AMD FidelityFX Super Resolution](https://gist.github.com/agyild/82219c545228d70c5604f865ce0b0ce5) - A spatial upscaler which provides consistent upscaling quality regardless of whether the frame is in movement.
 - [Anime4k](https://github.com/bloc97/Anime4K) - Shaders designed to scale and enhance anime. Includes shaders for line sharpening, artefact removal, denoising, upscaling, and more.
     - I have only kept the shaders that were useful to me.
--  (Ravu) mpv-prescalers
+
+(Ravu) mpv-prescalers
     - **COMING SOON!**
    
 ## Installation (on Windows)
@@ -144,9 +145,9 @@ Custom key bindings can be added/edited in the [input.conf](https://github.com/Z
 
 ## Useful Links
 
-* [To-do's for this repo](https://github.com/users/Zabooby/projects/1/views/1) - Just a list of things I plan to implement into my mpv config. 
 * [mpv wiki](https://github.com/mpv-player/mpv/wiki) - Official wiki with links to user scripts, FAQ's and much more.
-* [mpv manual](https://mpv.io/manual/master/) - Lists all the settings and configuration options mpv understands including key bindings, scripting, and other customizations. 
+* [To-do's for this repo](https://github.com/users/Zabooby/projects/1/views/1) - Just a list of things I plan to implement into my mpv config. 
 * [Mathematical evaluation of various scalers](https://artoriuz.github.io/blog/mpv_upscaling.html) - My config uses the best scalers/settings from this analysis.
+* [mpv manual](https://mpv.io/manual/master/) - Lists all the settings and configuration options mpv understands including key bindings, scripting, and other customizations. 
 
 Huge shoutout to [@he2a](https://github.com/he2a) for their [config](https://github.com/he2a/mpv-config), most of my setup is inspired by it.
