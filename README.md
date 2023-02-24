@@ -121,7 +121,7 @@ mpv
 │   │   ├── adasharpA.glsl                    # Adjusted for anime
 │   │   ├── CAS.glsl
 │   │   ├── F8.glsl
-│   │   ├── F_LA.glsl
+│   │   ├── F8_LA.glsl
 │   │   ├── FSR.glsl
 │   │   ├── krigbl.glsl
 │   │   ├── NVSharpen.glsl
