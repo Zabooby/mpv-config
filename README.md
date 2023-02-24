@@ -68,7 +68,7 @@ mpv
 |   |   └── uosc-textures.ttf
 │   │
 │   ├── script-opts                           # Contains configuration files for scripts
-|   |   ├── recent.json
+|   |   ├── recent.json                       # Will be created automatically   
 |   |   ├── recentmenu.conf    
 │   │   ├── thumbfast.conf                    
 │   │   ├── uosc.conf                         # Set desired default directory for uosc menu here
