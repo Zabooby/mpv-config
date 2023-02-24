@@ -26,7 +26,7 @@ Just my personal config files for use in [mpv](https://mpv.io/), a free (freedom
     - SSimSuperRes: Make corrections to the image upscaled by mpv built-in scaler (removes ringing artifacts and restores original  sharpness).
 - [NVIDIA Image Sharpening](https://gist.github.com/agyild/7e8951915b2bf24526a9343d951db214) - An adaptive-directional sharpening algorithm shaders.
 - [FidelityFX CAS](https://gist.github.com/agyild/bbb4e58298b2f86aa24da3032a0d2ee6) - Sharpening shader that provides an even level of sharpness across the frame. 
-- [FSRCNN](https://github.com/igv/FSRCNN-TensorFlow/releases) - Very resource intensive upscaler that uses a neural network to upscale very accurately.
+- [FSRCNN-TensorFlow](https://github.com/igv/FSRCNN-TensorFlow/releases) - Very resource intensive upscaler that uses a neural network to upscale very accurately.
 - [AMD FidelityFX Super Resolution](https://gist.github.com/agyild/82219c545228d70c5604f865ce0b0ce5) - A spatial upscaler which provides consistent upscaling quality regardless of whether the frame is in movement.
 - [Anime4k](https://github.com/bloc97/Anime4K) - Shaders designed to scale and enhance anime. Includes shaders for line sharpening, artefact removal, denoising, upscaling, and more.
     - I have only kept the shaders that were useful to me.
@@ -121,7 +121,7 @@ mpv
 │   │   ├── adasharpA.glsl                    # Adjusted for anime
 │   │   ├── CAS.glsl
 │   │   ├── F8.glsl
-│   │   ├── F16.glsl
+│   │   ├── F_LA.glsl
 │   │   ├── FSR.glsl
 │   │   ├── krigbl.glsl
 │   │   ├── NVSharpen.glsl
