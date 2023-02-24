@@ -16,7 +16,7 @@ Just my personal config files for use in [mpv](https://mpv.io/), a free (freedom
 - [sview](https://github.com/he2a/mpv-scripts/blob/main/scripts/sview.lua) - A simple script to show multiple shaders running, in a clean list. Triggered on shader activation or by toggle button.
 - [webtorrent-mpv-hook](https://github.com/mrxdst/webtorrent-mpv-hook) - Adds a hook that allows mpv to stream torrents. It provides an osd overlay to show info/progress.
     - **Requires [node.js](https://nodejs.org/en/download/) to be installed**.
-    - **This script needs to be setup manually, follow installation steps [here](https://github.com/mrxdst/webtorrent-mpv-hook#install)**.
+    - **This script needs some more setup, follow the simple installation steps [here](https://github.com/mrxdst/webtorrent-mpv-hook#install)**.
     - **Point to the same location in the file structure section below for the webtorrent.js file.**
 - - - 
 - [SSimDownscaler, SSimSuperRes, KrigBilateral, Adaptive Sharpen](https://gist.github.com/igv) 
