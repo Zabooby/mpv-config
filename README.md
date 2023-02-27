@@ -4,7 +4,7 @@
 <p align="center"><img width=100% src="https://user-images.githubusercontent.com/78969986/221602122-af51d5ff-7459-43fc-aed5-498200e72eee.png" alt="mpv screenshot"></p>
 
 ## Overview
-Just my personal config files for use in [mpv](https://mpv.io/), a free (freedom & free beer), open-source, and cross-platform media player, aiming to get the highest quality and best viewing experience. Contains custom key bindings, a GUI menu, tuned profiles (for upscaling, downscaling, live action and anime), multiple scripts & filters serving different functions and various shaders & scalers for animated and live action media (all specified below). Suitable for both high and low end computers (with some tweaks). 
+Just my personal config files for use in [mpv](https://mpv.io/), a free, open-source, and cross-platform media player, aiming to get the highest quality and best viewing experience. Contains custom key bindings, a GUI menu, tuned profiles (for upscaling, downscaling, live action and anime), multiple scripts & filters serving different functions and various shaders & scalers for animated and live action media (all specified below). Suitable for both high and low end computers (with some tweaks). 
 
 ## Scripts and Shaders
 - [uosc](https://github.com/darsain/uosc) - Adds a minimalist but highly customizable gui.
@@ -39,7 +39,7 @@ Just my personal config files for use in [mpv](https://mpv.io/), a free (freedom
 * Download the latest 64bit (or 64bit-v3 for new CPUs) mpv Windows build by shinchiro [here](https://mpv.io/installation/) or directly from [here](https://sourceforge.net/projects/mpv-player-windows/files/) and extract its contents into a folder of your choice (mine is called mpv). This is now your mpv folder and can be placed wherever you desire. 
 * Run `mpv-install.bat`, which is located in the `installer` folder (see below), with administrator privileges by right-clicking and selecting run as administrator, after it's done, you'll get a prompt to open Control Panel and set mpv as the default player.
 * Download and extract the `portable_config` folder from this repo to the mpv folder and you are good to go. 
-* Change file paths, to where the files/folders exist on your pc, in [mpv.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/mpv.conf) and 2 files in the [script-opts](https://github.com/Zabooby/mpv-config/tree/main/portable_config/script-opts) folder, (details below). 
+* Change file paths, in [mpv.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/mpv.conf) and 2 other files in the [script-opts](https://github.com/Zabooby/mpv-config/tree/main/portable_config/script-opts) folder (detailed below), to where the files/folders exist on your pc. 
 * Adjust any settings in [mpv.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/mpv.conf) to fit your hardware, use the [manual](https://mpv.io/manual/master/) to find out what different options do. 
 * You're done. Go watch some videos!
 
