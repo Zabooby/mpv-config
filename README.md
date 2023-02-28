@@ -91,14 +91,12 @@ mpv
 |   |           ├── TopBar.lua
 |   |           ├── Volume.lua
 |   |           └── WindowBorder.lua
-│   │
 |   |       ├── lib
 |   |           ├── ass.lua
 |   |           ├── menus.lua
 |   |           ├── std.lua
 |   |           ├── text.lua
 |   |           └── utils.lua
-│   │
 |   |       └── main.lua
 │   │
 │   │   ├── autodeint.lua
