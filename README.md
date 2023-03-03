@@ -4,7 +4,7 @@
 <p align="center"><img width=100% src="https://user-images.githubusercontent.com/78969986/221602122-af51d5ff-7459-43fc-aed5-498200e72eee.png" alt="mpv screenshot"></p>
 
 ## Overview
-Just my personal config files for use in [mpv](https://mpv.io/), a free, open-source, & cross-platform media player, with a focus on quality and a practical yet comfortable viewing experience. Contains custom key bindings, a GUI, tuned profiles (for up/downscaling, live action & anime), as well as multiple scripts, filters and shaders serving different functions. Suitable for both high and low end computers (with some tweaks).
+Just my personal config files for use in [mpv](https://mpv.io/), a free, open-source, & cross-platform media player, with a focus on quality and a practical yet comfortable viewing experience. Contains custom key bindings, a GUI, tuned profiles (for up/downscaling, live action & anime), as well as multiple scripts, filters & shaders serving different functions. Suitable for both high and low end computers (with some tweaks).
 
 ## Scripts and Shaders
 - [uosc](https://github.com/darsain/uosc) - Adds a minimalist but highly customizable gui.
