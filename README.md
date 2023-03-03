@@ -99,9 +99,9 @@ mpv
 |   |           └── utils.lua
 |   |       └── main.lua
 │   │
-│   │   ├── autodeint.lua
+│   │   ├── autodeint.lua                     # Change key binding here, not input.conf (Ctrl+d)
 │   │   ├── autoload.lua                    
-|   |   ├── cycle-denoise.lua                 # Change key binding here, not input.conf
+|   |   ├── cycle-denoise.lua                 # Change key binding here, not input.conf (n)
 |   |   ├── recentmenu.lua
 |   |   ├── sview.lua
 │   │   ├── thumbfast.lua                     
