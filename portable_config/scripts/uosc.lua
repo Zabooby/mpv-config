@@ -1,5 +1,5 @@
---[[ uosc 4.5.0 - 2022-Dec-07 | https://github.com/tomasklaen/uosc ]]
-local uosc_version = '4.5.0'
+--[[ uosc 4.6.0 - 2023-Feb-15 | https://github.com/tomasklaen/uosc ]]
+local uosc_version = '4.6.0'
 
 assdraw = require('mp.assdraw')
 opt = require('mp.options')
@@ -174,6 +174,7 @@ config = {
 		video = split(options.video_types, ' *, *'),
 		audio = split(options.audio_types, ' *, *'),
 		image = split(options.image_types, ' *, *'),
+		subtitle = split(options.subtitle_types, ' *, *'),
 		media = split(options.video_types .. ',' .. options.audio_types .. ',' .. options.image_types, ' *, *'),
 		autoload = (function()
 			---@type string[]
@@ -184,7 +185,6 @@ config = {
 			end
 			return split(table.concat(option_values, ','), ' *, *')
 		end)(),
-		subtitle = split(options.subtitle_types, ' *, *'),
 	},
 	stream_quality_options = split(options.stream_quality_options, ' *, *'),
 	menu_items = (function()
@@ -802,8 +802,8 @@ bind_command('decide-pause-indicator', function() Elements.pause_indicator:decid
 bind_command('menu', function() toggle_menu_with_items() end)
 bind_command('menu-blurred', function() toggle_menu_with_items({mouse_nav = true}) end)
 local track_loaders = {
-	{name = 'subtitles', prop = 'sub', allowed_types = config.types.subtitle},
-	{name = 'audio', prop = 'audio', allowed_types = config.types.audio},
+	{name = 'subtitles', prop = 'sub', allowed_types = itable_join(config.types.video, config.types.subtitle)},
+	{name = 'audio', prop = 'audio', allowed_types = itable_join(config.types.video, config.types.audio)},
 	{name = 'video', prop = 'video', allowed_types = config.types.video},
 }
 for _, loader in ipairs(track_loaders) do
@@ -858,6 +858,10 @@ bind_command('playlist', create_self_updating_menu_opener({
 		return items
 	end,
 	on_select = function(index) mp.commandv('set', 'playlist-pos-1', tostring(index)) end,
+	on_move_item = function(from, to)
+		mp.commandv('playlist-move', tostring(math.max(from, to) - 1), tostring(math.min(from, to) - 1))
+	end,
+	on_delete_item = function(index) mp.commandv('playlist-remove', tostring(index - 1)) end,
 }))
 bind_command('chapters', create_self_updating_menu_opener({
 	title = 'Chapters',
@@ -1116,7 +1120,7 @@ mp.register_script_message('open-menu', function(json, submenu_id)
 		msg.error('open-menu: received json didn\'t produce a table with menu configuration')
 	else
 		if data.type and Menu:is_open(data.type) then Menu:close()
-		else open_command_menu(data, {submenu_id = submenu_id}) end
+		else open_command_menu(data, {submenu = submenu_id, on_close = data.on_close}) end
 	end
 end)
 mp.register_script_message('update-menu', function(json)

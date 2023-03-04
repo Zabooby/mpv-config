@@ -1,25 +1,32 @@
 ---@param data MenuData
----@param opts? {submenu?: string; mouse_nav?: boolean}
+---@param opts? {submenu?: string; mouse_nav?: boolean; on_close?: string | string[]}
 function open_command_menu(data, opts)
-	local menu = Menu:open(data, function(value)
-		if type(value) == 'string' then
-			mp.command(value)
+	local function run_command(command)
+		if type(command) == 'string' then
+			mp.command(command)
 		else
 			---@diagnostic disable-next-line: deprecated
-			mp.commandv(unpack(value))
+			mp.commandv(unpack(command))
 		end
-	end, opts)
+	end
+	---@type MenuOptions
+	local menu_opts = {}
+	if opts then
+		menu_opts.submenu, menu_opts.mouse_nav = opts.submenu, opts.mouse_nav
+		if opts.on_close then menu_opts.on_close = function() run_command(opts.on_close) end end
+	end
+	local menu = Menu:open(data, run_command, menu_opts)
 	if opts and opts.submenu then menu:activate_submenu(opts.submenu) end
 	return menu
 end
 
----@param opts? {submenu?: string; mouse_nav?: boolean}
+---@param opts? {submenu?: string; mouse_nav?: boolean; on_close?: string | string[]}
 function toggle_menu_with_items(opts)
 	if Menu:is_open('menu') then Menu:close()
 	else open_command_menu({type = 'menu', items = config.menu_items}, opts) end
 end
 
----@param options {type: string; title: string; list_prop: string; active_prop?: string; serializer: fun(list: any, active: any): MenuDataItem[]; on_select: fun(value: any)}
+---@param options {type: string; title: string; list_prop: string; active_prop?: string; serializer: fun(list: any, active: any): MenuDataItem[]; on_select: fun(value: any); on_move_item?: fun(from_index: integer, to_index: integer, submenu_path: integer[]); on_delete_item?: fun(index: integer, submenu_path: integer[])}
 function create_self_updating_menu_opener(options)
 	return function()
 		if Menu:is_open(options.type) then Menu:close() return end
@@ -58,6 +65,8 @@ function create_self_updating_menu_opener(options)
 				mp.unobserve_property(handle_list_prop_change)
 				mp.unobserve_property(handle_active_prop_change)
 			end,
+			on_move_item = options.on_move_item,
+			on_delete_item = options.on_delete_item,
 		})
 	end
 end
