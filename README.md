@@ -11,12 +11,12 @@ Just my personal config files for use in [mpv,](https://mpv.io/) a free, open-so
 - [thumbfast](https://github.com/po5/thumbfast) - High-performance on-the-fly thumbnailer for mpv.
 - [recent-menu](https://github.com/natural-harmonia-gropius/recent-menu) - Recently played menu for mpv, integrated with uosc menu.
 - [cycle-denoise](https://gist.github.com/myfreeer/d744c445aa71c0eeb165ca39cf6c0511) - Cycle between lavfi's denoise filters, triggered by toggle button. 
+- [sview](https://github.com/he2a/mpv-scripts/blob/main/scripts/sview.lua) - Show shaders currently running, in a clean list. Triggered on shader activation or by toggle button.
 - [autoload](https://github.com/mpv-player/mpv/blob/master/TOOLS/lua/autoload.lua) - Automatically load playlist entries before and after the currently playing file, by scanning the directory.
-- [sview](https://github.com/he2a/mpv-scripts/blob/main/scripts/sview.lua) - A simple script to show multiple shaders running, in a clean list. Triggered on shader activation or by toggle button.
 - [autodeint](https://github.com/mpv-player/mpv/blob/master/TOOLS/lua/autodeint.lua) - Automatically insert the appropriate deinterlacing filter based on a short section of the current video, triggered by toggle button. 
 - [webtorrent-mpv-hook](https://github.com/mrxdst/webtorrent-mpv-hook) - Adds a hook that allows mpv to stream torrents. It provides an osd overlay to show info/progress.
     - **Requires [node.js](https://nodejs.org/en/download/) to be installed**.
-    - **This script needs some more setup, follow the simple installation steps [here](https://github.com/mrxdst/webtorrent-mpv-hook#install)**.
+    - **This script needs some extra setup, follow the simple installation steps [here](https://github.com/mrxdst/webtorrent-mpv-hook#install)**.
     - **Point to the same location in the file structure section below for the webtorrent.js file.**
 - - - 
 - [SSimDownscaler, SSimSuperRes, KrigBilateral, Adaptive Sharpen](https://gist.github.com/igv) 
@@ -36,7 +36,7 @@ Just my personal config files for use in [mpv,](https://mpv.io/) a free, open-so
    
 ## Installation (on Windows)
 
-* Download the latest 64bit (or 64bit-v3 for new CPUs) mpv Windows build by shinchiro [here](https://mpv.io/installation/) or directly from [here](https://sourceforge.net/projects/mpv-player-windows/files/) and extract its contents into a folder of your choice (mine is called mpv). This is now your mpv folder and can be placed wherever you desire. 
+* Download the latest 64bit (or 64bit-v3 for new CPUs) mpv Windows build by shinchiro [here](https://mpv.io/installation/) or directly from [here](https://sourceforge.net/projects/mpv-player-windows/files/) and extract its contents into a folder of your choice (mine is called mpv). This is now your mpv folder and can be placed wherever you want. 
 * Run `mpv-install.bat`, which is located in the `installer` folder (see below), with administrator privileges by right-clicking and selecting run as administrator, after it's done, you'll get a prompt to open Control Panel and set mpv as the default player.
 * Download and extract the `portable_config` folder from this repo to the mpv folder you just made. 
 * Change file paths, in [mpv.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/mpv.conf) and 2 other files in the [script-opts](https://github.com/Zabooby/mpv-config/tree/main/portable_config/script-opts) folder (detailed below), to where the files/folders exist on your pc. 
@@ -52,7 +52,7 @@ mpv
 |
 ├── doc
 │   ├── manual.pdf                            
-│   └── mpbindings.png                        # System default key bindings when input.conf is empty
+│   └── mpbindings.png                        # mpv default key bindings when input.conf is empty
 │
 ├── installer
 │   ├── configure-opengl-hq.bat
@@ -145,6 +145,6 @@ Custom key bindings can be added/edited in the [input.conf](https://github.com/Z
 * [mpv wiki](https://github.com/mpv-player/mpv/wiki) - Official wiki with links to user scripts, FAQ's and much more.
 * [To-do's for this repo](https://github.com/users/Zabooby/projects/1/views/1) - Just a list of things I plan to implement into my mpv config. 
 * [Mathematical evaluation of various scalers](https://artoriuz.github.io/blog/mpv_upscaling.html) - My config uses the best scalers/settings from this analysis.
-* [mpv manual](https://mpv.io/manual/master/) - Lists all the settings and configuration options mpv understands including video/audio filters, scripting, and other customizations. 
+* [mpv manual](https://mpv.io/manual/master/) - Lists all the settings and configuration options available including video/audio filters, scripting, and other customizations. 
 
 Huge shoutout to [@he2a](https://github.com/he2a) for their [config](https://github.com/he2a/mpv-config), most of my setup is inspired by it.
