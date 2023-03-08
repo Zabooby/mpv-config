@@ -4,12 +4,12 @@
 <p align="center"><img width=100% src="https://user-images.githubusercontent.com/78969986/221602122-af51d5ff-7459-43fc-aed5-498200e72eee.png" alt="mpv screenshot"></p>
 
 ## Overview
-Just my personal config files for use in [mpv,](https://mpv.io/) a free, open-source, & cross-platform media player, with a focus on quality and a practical yet comfortable viewing experience. Contains custom key bindings, a GUI, tuned profiles (for up/downscaling, live action & anime), as well as multiple scripts, filters & shaders serving different functions. Suitable for both high and low-end computers (with some tweaks).
+Just my personal config files for use in [mpv,](https://mpv.io/) a free, open-source, & cross-platform media player, with a focus on quality and a practical yet comfortable viewing experience. Contains custom key bindings, a GUI, tuned profiles (for up/downscaling, live action & anime), as well as multiple scripts, shaders & filters serving different functions. Suitable for both high and low-end computers (with some tweaks).
 
 ## Scripts and Shaders
 - [uosc](https://github.com/darsain/uosc) - Adds a minimalist but highly customizable gui.
 - [thumbfast](https://github.com/po5/thumbfast) - High-performance on-the-fly thumbnailer for mpv.
-- [recent-menu](https://github.com/natural-harmonia-gropius/recent-menu) - Recently played menu for mpv, integrated with uosc menu.
+- [recent-menu](https://github.com/natural-harmonia-gropius/recent-menu) - Recently played menu for mpv, integrated with uosc.
 - [cycle-denoise](https://gist.github.com/myfreeer/d744c445aa71c0eeb165ca39cf6c0511) - Cycle between lavfi's denoise filters, triggered by toggle button. 
 - [sview](https://github.com/he2a/mpv-scripts/blob/main/scripts/sview.lua) - Show shaders currently running, triggered on shader activation or by toggle button.
 - [autoload](https://github.com/mpv-player/mpv/blob/master/TOOLS/lua/autoload.lua) - Automatically load playlist entries before and after the currently playing file, by scanning the directory.
