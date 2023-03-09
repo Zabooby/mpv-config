@@ -106,7 +106,7 @@ mpv
 |   |   ├── sview.lua
 │   │   ├── thumbfast.lua                     
 │   │   ├── uosc.lua
-│   │   └── webtorrent.js                     # Created here when setting up webtorrent script
+│   │   └── webtorrent.js                     # Point here when setting up webtorrent script
 │   │
 │   ├── shaders                               # Contains external shaders
 │   │   ├── A4K_Dark.glsl                         
@@ -127,14 +127,14 @@ mpv
 │   │
 |   ├── watch_later                           # Video timestamps saved here (created automatically)
 |   ├── fonts.conf
-│   ├── input.conf                            # Change uosc menu and buttons shown above here
-│   ├── mpv.conf                              # Alter settings here, (general anime profile here)
+│   ├── input.conf                            # Tweak uosc right click menu here
+│   ├── mpv.conf                              # General anime profile here 
 |   └── profiles.conf                         # Up/downscale and more anime profiles here
 |   
 ├── d3dcompiler_43.dll
 ├── mpv.com
 ├── mpv.exe                                   # The mpv executable file
-└── updater.bat                               # Run this with administrator priviledges to update mpv
+└── updater.bat                               # Run with administrator priviledges to update mpv
 ```
 
 ## Key Bindings
