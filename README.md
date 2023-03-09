@@ -52,7 +52,7 @@ mpv
 |
 ├── doc
 │   ├── manual.pdf                            
-│   └── mpbindings.png                        # mpv default key bindings when input.conf is empty
+│   └── mpbindings.png                        # Default key bindings if not overridden in input.conf
 │
 ├── installer
 │   ├── configure-opengl-hq.bat
@@ -138,7 +138,7 @@ mpv
 ```
 
 ## Key Bindings
-Custom key bindings can be added/edited in the [input.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/input.conf) file. Refer to the [manual](https://mpv.io/manual/master/) and available [uosc](https://github.com/tomasklaen/uosc) commands for making any changes. Default key bindings can be seen from the [input.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/input.conf) file but most of the player functions can be used through the menu accessed by `Right Click` and the buttons above the timeline as seen in the images above.
+Custom key bindings can be added/edited in the [input.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/input.conf) file. Refer to the [manual](https://mpv.io/manual/master/) and [uosc](https://github.com/tomasklaen/uosc) commands for making any changes. Default key bindings can be seen from the [input.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/input.conf) file but most of the player functions can be used through the menu accessed by `Right Click` and the buttons above the timeline as seen in the images above.
 
 ## Useful Links
 
