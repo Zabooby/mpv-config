@@ -72,7 +72,7 @@ mpv
 |   |   ├── recentmenu.conf    
 │   │   ├── thumbfast.conf                    
 │   │   ├── uosc.conf                         # Set desired default directory for uosc menu here
-│   │   └── webtorrent.conf                   # Choose where to save downloaded videos here
+│   │   └── webtorrent.conf                   # Specify where to save downloaded videos here
 │   │
 │   ├── scripts      
 │   │   ├── uosc_shared                       # Contains ui elements for the uosc gui
