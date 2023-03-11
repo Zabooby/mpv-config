@@ -21,18 +21,15 @@ Just my personal config files for use in [mpv,](https://mpv.io/) a free, open-so
 - - - 
 - [NVIDIA Image Sharpening](https://gist.github.com/agyild/7e8951915b2bf24526a9343d951db214) - An adaptive-directional sharpening algorithm shaders.
 - [FidelityFX CAS](https://gist.github.com/agyild/bbb4e58298b2f86aa24da3032a0d2ee6) - Sharpening shader that provides an even level of sharpness across the frame. 
-- [FSRCNN-TensorFlow](https://github.com/igv/FSRCNN-TensorFlow) - Very resource intensive upscaler that uses a neural network to upscale accurately.
-- [AMD FidelityFX Super Resolution](https://gist.github.com/agyild/82219c545228d70c5604f865ce0b0ce5) - A spatial upscaler which provides consistent upscaling quality regardless of whether the frame is in movement.
+- [FSRCNNX-TensorFlow](https://github.com/igv/FSRCNN-TensorFlow) - Very resource intensive upscaler that uses a neural network to upscale accurately.
 - [Anime4k](https://github.com/bloc97/Anime4K) - Shaders designed to scale and enhance anime. Includes shaders for line sharpening, artefact removal, denoising, upscaling, and more.
-    - **I have only kept shaders that dont't alter the video too far from the source**. 
+- [AMD FidelityFX Super Resolution](https://gist.github.com/agyild/82219c545228d70c5604f865ce0b0ce5) - A spatial upscaler which provides consistent upscaling quality regardless of whether the frame is in movement.
+- [mpv-prescalers](https://github.com/bjin/mpv-prescalers) - RAVU (Rapid and Accurate Video Upscaling) is a set of prescalers inspired by RAISR (Rapid and Accurate Image Super Resolution). It comes with different variants to fit different scenarios. 
 - [SSimDownscaler, SSimSuperRes, KrigBilateral, Adaptive Sharpen](https://gist.github.com/igv) 
     - Adaptive Sharpen: A sharpening shader.
     - SSimDownscaler: Perceptually based downscaler.
     - KrigBilateral: Chroma scaler that uses luma information for high quality upscaling.
     - SSimSuperRes: Make corrections to the image upscaled by mpv built-in scaler (removes ringing artifacts and restores original  sharpness).
-
-[mpv-prescalers](https://github.com/bjin/mpv-prescalers) 
-    - **COMING SOON<sup>TM</sup>!**
    
 ## Installation (on Windows)
 
@@ -110,10 +107,7 @@ mpv
 │   │
 │   ├── shaders                               # Contains external shaders
 │   │   ├── A4K_Dark.glsl                         
-│   │   ├── A4K_RestoreL.glsl
 │   │   ├── A4K_Thin.glsl
-│   │   ├── A4K_UpDeVL.glsl
-│   │   ├── A4K_UpVL.glsl 
 │   │   ├── adasharp.glsl                     
 │   │   ├── adasharpA.glsl                    # Adjusted for anime
 │   │   ├── CAS.glsl
@@ -122,6 +116,8 @@ mpv
 │   │   ├── FSR.glsl
 │   │   ├── krigbl.glsl
 │   │   ├── NVSharpen.glsl
+│   │   ├── ravu_L_r4.hook
+│   │   ├── ravu_Z_r3.hook
 │   │   ├── ssimds.glsl
 │   │   └── ssimsr.glsl
 │   │
