@@ -26,7 +26,7 @@ Just my personal config files for use in [mpv,](https://mpv.io/) a free, open-so
 - [AMD FidelityFX Super Resolution](https://gist.github.com/agyild/82219c545228d70c5604f865ce0b0ce5) - A spatial upscaler which provides consistent upscaling quality regardless of whether the frame is in movement.
 - [mpv-prescalers](https://github.com/bjin/mpv-prescalers) - RAVU (Rapid and Accurate Video Upscaling) is a set of prescalers with an overall performance consumption design slightly higher than the built-in ewa scaler in mpv, but provides much better results. 
 - [SSimDownscaler, SSimSuperRes, KrigBilateral, Adaptive Sharpen](https://gist.github.com/igv) 
-    - Adaptive Sharpen: A sharpening shader.
+    - Adaptive Sharpen: Another sharpening shader.
     - SSimDownscaler: Perceptually based downscaler.
     - KrigBilateral: Chroma scaler that uses luma information for high quality upscaling.
     - SSimSuperRes: Make corrections to the image upscaled by mpv built-in scaler (removes ringing artifacts and restores original  sharpness).
