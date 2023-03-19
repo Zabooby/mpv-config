@@ -2,7 +2,7 @@ local utils = require("mp.utils")
 local options = require("mp.options")
 
 local o = {
-    path = "~~/script-opts/recent.json",
+    path = "~~/recent.json",
     length = 10,
     width = 88,
     ignore_same_series = true,
@@ -24,7 +24,7 @@ function read_json()
     local json_file = io.open(path, "r")
     if not json_file then return end
 
-    local json = json_file:read("a")
+    local json = json_file:read("*all")
     json_file:close()
 
     menu.items = utils.parse_json(json)
