@@ -108,6 +108,7 @@ mpv
 │   ├── shaders                               # Contains external shaders
 │   │   ├── A4K_Dark.glsl                         
 │   │   ├── A4K_Thin.glsl
+│   │   ├── A4K_Upscale_L.glsl
 │   │   ├── adasharp.glsl                     
 │   │   ├── adasharpA.glsl                    # Adjusted for anime
 │   │   ├── CAS.glsl
