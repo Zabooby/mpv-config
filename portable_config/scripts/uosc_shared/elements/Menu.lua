@@ -211,8 +211,10 @@ function Menu:update_content_dimensions()
 	local hint_opts = {size = self.font_size_hint}
 
 	for _, menu in ipairs(self.all) do
+		title_opts.bold, title_opts.italic = true, false
+		local max_width = text_width(menu.title, title_opts) + 2 * self.item_padding
+
 		-- Estimate width of a widest item
-		local max_width = 0
 		for _, item in ipairs(menu.items) do
 			local icon_width = item.icon and self.font_size or 0
 			item.title_width = text_width(item.title, title_opts)
@@ -223,11 +225,6 @@ function Menu:update_content_dimensions()
 				+ (self.item_padding * spacings_in_item)
 			if estimated_width > max_width then max_width = estimated_width end
 		end
-
-		-- Also check menu title
-		title_opts.bold, title_opts.italic = true, false
-		local menu_title_width = text_width(menu.title, title_opts)
-		if menu_title_width > max_width then max_width = menu_title_width end
 
 		menu.max_width = max_width
 	end
@@ -518,7 +515,7 @@ end
 function Menu:on_display() self:update_dimensions() end
 function Menu:on_prop_fullormaxed() self:update_content_dimensions() end
 
-function Menu:on_global_mbtn_left_down()
+function Menu:handle_cursor_down()
 	if self.proximity_raw == 0 then
 		self.drag_data = {{y = cursor.y, time = mp.get_time()}}
 		self.current.fling = nil
@@ -538,7 +535,7 @@ function Menu:fling_distance()
 	return #self.drag_data < 2 and 0 or ((first.y - last.y) / ((first.time - last.time) / 0.03)) * 10
 end
 
-function Menu:on_global_mbtn_left_up()
+function Menu:handle_cursor_up()
 	if self.proximity_raw == 0 and self.drag_data and not self.is_dragging then
 		self:select_item_below_cursor()
 		self:open_selected_item({preselect_submenu_item = false, keep_open = self.modifiers and self.modifiers.shift})
@@ -570,8 +567,8 @@ function Menu:on_global_mouse_move()
 	request_render()
 end
 
-function Menu:on_wheel_up() self:scroll_by(self.scroll_step * -3, nil, {update_cursor = true}) end
-function Menu:on_wheel_down() self:scroll_by(self.scroll_step * 3, nil, {update_cursor = true}) end
+function Menu:handle_wheel_up() self:scroll_by(self.scroll_step * -3, nil, {update_cursor = true}) end
+function Menu:handle_wheel_down() self:scroll_by(self.scroll_step * 3, nil, {update_cursor = true}) end
 
 function Menu:on_pgup()
 	local menu = self.current
@@ -647,8 +644,8 @@ function Menu:create_modified_mbtn_left_handler(modifiers)
 	return function()
 		self.mouse_nav = true
 		self.modifiers = modifiers
-		self:on_global_mbtn_left_down()
-		self:on_global_mbtn_left_up()
+		self:handle_cursor_down()
+		self:handle_cursor_up()
 		self.modifiers = nil
 	end
 end
@@ -676,6 +673,13 @@ function Menu:render()
 		end
 	end
 	if update_cursor then self:select_item_below_cursor() end
+
+	cursor.on_primary_down = function() self:handle_cursor_down() end
+	cursor.on_primary_up = function() self:handle_cursor_up() end
+	if self.proximity_raw == 0 then
+		cursor.on_wheel_down = function() self:handle_wheel_down() end
+		cursor.on_wheel_up = function() self:handle_wheel_up() end
+	end
 
 	local ass = assdraw.ass_new()
 	local opacity = options.menu_opacity * self.opacity
