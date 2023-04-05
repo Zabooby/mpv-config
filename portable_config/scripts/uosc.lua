@@ -327,6 +327,19 @@ cursor = {
 			mp[(enable_wheel and 'enable' or 'disable') .. '_key_bindings']('wheel')
 			cursor.wheel_enabled = enable_wheel
 		end
+	end,
+	-- Cursor auto-hiding after period of inactivity
+	autohide = function()
+		if not Menu:is_open() then handle_mouse_leave() end
+	end,
+	autohide_timer = mp.add_timeout(mp.get_property_native('cursor-autohide') / 1000, function()
+		cursor.autohide()
+	end),
+	queue_autohide = function()
+		if options.autohide then
+			cursor.autohide_timer:kill()
+			cursor.autohide_timer:resume()
+		end
 	end
 }
 state = {
@@ -373,10 +386,6 @@ state = {
 	has_chapter = false,
 	has_playlist = false,
 	shuffle = options.shuffle,
-	cursor_autohide_timer = mp.add_timeout(mp.get_property_native('cursor-autohide') / 1000, function()
-		if not options.autohide then return end
-		handle_mouse_leave()
-	end),
 	mouse_bindings_enabled = false,
 	uncached_ranges = nil,
 	cache = nil,
@@ -526,12 +535,7 @@ function handle_mouse_move(x, y)
 	update_cursor_position(x, y)
 	Elements:proximity_trigger('mouse_move')
 	request_render()
-
-	-- Restart timer that hides UI when mouse is autohidden
-	if options.autohide then
-		state.cursor_autohide_timer:kill()
-		state.cursor_autohide_timer:resume()
-	end
+	cursor.queue_autohide()
 end
 
 function handle_file_end()
@@ -808,20 +812,26 @@ mp.observe_property('core-idle', 'native', create_state_setter('core_idle'))
 --[[ KEY BINDS ]]
 
 -- Pointer related binding groups
+function make_cursor_handler(event, cb)
+	return function(...)
+		call_maybe(cursor[event], ...)
+		call_maybe(cb, ...)
+		cursor.queue_autohide() -- refresh cursor autohide timer
+	end
+end
 mp.set_key_bindings({
 	{
 		'mbtn_left',
-		function(...) call_maybe(cursor.on_primary_up, ...) end,
-		function(...)
+		make_cursor_handler('on_primary_up'),
+		make_cursor_handler('on_primary_down', function(...)
 			update_mouse_pos(nil, mp.get_property_native('mouse-pos'))
-			call_maybe(cursor.on_primary_down, ...)
-		end,
+		end),
 	},
 	{'mbtn_left_dbl', 'ignore'},
 }, 'mbtn_left', 'force')
 mp.set_key_bindings({
-	{'wheel_up', function(...) call_maybe(cursor.on_wheel_up, ...) end},
-	{'wheel_down', function(...) call_maybe(cursor.on_wheel_down, ...) end},
+	{'wheel_up', make_cursor_handler('on_wheel_up')},
+	{'wheel_down', make_cursor_handler('on_wheel_down')},
 }, 'wheel', 'force')
 
 -- Adds a key binding that respects rerouting set by `key_binding_overwrites` table.
