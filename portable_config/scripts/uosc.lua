@@ -337,9 +337,11 @@ cursor = {
 	autohide = function()
 		if not cursor.on_primary_up and not Menu:is_open() then handle_mouse_leave() end
 	end,
-	autohide_timer = mp.add_timeout(mp.get_property_native('cursor-autohide') / 1000, function()
-		cursor.autohide()
-	end),
+	autohide_timer = (function()
+		local timer = mp.add_timeout(mp.get_property_native('cursor-autohide') / 1000, function() cursor.autohide() end)
+		timer:kill()
+		return timer
+	end)(),
 	queue_autohide = function()
 		if options.autohide and not cursor.on_primary_up then
 			cursor.autohide_timer:kill()
@@ -653,6 +655,7 @@ mp.register_event('file-loaded', function()
 	Elements:flash({'top_bar'})
 end)
 mp.register_event('end-file', function(event)
+	set_state('path', nil)
 	if event.reason == 'eof' then
 		file_end_timer:kill()
 		handle_file_end()
