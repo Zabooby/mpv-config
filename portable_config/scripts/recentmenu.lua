@@ -14,7 +14,7 @@ local path = mp.command_native({ "expand-path", o.path })
 local menu = {
     type = 'recent_menu',
     title = 'Recently played',
-    items = { { title = 'Nothing here', value = 'ignore' } },
+    items = {},
 }
 
 function read_json()
