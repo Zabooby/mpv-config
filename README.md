@@ -33,7 +33,7 @@ Just my personal config files for use in [mpv,](https://mpv.io/) a free, open-so
    
 ## Installation (on Windows)
 
-(For Linux and mac users, copying the contents of portable_config into the [relevant](https://mpv.io/manual/master/#files) folder should be sufficient.)
+(For Linux and Mac users, copying the contents of portable_config into the [relevant](https://mpv.io/manual/master/#files) folder should be sufficient.)
 
 * Download the latest 64bit (or 64bit-v3 for newer CPUs) mpv Windows build by shinchiro [here](https://mpv.io/installation/) or directly from [here](https://sourceforge.net/projects/mpv-player-windows/files/) and extract its contents into a folder of your choice (mine is called mpv). This is now your mpv folder and can be placed wherever you want. 
 * Run `mpv-install.bat`, which is located in the `installer` folder (see below), with administrator privileges by right-clicking and selecting run as administrator, after it's done, you'll get a prompt to open Control Panel and set mpv as the default player.
@@ -67,7 +67,7 @@ mpv
 |   |   └── uosc-textures.ttf
 │   │
 │   ├── script-opts                           # Contains configuration files for scripts
-|   |   ├── recent.json                       # Created automatically   
+|   |   ├── recent.json                       # Save recently opened videos (created automatically)  
 |   |   ├── recentmenu.conf    
 │   │   ├── thumbfast.conf                    
 │   │   ├── uosc.conf                         # Set desired default directory for uosc menu here
@@ -90,8 +90,15 @@ mpv
 |   |           ├── TopBar.lua
 |   |           ├── Volume.lua
 |   |           └── WindowBorder.lua
+|   |       ├── intl
+|   |           ├── de.lua
+|   |           ├── es.lua
+|   |           ├── fr.lua
+|   |           ├── ro.lua
+|   |           └── zh-hans.lua
 |   |       ├── lib
 |   |           ├── ass.lua
+|   |           ├── intl.lua
 |   |           ├── menus.lua
 |   |           ├── std.lua
 |   |           ├── text.lua
