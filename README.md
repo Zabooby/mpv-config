@@ -10,7 +10,6 @@ Just my personal config files for use in [mpv,](https://mpv.io/) a free, open-so
 - [uosc](https://github.com/darsain/uosc) - Adds a minimalist but highly customizable gui.
 - [thumbfast](https://github.com/po5/thumbfast) - High-performance on-the-fly thumbnailer.
 - [recent-menu](https://github.com/natural-harmonia-gropius/recent-menu) - Recently played menu, integrated with uosc.
-- [cycle-denoise](https://gist.github.com/myfreeer/d744c445aa71c0eeb165ca39cf6c0511) - Cycle between lavfi's denoise filters, triggered by toggle button. 
 - [sview](https://github.com/he2a/mpv-scripts/blob/main/scripts/sview.lua) - Show shaders currently running, triggered on shader activation or by toggle button.
 - [autoload](https://github.com/mpv-player/mpv/blob/master/TOOLS/lua/autoload.lua) - Automatically load playlist entries before and after the currently playing file, by scanning the directory.
 - [autodeint](https://github.com/mpv-player/mpv/blob/master/TOOLS/lua/autodeint.lua) - Automatically insert the appropriate deinterlacing filter based on a short section of the current video, triggered by toggle button. 
@@ -19,6 +18,7 @@ Just my personal config files for use in [mpv,](https://mpv.io/) a free, open-so
     - **This script needs some extra setup, follow the simple installation steps [here](https://github.com/mrxdst/webtorrent-mpv-hook#install)**.
     - **Point to the same location in the File Structure section below for the webtorrent.js file.**
 - - - 
+- [nlmeans ](https://github.com/AN3223/dotfiles/tree/master/.config/mpv/shaders) - Highly configurable and featureful denoiser.
 - [NVIDIA Image Sharpening](https://gist.github.com/agyild/7e8951915b2bf24526a9343d951db214) - An adaptive-directional sharpening algorithm shaders.
 - [FidelityFX CAS](https://gist.github.com/agyild/bbb4e58298b2f86aa24da3032a0d2ee6) - Sharpening shader that provides an even level of sharpness across the frame. 
 - [FSRCNNX-TensorFlow](https://github.com/igv/FSRCNN-TensorFlow) - Very resource intensive upscaler that uses a neural network to upscale accurately.
@@ -107,7 +107,6 @@ mpv
 │   │
 │   │   ├── autodeint.lua                     # Change key binding here, not input.conf (Ctrl+d)
 │   │   ├── autoload.lua                    
-|   |   ├── cycle-denoise.lua                 # Change key binding here, not input.conf (n)
 |   |   ├── recentmenu.lua
 |   |   ├── sview.lua
 │   │   ├── thumbfast.lua                     
@@ -125,6 +124,8 @@ mpv
 │   │   ├── F8_LA.glsl
 │   │   ├── FSR.glsl
 │   │   ├── krigbl.glsl
+│   │   ├── nlmeans_hq_m.glsl                 
+│   │   ├── nlmeans_hqx.glsl
 │   │   ├── NVSharpen.glsl
 │   │   ├── ravu_L_r4.hook
 │   │   ├── ravu_Z_r3.hook
