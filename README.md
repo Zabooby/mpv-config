@@ -9,7 +9,8 @@ Just my personal config files for use in [mpv,](https://mpv.io/) a free, open-so
 ## Scripts and Shaders
 - [uosc](https://github.com/darsain/uosc) - Adds a minimalist but highly customizable gui.
 - [thumbfast](https://github.com/po5/thumbfast) - High-performance on-the-fly thumbnailer.
-- [recent-menu](https://github.com/natural-harmonia-gropius/recent-menu) - Recently played menu, integrated with uosc.
+- [recent-menu](https://github.com/natural-harmonia-gropius/recent-menu) - Recently played menu, integrated with uosc. 
+    - **Currently testing [memo](https://github.com/po5/memo) script, to replace recent-menu**. 
 - [sview](https://github.com/he2a/mpv-scripts/blob/main/scripts/sview.lua) - Show shaders currently running, triggered on shader activation or by toggle button.
 - [autoload](https://github.com/mpv-player/mpv/blob/master/TOOLS/lua/autoload.lua) - Automatically load playlist entries before and after the currently playing file, by scanning the directory.
 - [autodeint](https://github.com/mpv-player/mpv/blob/master/TOOLS/lua/autodeint.lua) - Automatically insert the appropriate deinterlacing filter based on a short section of the current video, triggered by toggle button. 
@@ -154,4 +155,4 @@ Custom key bindings can be added/edited in the [input.conf](https://github.com/Z
 * [Mathematical evaluation of various scalers](https://artoriuz.github.io/blog/mpv_upscaling.html) - My config uses the best scalers/settings from this analysis.
 * [mpv manual](https://mpv.io/manual/master/) - Lists all the settings and configuration options available including video/audio filters, scripting, and countless other customizations. 
 
-Huge shoutout to [@he2a](https://github.com/he2a) for their [config,](https://github.com/he2a/mpv-config) most of my setup is inspired by it.
+Huge shoutout to [@he2a](https://github.com/he2a) for their [config,](https://github.com/he2a/mpv-config) lots of my setup is inspired by it.
