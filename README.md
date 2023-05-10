@@ -9,9 +9,8 @@ Just my personal config files for use in [mpv,](https://mpv.io/) a free, open-so
 ## Scripts and Shaders
 - [uosc](https://github.com/darsain/uosc) - Adds a minimalist but highly customizable gui.
 - [thumbfast](https://github.com/po5/thumbfast) - High-performance on-the-fly thumbnailer.
-- [recent-menu](https://github.com/natural-harmonia-gropius/recent-menu) - Recently played menu, integrated with uosc. 
-    - **Currently testing [memo](https://github.com/po5/memo) script, to replace recent-menu**. 
 - [sview](https://github.com/he2a/mpv-scripts/blob/main/scripts/sview.lua) - Show shaders currently running, triggered on shader activation or by toggle button.
+- [memo](https://github.com/po5/memo) - This script saves your watch history, and displays it in a nice menu, integrated with uosc. 
 - [autoload](https://github.com/mpv-player/mpv/blob/master/TOOLS/lua/autoload.lua) - Automatically load playlist entries before and after the currently playing file, by scanning the directory.
 - [autodeint](https://github.com/mpv-player/mpv/blob/master/TOOLS/lua/autodeint.lua) - Automatically insert the appropriate deinterlacing filter based on a short section of the current video, triggered by toggle button. 
 - [webtorrent-mpv-hook](https://github.com/mrxdst/webtorrent-mpv-hook) - Adds a hook that allows mpv to stream torrents. It provides an osd overlay to show info/progress.
@@ -68,8 +67,8 @@ mpv
 |   |   └── uosc-textures.ttf
 │   │
 │   ├── script-opts                           # Contains configuration files for scripts
-|   |   ├── recent.json                       # Save recently opened videos (created automatically)  
-|   |   ├── recentmenu.conf    
+|   |   ├── memo.conf
+|   |   ├── memo-history.log                  # Save recently opened videos (created automatically)      
 │   │   ├── thumbfast.conf                    
 │   │   ├── uosc.conf                         # Set desired default directory for uosc menu here
 │   │   └── webtorrent.conf                   # Specify where to save downloaded videos here
@@ -108,7 +107,7 @@ mpv
 │   │
 │   │   ├── autodeint.lua                     # Change key binding here, not input.conf (Ctrl+d)
 │   │   ├── autoload.lua                    
-|   |   ├── recentmenu.lua
+|   |   ├── memo.lua
 |   |   ├── sview.lua
 │   │   ├── thumbfast.lua                     
 │   │   ├── uosc.lua
