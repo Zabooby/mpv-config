@@ -10,7 +10,7 @@ Just my personal config files for use in [mpv,](https://mpv.io/) a free, open-so
 - [uosc](https://github.com/darsain/uosc) - Adds a minimalist but highly customizable gui.
 - [thumbfast](https://github.com/po5/thumbfast) - High-performance on-the-fly thumbnailer.
 - [sview](https://github.com/he2a/mpv-scripts/blob/main/scripts/sview.lua) - Show shaders currently running, triggered on shader activation or by toggle button.
-- [memo](https://github.com/po5/memo) - This script saves your watch history, and displays it in a nice menu, integrated with uosc. 
+- [memo](https://github.com/po5/memo) - Saves watch history, and displays it in a nice menu, integrated with uosc. 
 - [autoload](https://github.com/mpv-player/mpv/blob/master/TOOLS/lua/autoload.lua) - Automatically load playlist entries before and after the currently playing file, by scanning the directory.
 - [autodeint](https://github.com/mpv-player/mpv/blob/master/TOOLS/lua/autodeint.lua) - Automatically insert the appropriate deinterlacing filter based on a short section of the current video, triggered by toggle button. 
 - [webtorrent-mpv-hook](https://github.com/mrxdst/webtorrent-mpv-hook) - Adds a hook that allows mpv to stream torrents. It provides an osd overlay to show info/progress.
@@ -51,30 +51,30 @@ mpv
 |
 ├── doc
 │   ├── manual.pdf                            
-│   └── mpbindings.png                        # Default key bindings if not overridden in input.conf
+│   └── mpbindings.png                      # Default key bindings if not overridden in input.conf
 │
 ├── installer
 │   ├── configure-opengl-hq.bat
 │   ├── mpv-icon.ico
-│   ├── mpv-install.bat                       # Run with administrator priviledges to install mpv
-│   ├── mpv-uninstall.bat                     # Run with administrator priviledges to uninstall mpv
+│   ├── mpv-install.bat                     # Run with administrator priviledges to install mpv
+│   ├── mpv-uninstall.bat                   # Run with administrator priviledges to uninstall mpv
 │   └── updater.ps1
 │
-├── portable_config                           # This is where my config is placed 
+├── portable_config                         # This is where my config is placed 
 │   ├── fonts
 │   │   ├── Ubuntu-Medium.ttf
 |   |   ├── uosc-icons.otf
 |   |   └── uosc-textures.ttf
 │   │
-│   ├── script-opts                           # Contains configuration files for scripts
+│   ├── script-opts                         # Contains configuration files for scripts
 |   |   ├── memo.conf
-|   |   ├── memo-history.log                  # Save recently opened videos (created automatically)      
+|   |   ├── memo-history.log                # Save recently opened videos (created automatically)      
 │   │   ├── thumbfast.conf                    
-│   │   ├── uosc.conf                         # Set desired default directory for uosc menu here
-│   │   └── webtorrent.conf                   # Specify where to save downloaded videos here
+│   │   ├── uosc.conf                       # Set desired default directory for uosc menu here
+│   │   └── webtorrent.conf                 # Specify where to save downloaded videos here
 │   │
 │   ├── scripts      
-│   │   ├── uosc_shared                       # Contains ui elements for the uosc gui
+│   │   ├── uosc_shared                    
 │   │       ├── elements 
 |   |           ├── BufferingIndicator.lua
 |   |           ├── Button.lua
@@ -105,20 +105,20 @@ mpv
 |   |           └── utils.lua
 |   |       └── main.lua
 │   │
-│   │   ├── autodeint.lua                     # Change key binding here, not input.conf (Ctrl+d)
+│   │   ├── autodeint.lua                   # Change key binding here, not input.conf (Ctrl+d)
 │   │   ├── autoload.lua                    
 |   |   ├── memo.lua
 |   |   ├── sview.lua
 │   │   ├── thumbfast.lua                     
 │   │   ├── uosc.lua
-│   │   └── webtorrent.js                     # Point here when setting up webtorrent script
+│   │   └── webtorrent.js                   # Point here when setting up webtorrent script
 │   │
-│   ├── shaders                               # Contains external shaders
+│   ├── shaders                             # Contains external shaders
 │   │   ├── A4K_Dark.glsl                         
 │   │   ├── A4K_Thin.glsl
 │   │   ├── A4K_Upscale_L.glsl
 │   │   ├── adasharp.glsl                     
-│   │   ├── adasharpA.glsl                    # Adjusted for anime
+│   │   ├── adasharpA.glsl                  # Adjusted for anime
 │   │   ├── CAS.glsl
 │   │   ├── F8.glsl
 │   │   ├── F8_LA.glsl
@@ -132,16 +132,16 @@ mpv
 │   │   ├── ssimds.glsl
 │   │   └── ssimsr.glsl
 │   │
-|   ├── watch_later                           # Video timestamps saved here (created automatically)
-|   ├── fonts.conf                            # Delete duplicate when installing in steps above 
-│   ├── input.conf                            # Tweak uosc right click menu here
-│   ├── mpv.conf                              # General anime profile here 
-|   └── profiles.conf                         # Up/downscale and more anime profiles here
+|   ├── watch_later                         # Video timestamps saved here (created automatically)
+|   ├── fonts.conf                          # Delete duplicate when installing in steps above 
+│   ├── input.conf                          # Tweak uosc right click menu here
+│   ├── mpv.conf                            # General anime profile here 
+|   └── profiles.conf                       # Up/downscale and more anime profiles here
 |   
 ├── d3dcompiler_43.dll
 ├── mpv.com
-├── mpv.exe                                   # The mpv executable file
-└── updater.bat                               # Run with administrator priviledges to update mpv
+├── mpv.exe                                 # The mpv executable file
+└── updater.bat                             # Run with administrator priviledges to update mpv
 ```
 
 ## Key Bindings
