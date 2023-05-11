@@ -1,6 +1,6 @@
 # Personal mpv Configuration for Windows
 
-<p align="center"><img width=100% src="https://user-images.githubusercontent.com/78969986/227644650-1100b3e2-8e6a-4085-8629-13c488c4ace1.png" alt="mpv screenshot"></p>
+<p align="center"><img width=100% src="https://github-production-user-asset-6210df.s3.amazonaws.com/78969986/237800365-98f44b90-8061-488b-9b28-691572676422.png" alt="mpv screenshot"></p>
 <p align="center"><img width=100% src="https://user-images.githubusercontent.com/78969986/221602122-af51d5ff-7459-43fc-aed5-498200e72eee.png" alt="mpv screenshot"></p>
 
 ## Overview
