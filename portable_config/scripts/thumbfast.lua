@@ -115,12 +115,14 @@ if options.direct_io then
     end
 end
 
+local file = nil
 local spawned = false
 local network = false
 local disabled = false
 local force_disabled = false
 local spawn_waiting = false
 local spawn_working = false
+local script_written = false
 
 local dirty = false
 
@@ -351,15 +353,23 @@ local function info(w, h)
     end
 
     local json, err = mp.utils.format_json({width=display_w, height=display_h, disabled=disabled, available=true, socket=options.socket, thumbnail=options.thumbnail, overlay_id=options.overlay_id})
-    mp.commandv("script-message", "thumbfast-info", json)
+    if pre_0_30_0 then
+        mp.command_native({"script-message", "thumbfast-info", json})
+    else
+        mp.command_native_async({"script-message", "thumbfast-info", json}, function() end)
+    end
 end
 
 local function remove_thumbnail_files()
+    if file then
+        file:close()
+        file = nil
+    end
     os.remove(options.thumbnail)
     os.remove(options.thumbnail..".bgra")
 end
 
-local function spawn(time)
+local function spawn(time, respawn)
     if disabled then return end
 
     local path = mp.get_property("path")
@@ -399,18 +409,22 @@ local function spawn(time)
 
     if os_name == "Windows" or pre_0_33_0 then
         table.insert(args, "--input-ipc-server="..options.socket)
-    else
+    elseif not script_written then
         local client_script_path = options.socket..".run"
-        local file = io.open(client_script_path, "w+")
-        if file == nil then
+        local script = io.open(client_script_path, "w+")
+        if script == nil then
             mp.msg.error("client script write failed")
             return
         else
-            file:write(string.format(client_script, options.socket))
-            file:close()
+            script_written = true
+            script:write(string.format(client_script, options.socket))
+            script:close()
             subprocess({"chmod", "+x", client_script_path}, true)
             table.insert(args, "--scripts="..client_script_path)
         end
+    else
+        local client_script_path = options.socket..".run"
+        table.insert(args, "--scripts="..client_script_path)
     end
 
     table.insert(args, "--")
@@ -478,19 +492,19 @@ local function run(command)
         return
     end
 
-    local file = nil
     if os_name == "Windows" then
-        file = io.open("\\\\.\\pipe\\"..options.socket, "r+")
+        if file == nil then
+            file = io.open("\\\\.\\pipe\\"..options.socket, "r+")
+        end
     elseif pre_0_33_0 then
         subprocess({"/usr/bin/env", "sh", "-c", "echo '" .. command .. "' | socat - " .. options.socket})
         return
-    else
+    elseif file == nil then
         file = io.open(options.socket, "r+")
     end
     if file ~= nil then
         file:seek("end")
         file:write(command.."\n")
-        file:close()
     end
 end
 
@@ -502,7 +516,11 @@ local function draw(w, h, script)
     end
 
     if x ~= nil then
-        mp.command_native({"overlay-add", options.overlay_id, x, y, options.thumbnail..".bgra", 0, "bgra", display_w, display_h, (4*display_w)})
+        if pre_0_30_0 then
+            mp.command_native({"overlay-add", options.overlay_id, x, y, options.thumbnail..".bgra", 0, "bgra", display_w, display_h, (4*display_w)})
+        else
+            mp.command_native_async({"overlay-add", options.overlay_id, x, y, options.thumbnail..".bgra", 0, "bgra", display_w, display_h, (4*display_w)}, function() end)
+        end
     elseif script then
         local json, err = mp.utils.format_json({width=display_w, height=display_h, x=x, y=y, socket=options.socket, thumbnail=options.thumbnail, overlay_id=options.overlay_id})
         mp.commandv("script-message-to", script, "thumbfast-render", json)
@@ -636,12 +654,16 @@ end
 local function clear()
     file_timer:kill()
     seek_timer:kill()
-    last_seek_time = 0
+    last_seek_time = nil
     show_thumbnail = false
     last_x = nil
     last_y = nil
     if script_name then return end
-    mp.command_native({"overlay-remove", options.overlay_id})
+    if pre_0_30_0 then
+        mp.command_native({"overlay-remove", options.overlay_id})
+    else
+        mp.command_native_async({"overlay-remove", options.overlay_id}, function() end)
+    end
 end
 
 local function watch_changes()
@@ -671,10 +693,11 @@ local function watch_changes()
     if spawned then
         if resized then
             -- mpv doesn't allow us to change output size
+            local seek_time = last_seek_time
             run("quit")
             clear()
             spawned = false
-            spawn(last_seek_time or mp.get_property_number("time-pos", 0))
+            spawn(seek_time or mp.get_property_number("time-pos", 0), true)
         else
             if rotate ~= last_rotate then
                 run("set video-rotate "..rotate)
