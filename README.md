@@ -105,7 +105,7 @@ mpv
 |   |           └── utils.lua
 |   |       └── main.lua
 │   │
-│   │   ├── autodeint.lua                 # Change key binding here, not input.conf (Ctrl+d)
+│   │   ├── autodeint.lua                 # Set key binding here, not input.conf (Ctrl+d)
 │   │   ├── autoload.lua                    
 |   |   ├── memo.lua
 |   |   ├── sview.lua
