@@ -68,7 +68,7 @@ mpv
 │   │
 │   ├── script-opts                       # Contains configuration files for scripts
 |   |   ├── memo.conf
-|   |   ├── memo-history.log              # Saves recently opened videos (created automatically)      
+|   |   ├── memo-history.log              # Logs recently opened videos (created automatically)      
 │   │   ├── thumbfast.conf                    
 │   │   ├── uosc.conf                     # Set desired default directory for uosc menu here
 │   │   └── webtorrent.conf               # Specify where to save downloaded videos here
