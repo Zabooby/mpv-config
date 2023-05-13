@@ -68,7 +68,7 @@ mpv
 │   │
 │   ├── script-opts                       # Contains configuration files for scripts
 |   |   ├── memo.conf
-|   |   ├── memo-history.log              # Save recently opened videos (created automatically)      
+|   |   ├── memo-history.log              
 │   │   ├── thumbfast.conf                    
 │   │   ├── uosc.conf                     # Set desired default directory for uosc menu here
 │   │   └── webtorrent.conf               # Specify where to save downloaded videos here
@@ -105,7 +105,7 @@ mpv
 |   |           └── utils.lua
 |   |       └── main.lua
 │   │
-│   │   ├── autodeint.lua                 # Change key binding here, not input.conf (Ctrl+d)
+│   │   ├── autodeint.lua                 # Set key binding here, not input.conf (Ctrl+d)
 │   │   ├── autoload.lua                    
 |   |   ├── memo.lua
 |   |   ├── sview.lua
