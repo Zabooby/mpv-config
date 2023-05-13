@@ -22,6 +22,9 @@ local options = {
     -- Spawn thumbnailer on file load for faster initial thumbnails
     spawn_first = false,
 
+    -- Close thumbnailer process after an inactivity period in seconds, 0 to disable
+    quit_after_inactivity = 0,
+
     -- Enable on network playback
     network = false,
 
@@ -147,8 +150,7 @@ local show_thumbnail = false
 
 local filters_reset = {["lavfi-crop"]=true, ["crop"]=true}
 local filters_runtime = {["hflip"]=true, ["vflip"]=true}
-local filters_all = filters_runtime
-for k,v in pairs(filters_reset) do filters_all[k] = v end
+local filters_all = {["hflip"]=true, ["vflip"]=true, ["lavfi-crop"]=true, ["crop"]=true}
 
 local last_vf_reset = ""
 local last_vf_runtime = ""
@@ -194,22 +196,22 @@ local function get_os()
     raw_os_name = (raw_os_name):lower()
 
     local os_patterns = {
-        ["windows"] = "Windows",
-        ["linux"]   = "Linux",
+        ["windows"] = "windows",
+        ["linux"]   = "linux",
 
-        ["osx"]     = "Mac",
-        ["mac"]     = "Mac",
-        ["darwin"]  = "Mac",
+        ["osx"]     = "darwin",
+        ["mac"]     = "darwin",
+        ["darwin"]  = "darwin",
 
-        ["^mingw"]  = "Windows",
-        ["^cygwin"] = "Windows",
+        ["^mingw"]  = "windows",
+        ["^cygwin"] = "windows",
 
-        ["bsd$"]    = "Mac",
-        ["sunos"]   = "Mac"
+        ["bsd$"]    = "darwin",
+        ["sunos"]   = "darwin"
     }
 
     -- Default to linux
-    local str_os_name = "Linux"
+    local str_os_name = "linux"
 
     for pattern, name in pairs(os_patterns) do
         if raw_os_name:match(pattern) then
@@ -221,11 +223,12 @@ local function get_os()
     return str_os_name
 end
 
-local os_name = get_os()
-local path_separator = os_name == "Windows" and "\\" or "/"
+local os_name = mp.get_property("platform") or get_os()
+
+local path_separator = os_name == "windows" and "\\" or "/"
 
 if options.socket == "" then
-    if os_name == "Windows" then
+    if os_name == "windows" then
         options.socket = "thumbfast"
     else
         options.socket = "/tmp/thumbfast"
@@ -233,7 +236,7 @@ if options.socket == "" then
 end
 
 if options.thumbnail == "" then
-    if os_name == "Windows" then
+    if os_name == "windows" then
         options.thumbnail = os.getenv("TEMP").."\\thumbfast.out"
     else
         options.thumbnail = "/tmp/thumbfast.out"
@@ -246,7 +249,7 @@ options.socket = options.socket .. unique
 options.thumbnail = options.thumbnail .. unique
 
 if options.direct_io then
-    if os_name == "Windows" then
+    if os_name == "windows" then
         winapi.socket_wc = winapi.MultiByteToWideChar("\\\\.\\pipe\\" .. options.socket)
     end
 
@@ -258,7 +261,7 @@ end
 local mpv_path = options.mpv_path
 local libmpv = false
 
-if mpv_path == "mpv" and os_name == "Mac" and unique then
+if mpv_path == "mpv" and os_name == "darwin" and unique then
     -- TODO: look into ~~osxbundle/
     mpv_path = string.gsub(subprocess({"ps", "-o", "comm=", "-p", tostring(unique)}).stdout, "[\n\r]", "")
     if mpv_path ~= "mpv" then
@@ -365,11 +368,20 @@ local function remove_thumbnail_files()
     os.remove(options.thumbnail..".bgra")
 end
 
-local function spawn(time, respawn)
+local activity_timer
+
+local function spawn(time)
     if disabled then return end
 
     local path = properties["path"]
     if path == nil then return end
+
+    if options.quit_after_inactivity > 0 then
+        if show_thumbnail or activity_timer:is_enabled() then
+            activity_timer:kill()
+        end
+        activity_timer:resume()
+    end
 
     local open_filename = properties["stream-open-filename"]
     local ytdl = open_filename and properties["demuxer-via-network"] and path ~= open_filename
@@ -399,11 +411,11 @@ local function spawn(time, respawn)
         table.insert(args, "--sws-allow-zimg=no")
     end
 
-    if os_name == "Mac" and properties["macos-app-activation-policy"] then
+    if os_name == "darwin" and properties["macos-app-activation-policy"] then
         table.insert(args, "--macos-app-activation-policy=accessory")
     end
 
-    if os_name == "Windows" or pre_0_33_0 then
+    if os_name == "windows" or pre_0_33_0 then
         table.insert(args, "--input-ipc-server="..options.socket)
     elseif not script_written then
         local client_script_path = options.socket..".run"
@@ -442,7 +454,7 @@ local function spawn(time, respawn)
                                 mpv_path = "ImPlay"
                                 spawn(time)
                             else -- ImPlay not in path
-                                if os_name ~= "Mac" then
+                                if os_name ~= "darwin" then
                                     force_disabled = true
                                     info(real_w or effective_w, real_h or effective_h)
                                 end
@@ -451,7 +463,7 @@ local function spawn(time, respawn)
                             end
                         else
                             mp.commandv("show-text", "thumbfast: ERROR! cannot create mpv subprocess", 5000)
-                            if os_name == "Windows" then
+                            if os_name == "windows" then
                                 mp.commandv("script-message-to", "mpvnet", "show-text", "thumbfast: ERROR! install standalone mpv, see README", 5000, 20)
                                 mp.commandv("script-message", "mpv.net", "show-text", "thumbfast: ERROR! install standalone mpv, see README", 5000, 20)
                             end
@@ -490,7 +502,7 @@ local function run(command)
 
     local command_n = command.."\n"
 
-    if os_name == "Windows" then
+    if os_name == "windows" then
         if file and file_bytes + #command_n >= 4096 then
             file:close()
             file = nil
@@ -555,7 +567,7 @@ local function real_res(req_w, req_h, filesize)
 end
 
 local function move_file(from, to)
-    if os_name == "Windows" then
+    if os_name == "windows" then
         os.remove(to)
     end
     -- move the file because it can get overwritten while overlay-add is reading it, and crash the player
@@ -615,6 +627,9 @@ local function check_new_thumb()
             last_real_w, last_real_h = real_w, real_h
             info(real_w, real_h)
         end
+        if not show_thumbnail then
+            file_timer:kill()
+        end
         return true
     end
 
@@ -627,6 +642,42 @@ file_timer = mp.add_periodic_timer(file_check_period, function()
     end
 end)
 file_timer:kill()
+
+local function clear()
+    file_timer:kill()
+    seek_timer:kill()
+    if options.quit_after_inactivity > 0 then
+        if show_thumbnail or activity_timer:is_enabled() then
+            activity_timer:kill()
+        end
+        activity_timer:resume()
+    end
+    last_seek_time = nil
+    show_thumbnail = false
+    last_x = nil
+    last_y = nil
+    if script_name then return end
+    if pre_0_30_0 then
+        mp.command_native({"overlay-remove", options.overlay_id})
+    else
+        mp.command_native_async({"overlay-remove", options.overlay_id}, function() end)
+    end
+end
+
+local function quit()
+    activity_timer:kill()
+    if show_thumbnail then
+        activity_timer:resume()
+        return
+    end
+    run("quit")
+    spawned = false
+    real_w, real_h = nil, nil
+    clear()
+end
+
+activity_timer = mp.add_timeout(options.quit_after_inactivity, quit)
+activity_timer:kill()
 
 local function thumb(time, r_x, r_y, script)
     if disabled then return end
@@ -648,6 +699,13 @@ local function thumb(time, r_x, r_y, script)
         draw(real_w, real_h, script)
     end
 
+    if options.quit_after_inactivity > 0 then
+        if show_thumbnail or activity_timer:is_enabled() then
+            activity_timer:kill()
+        end
+        activity_timer:resume()
+    end
+
     if time == last_seek_time then return end
     last_seek_time = time
     if not spawned then spawn(time) end
@@ -655,26 +713,9 @@ local function thumb(time, r_x, r_y, script)
     if not file_timer:is_enabled() then file_timer:resume() end
 end
 
-local function clear()
-    file_timer:kill()
-    seek_timer:kill()
-    last_seek_time = nil
-    show_thumbnail = false
-    last_x = nil
-    last_y = nil
-    if script_name then return end
-    if pre_0_30_0 then
-        mp.command_native({"overlay-remove", options.overlay_id})
-    else
-        mp.command_native_async({"overlay-remove", options.overlay_id}, function() end)
-    end
-end
-
 local function watch_changes()
-    if not dirty then return end
+    if not dirty or not properties["video-out-params"] then return end
     dirty = false
-
-    if not properties["video-out-params"] then return end
 
     local old_w = effective_w
     local old_h = effective_h
@@ -704,7 +745,8 @@ local function watch_changes()
             run("quit")
             clear()
             spawned = false
-            spawn(seek_time or mp.get_property_number("time-pos", 0), true)
+            spawn(seek_time or mp.get_property_number("time-pos", 0))
+            file_timer:resume()
         else
             if rotate ~= last_rotate then
                 run("set video-rotate "..rotate)
@@ -723,6 +765,11 @@ local function watch_changes()
     last_rotate = rotate
     last_par = par
     last_has_vid = has_vid
+
+    if not spawned and not disabled and options.spawn_first and resized then
+        spawn(mp.get_property_number("time-pos", 0))
+        file_timer:resume()
+    end
 end
 
 local function update_property(name, value)
@@ -772,6 +819,8 @@ end
 
 local function file_load()
     clear()
+    libmpv = properties["current-vo"] == "libmpv"
+    spawned = false
     real_w, real_h = nil, nil
     last_real_w, last_real_h = nil, nil
     last_seek_time = nil
@@ -782,19 +831,12 @@ local function file_load()
 
     calc_dimensions()
     info(effective_w, effective_h)
-    if disabled then return end
-
-    libmpv = properties["current-vo"] == "libmpv"
-    spawned = false
-    if options.spawn_first then
-        spawn(mp.get_property_number("time-pos", 0))
-    end
 end
 
 local function shutdown()
     run("quit")
     remove_thumbnail_files()
-    if os_name ~= "Windows" then
+    if os_name ~= "windows" then
         os.remove(options.socket)
         os.remove(options.socket..".run")
     end
