@@ -16,6 +16,9 @@ local options = {
     max_height = 200,
     max_width = 200,
 
+    -- Apply tone-mapping, no to disable
+    tone_mapping = "auto",
+
     -- Overlay id
     overlay_id = 42,
 
@@ -152,6 +155,9 @@ local filters_reset = {["lavfi-crop"]=true, ["crop"]=true}
 local filters_runtime = {["hflip"]=true, ["vflip"]=true}
 local filters_all = {["hflip"]=true, ["vflip"]=true, ["lavfi-crop"]=true, ["crop"]=true}
 
+local tone_mappings = {["none"]=true, ["clip"]=true, ["linear"]=true, ["gamma"]=true, ["reinhard"]=true, ["hable"]=true, ["mobius"]=true}
+local last_tone_mapping = nil
+
 local last_vf_reset = ""
 local last_vf_runtime = ""
 
@@ -259,7 +265,6 @@ if options.direct_io then
 end
 
 local mpv_path = options.mpv_path
-local libmpv = false
 
 if mpv_path == "mpv" and os_name == "darwin" and unique then
     -- TODO: look into ~~osxbundle/
@@ -275,6 +280,22 @@ if mpv_path == "mpv" and os_name == "darwin" and unique then
                 mp.msg.warn("symlink mpv to fix Dock icons: `sudo ln -s /Applications/mpv.app/Contents/MacOS/mpv /usr/local/mpv`")
             else
                 mp.msg.warn("drag to your Applications folder and symlink mpv to fix Dock icons: `sudo ln -s /Applications/mpv.app/Contents/MacOS/mpv /usr/local/mpv`")
+            end
+        end
+    end
+end
+
+local function vo_tone_mapping()
+    local passes = mp.get_property_native("vo-passes")
+    if passes and passes["fresh"] then
+        for k, v in pairs(passes["fresh"]) do
+            for k2, v2 in pairs(v) do
+                if k2 == "desc" and v2 then
+                    local tone_mapping = string.match(v2, "([0-9a-z.-]+) tone map")
+                    if tone_mapping then
+                        return tone_mapping
+                    end
+                end
             end
         end
     end
@@ -296,6 +317,23 @@ local function vf_string(filters, full)
                 end
                 vf = vf .. vf_table[i].name .. "=" .. args .. ","
             end
+        end
+    end
+
+    if (full and options.tone_mapping ~= "no") or options.tone_mapping == "auto" then
+        if properties["video-params"] and properties["video-params"]["primaries"] == "bt.2020" then
+            local tone_mapping = options.tone_mapping
+            if tone_mapping == "auto" then
+                tone_mapping = last_tone_mapping or properties["tone-mapping"]
+                if tone_mapping == "auto" and properties["current-vo"] == "gpu-next" then
+                    tone_mapping = vo_tone_mapping()
+                end
+            end
+            if not tone_mappings[tone_mapping] then
+                tone_mapping = "hable"
+            end
+            last_tone_mapping = tone_mapping
+            vf = vf .. "zscale=transfer=linear,format=gbrpf32le,tonemap="..tone_mapping..",zscale=transfer=bt709,"
         end
     end
 
@@ -446,10 +484,11 @@ local function spawn(time)
             if spawn_waiting and (success == false or (result.status ~= 0 and result.status ~= -2)) then
                 spawned = false
                 spawn_waiting = false
+                options.tone_mapping = "no"
                 mp.msg.error("mpv subprocess create failed")
                 if not spawn_working then -- notify users of required configuration
                     if options.mpv_path == "mpv" then
-                        if libmpv then
+                        if properties["current-vo"] == "libmpv" then
                             if options.mpv_path == mpv_path then -- attempt to locate ImPlay
                                 mpv_path = "ImPlay"
                                 spawn(time)
@@ -475,7 +514,7 @@ local function spawn(time)
                     end
                 end
             elseif success == true and (result.status == 0 or result.status == -2) then
-                if not spawn_working and libmpv and options.mpv_path ~= mpv_path then
+                if not spawn_working and properties["current-vo"] == "libmpv" and options.mpv_path ~= mpv_path then
                     mp.commandv("script-message-to", "implay", "show-message", "thumbfast initial setup", "Set mpv_path=ImPlay in thumbfast config:\n" .. string.gsub(mp.command_native({"expand-path", "~~/script-opts/thumbfast.conf"}), "[/\\]", path_separator).."\nand restart ImPlay")
                 end
                 spawn_working = true
@@ -779,6 +818,9 @@ end
 local function update_property_dirty(name, value)
     properties[name] = value
     dirty = true
+    if name == "tone-mapping" then
+        last_tone_mapping = nil
+    end
 end
 
 local function update_tracklist(name, value)
@@ -819,10 +861,10 @@ end
 
 local function file_load()
     clear()
-    libmpv = properties["current-vo"] == "libmpv"
     spawned = false
     real_w, real_h = nil, nil
     last_real_w, last_real_h = nil, nil
+    last_tone_mapping = nil
     last_seek_time = nil
     if info_timer then
         info_timer:kill()
@@ -859,6 +901,7 @@ mp.observe_property("display-hidpi-scale", "native", update_property_dirty)
 mp.observe_property("video-out-params", "native", update_property_dirty)
 mp.observe_property("video-params", "native", update_property_dirty)
 mp.observe_property("vf", "native", update_property_dirty)
+mp.observe_property("tone-mapping", "native", update_property_dirty)
 mp.observe_property("demuxer-via-network", "native", update_property)
 mp.observe_property("stream-open-filename", "native", update_property)
 mp.observe_property("macos-app-activation-policy", "native", update_property)
