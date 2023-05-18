@@ -349,42 +349,24 @@ vec4 hook()
 
 /* Adaptive sharpening
  *
- * Uses the blur incurred by denoising to perform an unsharp mask, and uses the 
- * weight map to restrict the sharpening to edges.
- *
- * If you just want to increase/decrease sharpness then you want to change ASF.
+ * Performs an unsharp mask by subtracting the spatial kernel's blur from the 
+ * NLM blur. For sharpen+denoise the sharpening is limited to edge areas and 
+ * denoising is done everywhere else.
  *
  * Use V=4 to visualize which areas are sharpened (black means sharpen).
  *
  * AS:
- * 	- 0 to disable
- * 	- 1 to sharpen+denoise
- * 	- 2 to sharpen only
+ * 	- 0: disable
+ * 	- 1: sharpen+denoise
+ * 	- 2: sharpen only
  * ASF: Higher numbers make a sharper image
- * ASP: Higher numbers use more of the sharp image
- * ASW:
- * 	- 0 to use pre-WD weights
- * 	- 1 to use post-WD weights (ASP should be ~2x to compensate)
- * ASK: Weight kernel:
- * 	- 0 for power. This is the old method.
- * 	- 1 for sigmoid. This is generally recommended.
- * 	- 2 for constant (non-adaptive, w/ ASP=0 this sharpens the entire image)
- * ASC (only for ASK=1, range 0-1): Reduces the contrast of the edge map
  */
 #ifdef LUMA_raw
 #define AS 0
-#define ASF 3.0
-#define ASP 1
-#define ASW 0
-#define ASK 1
-#define ASC 0.0
+#define ASF 0.5
 #else
 #define AS 0
-#define ASF 3.0
-#define ASP 1.0
-#define ASW 0
-#define ASK 1
-#define ASC 0.0
+#define ASF 0.5
 #endif
 
 /* Starting weight
@@ -426,18 +408,20 @@ vec4 hook()
 
 /* Extremes preserve
  *
- * Reduces denoising around very bright/dark areas.
+ * Reduce denoising in very bright/dark areas.
+ *
+ * Disabled by default now. If you want to reenable this, set EP=3/ in 
+ * Makefile.nlm and rebuild.
  *
  * The downscaling factor of the EP shader stage affects what is considered a 
- * bright/dark area. The default of 3 should be fine, it's not recommended to 
- * change this.
+ * bright/dark area.
  *
  * This is incompatible with RGB. If you have RGB hooks enabled then you will 
  * have to delete the EP shader stage or specify EP=0 through shader_cfg.
  *
  * EP: 1 to enable, 0 to disable
- * DP: EP strength on dark patches, 0 to fully denoise
- * BP: EP strength on bright patches, 0 to fully denoise
+ * DP: EP strength on dark areas, 0 to fully denoise
+ * BP: EP strength on bright areas, 0 to fully denoise
  */
 #ifdef LUMA_raw
 #define EP 0
@@ -636,8 +620,10 @@ vec4 hook()
  * 0: off
  * 1: absolute difference between input/output to the power of 0.25
  * 2: difference between input/output centered on 0.5
- * 3: avg_weight
- * 4: edge map (based on the relevant AS settings)
+ * 3: post-WD weight map
+ * 4: pre-WD weight map
+ * 5: unsharp mask
+ * 6: EP
  */
 #ifdef LUMA_raw
 #define V 0
@@ -1001,10 +987,6 @@ val range(val pdiff_sq)
 #else
 	return vec3(RK(pdiff_sq.x), RK(pdiff_sq.y), RK(pdiff_sq.z));
 #endif
-	//return exp(-pdiff_sq * pdiff_scale);
-
-	// weight function from the NLM paper, it's not very good
-	//return exp(-max(pdiff_sq - 2*S*S, 0.0) * pdiff_scale);
 }
 
 val patch_comparison(vec3 r, vec3 r2)
@@ -1096,6 +1078,8 @@ vec4 hook()
 {
 	val total_weight = val(0);
 	val sum = val(0);
+	val total_weight_s = val(0);
+	val sum_s = val(0);
 	val result = val(0);
 
 	vec3 r = vec3(0);
@@ -1121,7 +1105,7 @@ vec4 hook()
 #endif
 
 	FOR_FRAME(r) {
-	// XXX ME is always a frame behind, should have to option to re-research after applying ME (could do it an arbitrary number of times per frame if desired)
+	// XXX ME is always a frame behind, should have the option to re-research after applying ME (could do it an arbitrary number of times per frame if desired)
 #if T && ME == 1 // temporal & motion estimation max weight
 	if (r.z > 0) {
 		me += me_tmp * MEF;
@@ -1135,7 +1119,10 @@ vec4 hook()
 		me_weight = 0;
 	}
 #endif
-	FOR_RESEARCH(r) { // main NLM logic
+	FOR_RESEARCH(r) {
+		float spatial_weight = spatial_r(r);
+		val px = load(r+me);
+
 #if SKIP_PATCH
 		val weight = val(1);
 #else
@@ -1155,21 +1142,23 @@ vec4 hook()
 		weight = val(weight.x);
 #endif
 
-		weight *= spatial_r(r);
+		weight *= spatial_weight;
+		sum_s += px * spatial_weight;
+		total_weight_s += spatial_weight;
 
 #if WD == 2 // weight discard
 		all_weights[r_index] = val_pack(weight);
-		all_pixels[r_index] = val_pack(load(r+me));
+		all_pixels[r_index] = val_pack(px);
 		r_index++;
 #elif WD == 1 // weight discard
 		val wd_scale = 1.0/max(no_weights, 1);
 		val keeps = step(total_weight*wd_scale * WDT*exp(-wd_scale*WDP), weight);
-		discard_sum += load(r+me) * weight * (1 - keeps);
+		discard_sum += px * weight * (1 - keeps);
 		discard_total_weight += weight * (1 - keeps);
 		no_weights += keeps;
 #endif
 
-		sum += load(r+me) * weight;
+		sum += px * weight;
 		total_weight += weight;
 	} // FOR_RESEARCH
 	} // FOR_FRAME
@@ -1202,12 +1191,7 @@ vec4 hook()
 
 	total_weight += SW * spatial_r(vec3(0));
 	sum += poi * SW * spatial_r(vec3(0));
-
-#if V == 3 // weight map
-	result = val(avg_weight);
-#else // mean
 	result = val(sum / total_weight);
-#endif
 
 	// store frames for temporal
 #if T > 1
@@ -1219,27 +1203,11 @@ vec4 hook()
 	imageStore(PREV1, ivec2(HOOKED_pos*imageSize(PREV1)), unval(poi2));
 #endif
 
-#if ASW == 0 // pre-WD weights
-#define AS_weight old_avg_weight
-#elif ASW == 1 // post-WD weights
-#define AS_weight avg_weight
-#endif
-
-#if ASK == 0
-	val sharpening_strength = pow(AS_weight, val(ASP));
-#elif ASK == 1
-	val sharpening_strength = mix(
-			pow(smoothstep(0.0, 1.0, AS_weight), val(ASP)),
-			AS_weight, ASC);
-	// XXX normalize the result to account for a negative ASC?
-#elif ASK == 2
-	val sharpening_strength = val(ASP);
-#endif
-
+#define USM ((result - sum_s/total_weight_s) * ASF)
 #if AS == 1 // sharpen+denoise
-	val sharpened = result + (poi - result) * ASF;
+	val sharpened = result + USM;
 #elif AS == 2 // sharpen only
-	val sharpened = poi + (poi - result) * ASF;
+	val sharpened = poi + USM;
 #endif
 
 #if EP // extremes preserve
@@ -1247,27 +1215,35 @@ vec4 hook()
 	// EPSILON is needed since pow(0,0) is undefined
 	float ep_weight = pow(max(min(1-luminance, luminance)*2, EPSILON), (luminance < 0.5 ? DP : BP));
 	result = mix(poi, result, ep_weight);
+#else
+	float ep_weight = 0;
 #endif
 
 #if AS == 1 // sharpen+denoise
-	result = mix(sharpened, result, sharpening_strength);
+	result = mix(sharpened, result, old_avg_weight);
 #elif AS == 2 // sharpen only
-	result = mix(sharpened, poi, sharpening_strength);
-#endif
-
-#if V == 4 // edge map
-	result = sharpening_strength;
-#endif
-
-#if (V == 3 || V == 4) && defined(CHROMA_raw) // drop chroma for these visualizations
-	return vec4(0.5);
+	result = sharpened;
 #endif
 
 #if V == 1
 	result = clamp(pow(abs(poi - result), val(0.25)), 0.0, 1.0);
 #elif V == 2
 	result = (poi - result) * 0.5 + 0.5;
+#elif V == 3 // post-WD weight map
+	result = avg_weight;
+#elif V == 4 // pre-WD edge map
+	result = old_avg_weight;
+#elif V == 5
+	result = 0.5 + USM;
+#elif V == 6
+	result = val(1 - ep_weight);
+#endif
+
+// XXX visualize chroma for these
+#if defined(CHROMA_raw) && (V == 3 || V == 4 || V == 6)
+	return vec4(0.5);
 #endif
 
 	return unval(mix(poi, result, BF));
 }
+
