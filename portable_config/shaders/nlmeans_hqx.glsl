@@ -568,14 +568,14 @@ vec4 hook()
  */
 #ifdef LUMA_raw
 #define SST 1
-#define SS 0.25
+#define SS 0.39
 #define SD vec3(1,1,1)
 #define PST 0
 #define PSS 0.0
 #define PSD vec2(1,1)
 #else
 #define SST 1
-#define SS 0.25
+#define SS 0.39
 #define SD vec3(1,1,1)
 #define PST 0
 #define PSS 0.0
@@ -680,25 +680,24 @@ vec4 hook()
 #define sphinx(x) ((x) < 1e-8 ? 1.0 : 3.0 * (sin((x)*M_PI) - (x)*M_PI * cos((x)*M_PI)) / POW3((x)*M_PI))
 
 // XXX could maybe be better optimized on LGC
-// XXX return original alpha component instead of 1.0
 #if defined(LUMA_raw)
 #define val float
 #define val_swizz(v) (v.x)
-#define unval(v) vec4(v.x, 0, 0, 1.0)
+#define unval(v) vec4(v.x, 0, 0, poi_.a)
 #define val_packed val
 #define val_pack(v) (v)
 #define val_unpack(v) (v)
 #elif defined(CHROMA_raw)
 #define val vec2
 #define val_swizz(v) (v.xy)
-#define unval(v) vec4(v.x, v.y, 0, 1.0)
+#define unval(v) vec4(v.x, v.y, 0, poi_.a)
 #define val_packed uint
 #define val_pack(v) packUnorm2x16(v)
 #define val_unpack(v) unpackUnorm2x16(v)
 #else
 #define val vec3
 #define val_swizz(v) (v.xyz)
-#define unval(v) vec4(v.x, v.y, v.z, 1.0)
+#define unval(v) vec4(v.x, v.y, v.z, poi_.a)
 #define val_packed val
 #define val_pack(v) (v)
 #define val_unpack(v) (v)
@@ -931,7 +930,8 @@ val load2(vec3 off)
 #define load2(off) val_swizz(load2_(off))
 #endif
 
-val poi = load(vec3(0)); // pixel-of-interest
+vec4 poi_ = load_(vec3(0));
+val poi = val_swizz(poi_); // pixel-of-interest
 val poi2 = load2(vec3(0)); // guide pixel-of-interest
 
 #if RI // rotation
@@ -1246,4 +1246,3 @@ vec4 hook()
 
 	return unval(mix(poi, result, BF));
 }
-
