@@ -608,6 +608,16 @@ vec4 hook()
 #define PSK gaussian
 #endif
 
+/* Research scaling factor
+ *
+ * Higher numbers sample more sparsely as the distance from the POI grows.
+ */
+#ifdef LUMA_raw
+#define RSF 0.0
+#else
+#define RSF 0.0
+#endif
+
 // Scaling factor (should match WIDTH/HEIGHT)
 #ifdef LUMA_raw
 #define SF 1
@@ -1120,21 +1130,25 @@ vec4 hook()
 	}
 #endif
 	FOR_RESEARCH(r) {
-		float spatial_weight = spatial_r(r);
-		val px = load(r+me);
+		// r coords with appropriate transformations applied
+		vec3 tr = vec3(r.xy + floor(r.xy * RSF), r.z);
+		float spatial_weight = spatial_r(tr);
+		tr.xy += me.xy;
+
+		val px = load(tr);
 
 #if SKIP_PATCH
 		val weight = val(1);
 #else
-		val pdiff_sq = (r.z == 0) ? val(patch_comparison_gather(r+me, vec3(0))) : patch_comparison(r+me, vec3(0));
+		val pdiff_sq = (r.z == 0) ? val(patch_comparison_gather(tr, vec3(0))) : patch_comparison(tr, vec3(0));
 		val weight = range(pdiff_sq);
 #endif
 
 #if T && ME == 1 // temporal & motion estimation max weight
-		me_tmp = vec3(r.xy,0) * step(maxweight, weight.x) + me_tmp * (1 - step(maxweight, weight.x));
+		me_tmp = vec3(tr.xy,0) * step(maxweight, weight.x) + me_tmp * (1 - step(maxweight, weight.x));
 		maxweight = max(maxweight, weight.x);
 #elif T && ME == 2 // temporal & motion estimation weighted average
-		me_sum += vec3(r.xy,0) * weight.x;
+		me_sum += vec3(tr.xy,0) * weight.x;
 		me_weight += weight.x;
 #endif
 
