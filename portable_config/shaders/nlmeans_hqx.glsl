@@ -19,7 +19,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Description: nlmeans_hqx.glsl: Very slow, should offer the best quality.
+// Description: nlmeans.glsl: Very slow, should offer the best quality.
 
 /* The recommended usage of this shader and its variant profiles is to add them 
  * to input.conf and then dispatch the appropriate shader via a keybind during 
@@ -333,7 +333,7 @@ vec4 hook()
 //!BIND HOOKED
 //!BIND RF_LUMA
 //!BIND RF
-//!DESC Non-local means (nlmeans_hqx.glsl)
+//!DESC Non-local means (nlmeans.glsl)
 
 // User variables
 
@@ -1055,6 +1055,15 @@ float patch_comparison_gather(vec3 r, vec3 r2)
 	float center_diff_sq = poi2.x - load2(r).x;
 	center_diff_sq *= center_diff_sq;
 	return (min_rot + center_diff_sq) * p_scale;
+}
+#elif (defined(LUMA_gather) || D1W) && PS == 4 && P == 3 && RI == 0 && RFI == 0 && NO_GATHER
+const ivec2 offsets[4] = { ivec2(0,-1), ivec2(-1,0), ivec2(0,0), ivec2(1,0) };
+const ivec2 offsets_sf[4] = { ivec2(0,-1) * SF, ivec2(-1,0) * SF, ivec2(0,0) * SF, ivec2(1,0) * SF };
+vec4 poi_patch = gather_offs(0, offsets);
+float patch_comparison_gather(vec3 r, vec3 r2)
+{
+	vec4 pdiff = poi_patch - gather_offs(r, offsets_sf);
+	return dot(pdiff * pdiff, vec4(1)) * p_scale;
 }
 #elif (defined(LUMA_gather) || D1W) && PS == 6 && RI == 0 && RFI == 0 && NO_GATHER
 // tiled even square patch_comparison_gather
