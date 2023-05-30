@@ -62,7 +62,7 @@ mpv
 │
 ├── portable_config                       # This is where my config is placed 
 │   ├── fonts
-│   │   ├── Ubuntu-Medium.ttf
+│   │   ├── JetBrainsMono-Regular.ttf
 |   |   ├── uosc-icons.otf
 |   |   └── uosc-textures.ttf
 │   │

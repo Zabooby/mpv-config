@@ -21,70 +21,12 @@
 
 // Description: nlmeans_medium.glsl: Slow, but higher quality. Tuned for medium noise.
 
-/* The recommended usage of this shader and its variant profiles is to add them 
- * to input.conf and then dispatch the appropriate shader via a keybind during 
- * media playback. Here is an example input.conf entry:
- *
- * F4 no-osd change-list glsl-shaders toggle "~~/shaders/nlmeans_luma.glsl"; show-text "Non-local means (LUMA only)"
- *
- * These shaders can also be enabled by default in mpv.conf, for example:
- *
- * glsl-shaders='~~/shaders/nlmeans.glsl'
- *
- * Both of the examples above assume the shaders are located in a subdirectory 
- * named "shaders" within mpv's config directory. Refer to the mpv 
- * documentation for more details.
- *
- * This shader is highly configurable via user variables below. Although the 
+/* This shader is highly configurable via user variables below. Although the 
  * default settings should offer good quality at a reasonable speed, you are 
- * encouraged to tweak them to your preferences. Be mindful that certain 
- * settings may greatly affect speed.
+ * encouraged to tweak them to your preferences.
  *
- * Denoising is most useful for noisy content. If there is no perceptible 
- * noise, you probably won't see a positive difference.
- *
- * The default settings are generally tuned for low noise and high detail 
- * preservation. The "medium" and "heavy" profiles are tuned for higher levels 
- * of noise.
- *
- * The denoiser will not work properly if the content has been upscaled 
- * beforehand (whether it was done by you or not). In such cases, consider 
- * issuing a command to downscale in the mpv console (backtick ` key):
- *
- * vf toggle scale=-2:720
- *
- * ...replacing 720 with whatever resolution seems appropriate. Rerun the 
- * command to undo the downscale. It may take some trial-and-error to find the 
- * proper resolution.
- */
-
-/* Regarding speed
- *
- * Speed may vary wildly for different vo and gpu-api settings. Generally 
- * vo=gpu-next and gpu-api=vulkan are recommended for the best speed, but this 
- * may be different for your system.
- *
- * If your GPU doesn't support textureGather, or if you are on a version of mpv 
- * prior to 0.35.0, then consider setting RI/RFI to 0, or try the LQ profile
- *
- * If you plan on tinkering with NLM's settings, read below:
- *
- * textureGather only applies to luma and limited to the these configurations:
- *
- * - PS={3,7}:P=3:PST=0:RI={0,1,3}:RFI={0,1,2}
- *   - Default, very fast, rotations and reflections should be free
- *   - If this is unusually slow then try changing gpu-api and vo
- *   - If it's still slow, try setting RI/RFI to 0.
- *
- * - PS=6:RI={0,1,3}:RFI={0,1,2}
- *   - Currently the only scalable variant
- *   - Patch shape is asymmetric on two axis
- *   - Rotations should have very little speed impact
- *   - Reflections may have a significant speed impact
- *
- * Options which always disable textureGather:
- * 	- PD
- * 	- NG
+ * The default settings are tuned for high detail preservation on low noise 
+ * content. For higher levels of noise there is the "medium" profile.
  */
 
 // The following is shader code injected from guided.glsl
@@ -438,6 +380,28 @@ vec4 hook()
 /* ADVANCED OPTIONS * ADVANCED OPTIONS * ADVANCED OPTIONS * ADVANCED OPTIONS */
 /* ADVANCED OPTIONS * ADVANCED OPTIONS * ADVANCED OPTIONS * ADVANCED OPTIONS */
 /* ADVANCED OPTIONS * ADVANCED OPTIONS * ADVANCED OPTIONS * ADVANCED OPTIONS */
+
+/* Regarding speed
+ *
+ * If you plan on tinkering with NLM's settings, read below:
+ *
+ * textureGather only applies to luma and limited to the these configurations:
+ *
+ * - PS={3,7}:P=3:PST=0:RI={0,1,3}:RFI={0,1,2}
+ *   - Default, very fast, rotations and reflections should be free
+ *   - If this is unusually slow then try changing gpu-api and vo
+ *   - If it's still slow, try setting RI/RFI to 0.
+ *
+ * - PS=6:RI={0,1,3}:RFI={0,1,2}
+ *   - Currently the only scalable variant
+ *   - Patch shape is asymmetric on two axis
+ *   - Rotations should have very little speed impact
+ *   - Reflections may have a significant speed impact
+ *
+ * Options which always disable textureGather:
+ * 	- PD
+ * 	- NG
+ */
 
 /* Patch & research sizes
  *
