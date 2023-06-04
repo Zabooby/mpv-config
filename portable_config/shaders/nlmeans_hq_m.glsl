@@ -414,26 +414,17 @@ return _INJ_RF_LUMA_texOff(0);
 /* ADVANCED OPTIONS * ADVANCED OPTIONS * ADVANCED OPTIONS * ADVANCED OPTIONS */
 /* ADVANCED OPTIONS * ADVANCED OPTIONS * ADVANCED OPTIONS * ADVANCED OPTIONS */
 
-/* Regarding speed
+/* textureGather applicable configurations:
  *
- * If you plan on tinkering with NLM's settings, read below:
- *
- * textureGather only applies to luma and limited to the these configurations:
- *
- * - PS={3,7}:P=3:PST=0:RI={0,1,3}:RFI={0,1,2}
- *   - Default, very fast, rotations and reflections should be free
- *   - If this is unusually slow then try changing gpu-api and vo
- *   - If it's still slow, try setting RI/RFI to 0.
- *
- * - PS=6:RI={0,1,3}:RFI={0,1,2}
+ * - PS={0,3,7,8}:P=3:PST=0:RI={0,1,3}:RFI={0,1,2}
+ * - PS=6:RI=0:RFI=0
  *   - Currently the only scalable variant
- *   - Patch shape is asymmetric on two axis
- *   - Rotations should have very little speed impact
- *   - Reflections may have a significant speed impact
  *
  * Options which always disable textureGather:
- * 	 - PD
  * 	 - NG
+ * 	 - PD
+ *
+ * Running without textureGather may be much slower.
  */
 
 /* Patch & research sizes
@@ -458,8 +449,6 @@ return _INJ_RF_LUMA_texOff(0);
  * shape (besides square) is smaller than square.
  *
  * PS applies applies to patches, RS applies to research zones.
- *
- * Be wary of gather optimizations (see the Regarding Speed comment above)
  *
  * 0: square (symmetrical)
  * 1: horizontal line (asymmetric)
@@ -1441,26 +1430,17 @@ vec4 hook()
 /* ADVANCED OPTIONS * ADVANCED OPTIONS * ADVANCED OPTIONS * ADVANCED OPTIONS */
 /* ADVANCED OPTIONS * ADVANCED OPTIONS * ADVANCED OPTIONS * ADVANCED OPTIONS */
 
-/* Regarding speed
+/* textureGather applicable configurations:
  *
- * If you plan on tinkering with NLM's settings, read below:
- *
- * textureGather only applies to luma and limited to the these configurations:
- *
- * - PS={3,7}:P=3:PST=0:RI={0,1,3}:RFI={0,1,2}
- *   - Default, very fast, rotations and reflections should be free
- *   - If this is unusually slow then try changing gpu-api and vo
- *   - If it's still slow, try setting RI/RFI to 0.
- *
- * - PS=6:RI={0,1,3}:RFI={0,1,2}
+ * - PS={0,3,7,8}:P=3:PST=0:RI={0,1,3}:RFI={0,1,2}
+ * - PS=6:RI=0:RFI=0
  *   - Currently the only scalable variant
- *   - Patch shape is asymmetric on two axis
- *   - Rotations should have very little speed impact
- *   - Reflections may have a significant speed impact
  *
  * Options which always disable textureGather:
- * 	- PD
  * 	- NG
+ * 	- PD
+ *
+ * Running without textureGather may be much slower.
  */
 
 /* Patch & research sizes
@@ -1485,8 +1465,6 @@ vec4 hook()
  * shape (besides square) is smaller than square.
  *
  * PS applies applies to patches, RS applies to research zones.
- *
- * Be wary of gather optimizations (see the Regarding Speed comment above)
  *
  * 0: square (symmetrical)
  * 1: horizontal line (asymmetric)
@@ -2341,3 +2319,4 @@ vec4 hook()
 
 	return unval(mix(poi, result, BF));
 }
+
