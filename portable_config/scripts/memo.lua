@@ -3,7 +3,7 @@
 -- A recent files menu for mpv
 
 local options = {
-    -- File path gets extended
+    -- File path gets expanded, leave empty for in-memory history
     history_path = "~~/memo-history.log",
 
     -- How many entries to display in menu
@@ -55,8 +55,59 @@ local width, height
 local margin_top, margin_bottom = 0, 0
 local font_size = mp.get_property_number("osd-font-size") or 55
 
-local history_path = mp.command_native({"expand-path", options.history_path})
-local history = io.open(history_path, "a+b")
+local fakeio = {data = "", cursor = 0, offset = 0, file = nil}
+function fakeio:setvbuf(mode) end
+function fakeio:flush()
+    self.cursor = self.offset + #self.data
+end
+function fakeio:read(format)
+    local out = ""
+    if self.cursor < self.offset then
+        local memory_side = self.offset - self.cursor
+        self.file:seek("set", self.cursor)
+        out = self.file:read(format)
+        format = format - #out
+        self.cursor = self.cursor + #out
+    end
+    if format > 0 then
+        out = out .. self.data:sub(self.cursor - self.offset, self.cursor - self.offset + format)
+        self.cursor = self.cursor + format
+    end
+    return out
+end
+function fakeio:seek(whence, offset)
+    local base = 0
+    offset = offset or 0
+    if whence == "end" then
+        base = self.offset + #self.data
+    end
+    self.cursor = base + offset
+    return self.cursor
+end
+function fakeio:write(...)
+    local args = {...}
+    for i, v in ipairs(args) do
+        self.data = self.data .. v
+    end
+end
+
+local history, history_path
+
+if options.history_path ~= "" then
+    history_path = mp.command_native({"expand-path", options.history_path})
+    history = io.open(history_path, "a+b")
+end
+if history == nil then
+    if history_path then
+        mp.msg.warn("cannot write to history file " .. options.history_path .. ", new entries will not be saved to disk")
+        history = io.open(history_path, "rb")
+        if history then
+            fakeio.offset = history:seek("end")
+            fakeio.file = history
+        end
+    end
+    history = fakeio
+end
 local last_state = nil
 history:setvbuf("full")
 
@@ -145,7 +196,7 @@ end
 function menu_json(menu_items, native)
     local menu = {
         type = "memo-history",
-        title = "History",
+        title = "History (memo)",
         items = menu_items,
         selected_index = 1,
         on_close = {"script-message-to", script_name, "memo-clear"}
@@ -281,7 +332,7 @@ function draw_menu(delay)
     ass:draw_stop()
     ass:new_event()
 
-    ass:append("{\\pos(10," .. (0.1 * font_size) .. ")\\fs" .. font_size .. "\\bord2\\q2\\b1}History{\\b0}\\N")
+    ass:append("{\\pos(10," .. (0.1 * font_size) .. ")\\fs" .. font_size .. "\\bord2\\q2\\b1}History (memo){\\b0}\\N")
     ass:new_event()
 
     local scrolled_lines = get_scrolled_lines()
@@ -497,6 +548,7 @@ function show_history(entries, next_page, prev_page, update, return_items)
                 if stat then
                     state.existing_files[full_path] = true
                 else
+                    state.known_files[full_path] = true
                     return
                 end
             end
