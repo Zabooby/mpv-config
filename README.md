@@ -67,8 +67,9 @@ mpv
 |   |   └── uosc-textures.ttf
 │   │
 │   ├── script-opts                       # Contains configuration files for scripts
+|   |   ├── evafast.conf 
 |   |   ├── memo.conf
-|   |   ├── memo-history.log              
+|   |   ├── memo-history.log              # Created automatically 
 │   │   ├── thumbfast.conf                    
 │   │   ├── uosc.conf                     # Set desired default directory for uosc menu here
 │   │   └── webtorrent.conf               # Specify where to save downloaded videos here
@@ -106,7 +107,8 @@ mpv
 |   |       └── main.lua
 │   │
 │   │   ├── autodeint.lua                 # Set key binding here, not input.conf (Ctrl+d)
-│   │   ├── autoload.lua                    
+│   │   ├── autoload.lua 
+│   │   ├── evafast.lua                   # Activatied by holding right arrow key
 |   |   ├── memo.lua
 |   |   ├── sview.lua
 │   │   ├── thumbfast.lua                     
