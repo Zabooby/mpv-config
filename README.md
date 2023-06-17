@@ -108,7 +108,7 @@ mpv
 │   │
 │   │   ├── autodeint.lua                 # Set key binding here, not input.conf (Ctrl+d)
 │   │   ├── autoload.lua 
-│   │   ├── evafast.lua                   # Activatied by holding right arrow key
+│   │   ├── evafast.lua                   # Activated by holding right arrow key
 |   |   ├── memo.lua
 |   |   ├── sview.lua
 │   │   ├── thumbfast.lua                     
