@@ -99,7 +99,7 @@
 #ifdef LUMA_raw
 #define S 3.7301445
 #else
-#define S 5.0
+#define S 4.985978566558599
 #endif
 
 /* Adaptive sharpening
@@ -137,7 +137,7 @@
 #ifdef LUMA_raw
 #define SW 0.763672
 #else
-#define SW 0.5
+#define SW 0.7353169262213034
 #endif
 
 /* Weight discard
@@ -160,7 +160,7 @@
 #define WDP 5.46
 #else
 #define WD 1
-#define WDT 0.75
+#define WDT 0.960341797329127
 #define WDP 5.46
 #endif
 
@@ -349,7 +349,7 @@
 #define PSD vec2(1,1)
 #else
 #define SST 1
-#define SS 0.39
+#define SS 0.23341241032450166
 #define SD vec3(1,1,1)
 #define PST 0
 #define PSS 0.0
@@ -1150,7 +1150,7 @@ return _INJ_RF_LUMA_texOff(0);
 #ifdef LUMA_raw
 #define S 2.1935417950125573
 #else
-#define S 5.0
+#define S 3.9856060408058616
 #endif
 
 /* Adaptive sharpening
@@ -1188,7 +1188,7 @@ return _INJ_RF_LUMA_texOff(0);
 #ifdef LUMA_raw
 #define SW 0.4251181962477117
 #else
-#define SW 0.5
+#define SW 0.20101231681764717
 #endif
 
 /* Weight discard
@@ -1211,7 +1211,7 @@ return _INJ_RF_LUMA_texOff(0);
 #define WDP 5.46
 #else
 #define WD 2
-#define WDT 0.75
+#define WDT 0.7376637633530657
 #define WDP 5.46
 #endif
 
@@ -1400,7 +1400,7 @@ return _INJ_RF_LUMA_texOff(0);
 #define PSD vec2(1,1)
 #else
 #define SST 1
-#define SS 0.39
+#define SS 0.27763977684848956
 #define SD vec3(1,1,1)
 #define PST 0
 #define PSS 0.0
@@ -2200,7 +2200,7 @@ vec4 hook()
 #ifdef LUMA_raw
 #define S 2.25
 #else
-#define S 5.0
+#define S 3.9856060408058616
 #endif
 
 /* Adaptive sharpening
@@ -2238,7 +2238,7 @@ vec4 hook()
 #ifdef LUMA_raw
 #define SW 0.4251181962477117
 #else
-#define SW 0.5
+#define SW 0.20101231681764717
 #endif
 
 /* Weight discard
@@ -2261,7 +2261,7 @@ vec4 hook()
 #define WDP 5.46
 #else
 #define WD 2
-#define WDT 0.75
+#define WDT 0.7376637633530657
 #define WDP 5.46
 #endif
 
@@ -2450,7 +2450,7 @@ vec4 hook()
 #define PSD vec2(1,1)
 #else
 #define SST 1
-#define SS 0.39
+#define SS 0.27763977684848956
 #define SD vec3(1,1,1)
 #define PST 0
 #define PSS 0.0
