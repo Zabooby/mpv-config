@@ -955,8 +955,6 @@ vec4 hook()
 {
 	  val total_weight = val(0);  
 	  val sum = val(0);  
-	  val total_weight_s = val(0);  
-	  val sum_s = val(0);  
 	  val result = val(0);  
 
 	  vec3 r = vec3(0);  
@@ -969,6 +967,11 @@ vec4 hook()
 #elif T && ME == 2 // temporal & motion estimation
 	  vec3 me_sum = vec3(0);  
 	  float me_weight = 0;  
+#endif
+
+#if AS
+	  val total_weight_s = val(0);  
+	  val sum_s = val(0);  
 #endif
 
 #if WD == 2 // weight discard
@@ -1025,10 +1028,11 @@ vec4 hook()
 
 	  	  weight *= spatial_weight;  
 
-	  	  // for sharpening:
+#if AS
 	  	  spatial_weight *= int(r.z == 0);   // ignore temporal
 	  	  sum_s += px * spatial_weight;  
 	  	  total_weight_s += spatial_weight;  
+#endif
 
 #if WD == 2 // weight discard
 	  	  all_weights[r_index] = val_pack(weight);  
@@ -2018,8 +2022,6 @@ vec4 hook()
 {
 	 val total_weight = val(0); 
 	 val sum = val(0); 
-	 val total_weight_s = val(0); 
-	 val sum_s = val(0); 
 	 val result = val(0); 
 
 	 vec3 r = vec3(0); 
@@ -2032,6 +2034,11 @@ vec4 hook()
 #elif T && ME == 2 // temporal & motion estimation
 	 vec3 me_sum = vec3(0); 
 	 float me_weight = 0; 
+#endif
+
+#if AS
+	 val total_weight_s = val(0); 
+	 val sum_s = val(0); 
 #endif
 
 #if WD == 2 // weight discard
@@ -2088,10 +2095,11 @@ vec4 hook()
 
 	 	 weight *= spatial_weight; 
 
-	 	 // for sharpening:
+#if AS
 	 	 spatial_weight *= int(r.z == 0);  // ignore temporal
 	 	 sum_s += px * spatial_weight; 
 	 	 total_weight_s += spatial_weight; 
+#endif
 
 #if WD == 2 // weight discard
 	 	 all_weights[r_index] = val_pack(weight); 
@@ -3080,8 +3088,6 @@ vec4 hook()
 {
 	val total_weight = val(0);
 	val sum = val(0);
-	val total_weight_s = val(0);
-	val sum_s = val(0);
 	val result = val(0);
 
 	vec3 r = vec3(0);
@@ -3094,6 +3100,11 @@ vec4 hook()
 #elif T && ME == 2 // temporal & motion estimation
 	vec3 me_sum = vec3(0);
 	float me_weight = 0;
+#endif
+
+#if AS
+	val total_weight_s = val(0);
+	val sum_s = val(0);
 #endif
 
 #if WD == 2 // weight discard
@@ -3150,10 +3161,11 @@ vec4 hook()
 
 		weight *= spatial_weight;
 
-		// for sharpening:
+#if AS
 		spatial_weight *= int(r.z == 0); // ignore temporal
 		sum_s += px * spatial_weight;
 		total_weight_s += spatial_weight;
+#endif
 
 #if WD == 2 // weight discard
 		all_weights[r_index] = val_pack(weight);
