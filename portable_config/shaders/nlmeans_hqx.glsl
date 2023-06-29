@@ -145,26 +145,29 @@
 
 /* Weight discard
  *
- * Discard weights that fall below a fraction of the average weight. This culls 
- * the most dissimilar samples from the blur, yielding a much more pleasant 
- * result, especially around edges.
+ * Reduces weights that fall below a fraction of the average weight. This culls 
+ * the most dissimilar samples from the blur, which can yield a better result, 
+ * especially around edges.
  * 
  * WD:
- * 	  - 2: True average. Better quality, but slower and requires GLSL 4.0 or later
- * 	  - 1: Moving cumulative average. Inaccurate, tends to blur directionally.
+ * 	  - 2: Mean. Better quality, but slower and requires GLSL 4.0 or later
+ * 	  - 1: Moving cumulative average. Fast but inaccurate, blurs directionally.
  * 	  - 0: Disable
  *
  * WDT: Threshold coefficient, higher numbers discard more
  * WDP (only for WD=1): Increasing reduces the threshold for small sample sizes
+ * WDS (not for WDK=is_zero): Higher numbers are more eager to reduce weights
  */
 #ifdef LUMA_raw
 #define WD 1
 #define WDT 0.580415381682815
 #define WDP 5.381278367349288
+#define WDS 1.0
 #else
 #define WD 1
 #define WDT 0.913447511792627
 #define WDP 5.832936323930807
+#define WDS 1.0
 #endif
 
 /* Extremes preserve
@@ -364,6 +367,8 @@
  * SK: spatial kernel
  * RK: range kernel (takes patch differences)
  * PSK: intra-patch spatial kernel
+ * WDK: weight discard kernel
+ * WD1TK (WD=1 only): weight discard tolerance kernel
  *
  * List of available kernels:
  *
@@ -384,10 +389,14 @@
 #define SK gaussian
 #define RK gaussian
 #define PSK gaussian
+#define WDK is_zero
+#define WD1TK gaussian
 #else
 #define SK gaussian
 #define RK gaussian
 #define PSK gaussian
+#define WDK is_zero
+#define WD1TK gaussian
 #endif
 
 /* Sampling method
@@ -498,6 +507,7 @@
 #define sphinx(x) sphinx_(clamp((x), 0.0, 1.4302966531242027))
 #define triangle_(x) (1 - (x))
 #define triangle(x) triangle_(clamp((x), 0.0, 1.0))
+#define is_zero(x) int(x == 0)
 
 // XXX could maybe be better optimized on LGC
 #if defined(LUMA_raw)
@@ -981,14 +991,14 @@ vec4 hook()
 	  val sum_s = val(0);  
 #endif
 
-#if WD == 2 // weight discard
+#if WD == 2 // weight discard (mean)
 	  int r_index = 0;  
 	  val_packed all_weights[r_area];  
 	  val_packed all_pixels[r_area];  
-#elif WD == 1 // weight discard
-	  val no_weights = val(0);  
-	  val discard_total_weight = val(0);  
-	  val discard_sum = val(0);  
+#elif WD == 1 // weight discard (moving cumulative average)
+	  int r_iter = 1;  
+	  val wd_total_weight = val(0);  
+	  val wd_sum = val(0);  
 #endif
 
 	  FOR_FRAME(r) {
@@ -1041,16 +1051,23 @@ vec4 hook()
 	  	  total_weight_s += spatial_weight;  
 #endif
 
-#if WD == 2 // weight discard
+#if WD == 2 // weight discard (mean)
 	  	  all_weights[r_index] = val_pack(weight);  
 	  	  all_pixels[r_index] = val_pack(px);  
 	  	  r_index++;  
-#elif WD == 1 // weight discard
-	  	  val wd_scale = 1.0/max(no_weights, 1);  
-	  	  val keeps = step(total_weight*wd_scale * WDT*exp(-wd_scale*WDP), weight);  
-	  	  discard_sum += px * weight * (1 - keeps);  
-	  	  discard_total_weight += weight * (1 - keeps);  
-	  	  no_weights += keeps;  
+#elif WD == 1 // weight discard (moving cumulative average)
+	  	  val wd_scale = val(1.0/r_iter);  
+	  	  val below_threshold = WDS * abs(min(val(0.0), weight - (total_weight * wd_scale * WDT * WD1TK(sqrt(wd_scale*WDP)))));  
+#if defined(LUMA_raw)
+	  	  val wdkf = WDK(below_threshold);  
+#elif defined(CHROMA_raw)
+	  	  val wdkf = vec2(WDK(below_threshold.x), WDK(below_threshold.y));  
+#else
+	  	  val wdkf = vec3(WDK(below_threshold.x), WDK(below_threshold.y), WDK(below_threshold.y));  
+#endif
+	  	  wd_sum += px * weight * wdkf;  
+	  	  wd_total_weight += weight * wdkf;  
+	  	  r_iter++;  
 #endif
 
 	  	  sum += px * weight;  
@@ -1061,27 +1078,32 @@ vec4 hook()
 	  val avg_weight = total_weight * r_scale;  
 	  val old_avg_weight = avg_weight;  
 
-#if WD == 2 // true average
+#if WD == 2 // weight discard (mean)
 	  total_weight = val(0);  
 	  sum = val(0);  
-	  val no_weights = val(0);  
 
 	  for (int i = 0;   i < r_area;   i++) {
-	  	  val w = val_unpack(all_weights[i]);  
+	  	  val weight = val_unpack(all_weights[i]);  
 	  	  val px = val_unpack(all_pixels[i]);  
-	  	  val keeps = step(avg_weight*WDT, w);  
 
-	  	  w *= keeps;  
-	  	  sum += px * w;  
-	  	  total_weight += w;  
-	  	  no_weights += keeps;  
+	  	  val below_threshold = WDS * abs(min(val(0.0), weight - (avg_weight * WDT)));  
+#if defined(LUMA_raw)
+	  	  weight *= WDK(below_threshold);  
+#elif defined(CHROMA_raw)
+	  	  weight *= vec2(WDK(below_threshold.x), WDK(below_threshold.y));  
+#else
+	  	  weight *= vec3(WDK(below_threshold.x), WDK(below_threshold.y), WDK(below_threshold.z));  
+#endif
+
+	  	  sum += px * weight;  
+	  	  total_weight += weight;  
 	  }
-#elif WD == 1 // moving cumulative average
-	  total_weight -= discard_total_weight;  
-	  sum -= discard_sum;  
+#elif WD == 1 // weight discard (moving cumulative average)
+	  total_weight = wd_total_weight;  
+	  sum = wd_sum;  
 #endif
 #if WD // weight discard
-	  avg_weight = total_weight / no_weights;  
+	  avg_weight = total_weight * r_scale;  
 #endif
 
 	  total_weight += SW * spatial_r(vec3(0));  
@@ -1220,26 +1242,29 @@ return _INJ_RF_LUMA_texOff(0);
 
 /* Weight discard
  *
- * Discard weights that fall below a fraction of the average weight. This culls 
- * the most dissimilar samples from the blur, yielding a much more pleasant 
- * result, especially around edges.
+ * Reduces weights that fall below a fraction of the average weight. This culls 
+ * the most dissimilar samples from the blur, which can yield a better result, 
+ * especially around edges.
  * 
  * WD:
- * 	 - 2: True average. Better quality, but slower and requires GLSL 4.0 or later
- * 	 - 1: Moving cumulative average. Inaccurate, tends to blur directionally.
+ * 	 - 2: Mean. Better quality, but slower and requires GLSL 4.0 or later
+ * 	 - 1: Moving cumulative average. Fast but inaccurate, blurs directionally.
  * 	 - 0: Disable
  *
  * WDT: Threshold coefficient, higher numbers discard more
  * WDP (only for WD=1): Increasing reduces the threshold for small sample sizes
+ * WDS (not for WDK=is_zero): Higher numbers are more eager to reduce weights
  */
 #ifdef LUMA_raw
 #define WD 2
 #define WDT 0.11671341022864548
 #define WDP 5.381278367349288
+#define WDS 1.0
 #else
 #define WD 0
 #define WDT 0.002713346103131793
 #define WDP 5.832936323930807
+#define WDS 1.0
 #endif
 
 /* Extremes preserve
@@ -1439,6 +1464,8 @@ return _INJ_RF_LUMA_texOff(0);
  * SK: spatial kernel
  * RK: range kernel (takes patch differences)
  * PSK: intra-patch spatial kernel
+ * WDK: weight discard kernel
+ * WD1TK (WD=1 only): weight discard tolerance kernel
  *
  * List of available kernels:
  *
@@ -1459,10 +1486,14 @@ return _INJ_RF_LUMA_texOff(0);
 #define SK gaussian
 #define RK gaussian
 #define PSK gaussian
+#define WDK is_zero
+#define WD1TK gaussian
 #else
 #define SK gaussian
 #define RK gaussian
 #define PSK gaussian
+#define WDK is_zero
+#define WD1TK gaussian
 #endif
 
 /* Sampling method
@@ -1573,6 +1604,7 @@ return _INJ_RF_LUMA_texOff(0);
 #define sphinx(x) sphinx_(clamp((x), 0.0, 1.4302966531242027))
 #define triangle_(x) (1 - (x))
 #define triangle(x) triangle_(clamp((x), 0.0, 1.0))
+#define is_zero(x) int(x == 0)
 
 // XXX could maybe be better optimized on LGC
 #if defined(LUMA_raw)
@@ -2056,14 +2088,14 @@ vec4 hook()
 	 val sum_s = val(0); 
 #endif
 
-#if WD == 2 // weight discard
+#if WD == 2 // weight discard (mean)
 	 int r_index = 0; 
 	 val_packed all_weights[r_area]; 
 	 val_packed all_pixels[r_area]; 
-#elif WD == 1 // weight discard
-	 val no_weights = val(0); 
-	 val discard_total_weight = val(0); 
-	 val discard_sum = val(0); 
+#elif WD == 1 // weight discard (moving cumulative average)
+	 int r_iter = 1; 
+	 val wd_total_weight = val(0); 
+	 val wd_sum = val(0); 
 #endif
 
 	 FOR_FRAME(r) {
@@ -2116,16 +2148,23 @@ vec4 hook()
 	 	 total_weight_s += spatial_weight; 
 #endif
 
-#if WD == 2 // weight discard
+#if WD == 2 // weight discard (mean)
 	 	 all_weights[r_index] = val_pack(weight); 
 	 	 all_pixels[r_index] = val_pack(px); 
 	 	 r_index++; 
-#elif WD == 1 // weight discard
-	 	 val wd_scale = 1.0/max(no_weights, 1); 
-	 	 val keeps = step(total_weight*wd_scale * WDT*exp(-wd_scale*WDP), weight); 
-	 	 discard_sum += px * weight * (1 - keeps); 
-	 	 discard_total_weight += weight * (1 - keeps); 
-	 	 no_weights += keeps; 
+#elif WD == 1 // weight discard (moving cumulative average)
+	 	 val wd_scale = val(1.0/r_iter); 
+	 	 val below_threshold = WDS * abs(min(val(0.0), weight - (total_weight * wd_scale * WDT * WD1TK(sqrt(wd_scale*WDP))))); 
+#if defined(LUMA_raw)
+	 	 val wdkf = WDK(below_threshold); 
+#elif defined(CHROMA_raw)
+	 	 val wdkf = vec2(WDK(below_threshold.x), WDK(below_threshold.y)); 
+#else
+	 	 val wdkf = vec3(WDK(below_threshold.x), WDK(below_threshold.y), WDK(below_threshold.y)); 
+#endif
+	 	 wd_sum += px * weight * wdkf; 
+	 	 wd_total_weight += weight * wdkf; 
+	 	 r_iter++; 
 #endif
 
 	 	 sum += px * weight; 
@@ -2136,27 +2175,32 @@ vec4 hook()
 	 val avg_weight = total_weight * r_scale; 
 	 val old_avg_weight = avg_weight; 
 
-#if WD == 2 // true average
+#if WD == 2 // weight discard (mean)
 	 total_weight = val(0); 
 	 sum = val(0); 
-	 val no_weights = val(0); 
 
 	 for (int i = 0;  i < r_area;  i++) {
-	 	 val w = val_unpack(all_weights[i]); 
+	 	 val weight = val_unpack(all_weights[i]); 
 	 	 val px = val_unpack(all_pixels[i]); 
-	 	 val keeps = step(avg_weight*WDT, w); 
 
-	 	 w *= keeps; 
-	 	 sum += px * w; 
-	 	 total_weight += w; 
-	 	 no_weights += keeps; 
+	 	 val below_threshold = WDS * abs(min(val(0.0), weight - (avg_weight * WDT))); 
+#if defined(LUMA_raw)
+	 	 weight *= WDK(below_threshold); 
+#elif defined(CHROMA_raw)
+	 	 weight *= vec2(WDK(below_threshold.x), WDK(below_threshold.y)); 
+#else
+	 	 weight *= vec3(WDK(below_threshold.x), WDK(below_threshold.y), WDK(below_threshold.z)); 
+#endif
+
+	 	 sum += px * weight; 
+	 	 total_weight += weight; 
 	 }
-#elif WD == 1 // moving cumulative average
-	 total_weight -= discard_total_weight; 
-	 sum -= discard_sum; 
+#elif WD == 1 // weight discard (moving cumulative average)
+	 total_weight = wd_total_weight; 
+	 sum = wd_sum; 
 #endif
 #if WD // weight discard
-	 avg_weight = total_weight / no_weights; 
+	 avg_weight = total_weight * r_scale; 
 #endif
 
 	 total_weight += SW * spatial_r(vec3(0)); 
@@ -2294,26 +2338,29 @@ vec4 hook()
 
 /* Weight discard
  *
- * Discard weights that fall below a fraction of the average weight. This culls 
- * the most dissimilar samples from the blur, yielding a much more pleasant 
- * result, especially around edges.
+ * Reduces weights that fall below a fraction of the average weight. This culls 
+ * the most dissimilar samples from the blur, which can yield a better result, 
+ * especially around edges.
  * 
  * WD:
- * 	- 2: True average. Better quality, but slower and requires GLSL 4.0 or later
- * 	- 1: Moving cumulative average. Inaccurate, tends to blur directionally.
+ * 	- 2: Mean. Better quality, but slower and requires GLSL 4.0 or later
+ * 	- 1: Moving cumulative average. Fast but inaccurate, blurs directionally.
  * 	- 0: Disable
  *
  * WDT: Threshold coefficient, higher numbers discard more
  * WDP (only for WD=1): Increasing reduces the threshold for small sample sizes
+ * WDS (not for WDK=is_zero): Higher numbers are more eager to reduce weights
  */
 #ifdef LUMA_raw
 #define WD 2
 #define WDT 0.11671341022864548
 #define WDP 5.381278367349288
+#define WDS 1.0
 #else
 #define WD 0
 #define WDT 0.002713346103131793
 #define WDP 5.832936323930807
+#define WDS 1.0
 #endif
 
 /* Extremes preserve
@@ -2513,6 +2560,8 @@ vec4 hook()
  * SK: spatial kernel
  * RK: range kernel (takes patch differences)
  * PSK: intra-patch spatial kernel
+ * WDK: weight discard kernel
+ * WD1TK (WD=1 only): weight discard tolerance kernel
  *
  * List of available kernels:
  *
@@ -2533,10 +2582,14 @@ vec4 hook()
 #define SK gaussian
 #define RK gaussian
 #define PSK gaussian
+#define WDK is_zero
+#define WD1TK gaussian
 #else
 #define SK gaussian
 #define RK gaussian
 #define PSK gaussian
+#define WDK is_zero
+#define WD1TK gaussian
 #endif
 
 /* Sampling method
@@ -2647,6 +2700,7 @@ vec4 hook()
 #define sphinx(x) sphinx_(clamp((x), 0.0, 1.4302966531242027))
 #define triangle_(x) (1 - (x))
 #define triangle(x) triangle_(clamp((x), 0.0, 1.0))
+#define is_zero(x) int(x == 0)
 
 // XXX could maybe be better optimized on LGC
 #if defined(LUMA_raw)
@@ -3130,14 +3184,14 @@ vec4 hook()
 	val sum_s = val(0);
 #endif
 
-#if WD == 2 // weight discard
+#if WD == 2 // weight discard (mean)
 	int r_index = 0;
 	val_packed all_weights[r_area];
 	val_packed all_pixels[r_area];
-#elif WD == 1 // weight discard
-	val no_weights = val(0);
-	val discard_total_weight = val(0);
-	val discard_sum = val(0);
+#elif WD == 1 // weight discard (moving cumulative average)
+	int r_iter = 1;
+	val wd_total_weight = val(0);
+	val wd_sum = val(0);
 #endif
 
 	FOR_FRAME(r) {
@@ -3190,16 +3244,23 @@ vec4 hook()
 		total_weight_s += spatial_weight;
 #endif
 
-#if WD == 2 // weight discard
+#if WD == 2 // weight discard (mean)
 		all_weights[r_index] = val_pack(weight);
 		all_pixels[r_index] = val_pack(px);
 		r_index++;
-#elif WD == 1 // weight discard
-		val wd_scale = 1.0/max(no_weights, 1);
-		val keeps = step(total_weight*wd_scale * WDT*exp(-wd_scale*WDP), weight);
-		discard_sum += px * weight * (1 - keeps);
-		discard_total_weight += weight * (1 - keeps);
-		no_weights += keeps;
+#elif WD == 1 // weight discard (moving cumulative average)
+		val wd_scale = val(1.0/r_iter);
+		val below_threshold = WDS * abs(min(val(0.0), weight - (total_weight * wd_scale * WDT * WD1TK(sqrt(wd_scale*WDP)))));
+#if defined(LUMA_raw)
+		val wdkf = WDK(below_threshold);
+#elif defined(CHROMA_raw)
+		val wdkf = vec2(WDK(below_threshold.x), WDK(below_threshold.y));
+#else
+		val wdkf = vec3(WDK(below_threshold.x), WDK(below_threshold.y), WDK(below_threshold.y));
+#endif
+		wd_sum += px * weight * wdkf;
+		wd_total_weight += weight * wdkf;
+		r_iter++;
 #endif
 
 		sum += px * weight;
@@ -3210,27 +3271,32 @@ vec4 hook()
 	val avg_weight = total_weight * r_scale;
 	val old_avg_weight = avg_weight;
 
-#if WD == 2 // true average
+#if WD == 2 // weight discard (mean)
 	total_weight = val(0);
 	sum = val(0);
-	val no_weights = val(0);
 
 	for (int i = 0; i < r_area; i++) {
-		val w = val_unpack(all_weights[i]);
+		val weight = val_unpack(all_weights[i]);
 		val px = val_unpack(all_pixels[i]);
-		val keeps = step(avg_weight*WDT, w);
 
-		w *= keeps;
-		sum += px * w;
-		total_weight += w;
-		no_weights += keeps;
+		val below_threshold = WDS * abs(min(val(0.0), weight - (avg_weight * WDT)));
+#if defined(LUMA_raw)
+		weight *= WDK(below_threshold);
+#elif defined(CHROMA_raw)
+		weight *= vec2(WDK(below_threshold.x), WDK(below_threshold.y));
+#else
+		weight *= vec3(WDK(below_threshold.x), WDK(below_threshold.y), WDK(below_threshold.z));
+#endif
+
+		sum += px * weight;
+		total_weight += weight;
 	}
-#elif WD == 1 // moving cumulative average
-	total_weight -= discard_total_weight;
-	sum -= discard_sum;
+#elif WD == 1 // weight discard (moving cumulative average)
+	total_weight = wd_total_weight;
+	sum = wd_sum;
 #endif
 #if WD // weight discard
-	avg_weight = total_weight / no_weights;
+	avg_weight = total_weight * r_scale;
 #endif
 
 	total_weight += SW * spatial_r(vec3(0));
