@@ -62,7 +62,9 @@ mpv
 │
 ├── portable_config                       # This is where my config is placed 
 │   ├── fonts
+│   │   ├── ClearSans-Bold.ttf
 │   │   ├── JetBrainsMono-Regular.ttf
+│   │   ├── MotivaSans-Bold.ttf
 |   |   ├── uosc-icons.otf
 |   |   └── uosc-textures.ttf
 │   │
