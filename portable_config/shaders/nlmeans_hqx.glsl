@@ -19,7 +19,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Description: nlmeans.glsl: Very slow, should offer the best quality.
+// Description: HQX/nlmeans.glsl: Very slow, should offer the best quality.
 
 /* This shader is highly configurable via user variables below. Although the 
  * default settings should offer good quality at a reasonable speed, you are 
@@ -77,7 +77,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Description: nlmeans.glsl: Faster, but lower quality.
+// Description: LQ/nlmeans.glsl: Faster, but lower quality.
 
 /* This shader is highly configurable via user variables below. Although the 
  * default settings should offer good quality at a reasonable speed, you are 
@@ -87,7 +87,7 @@
 //!HOOK LUMA
 //!HOOK CHROMA
 //!BIND HOOKED
-//!DESC Non-local means (nlmeans.glsl)
+//!DESC Non-local means (LQ/nlmeans.glsl)
 //!SAVE _INJ_RF_LUMA
 
 // User variables
@@ -205,8 +205,9 @@
 
 /* textureGather applicable configurations:
  *
- * - PS={0,3,7,8}:P=3:PST=0:RI={0,1,3,7}:RFI={0,1,2}
- * - PS={0,8}:P=3:PST=0:RI={0,1,3,7}:RFI={0,1,2}
+ * - PS={0,3,7,8}:P=3:RI={0,1,3,7}:RFI={0,1,2}
+ * - PS={0,8}:P=3:RI={0,1,3,7}:RFI={0,1,2}
+ * - PS=4:P=3:PST=0:RI=0:RFI=0
  * - PS=6:RI=0:RFI=0
  *   - Currently the only scalable variant
  *
@@ -517,6 +518,7 @@
 #define val_packed val
 #define val_pack(v) (v)
 #define val_unpack(v) (v)
+#define MAP(f,param) f(param)
 #elif defined(CHROMA_raw)
 #define val vec2
 #define val_swizz(v) (v.xy)
@@ -524,6 +526,7 @@
 #define val_packed uint
 #define val_pack(v) packUnorm2x16(v)
 #define val_unpack(v) unpackUnorm2x16(v)
+#define MAP(f,param) vec2(f(param.x), f(param.y))
 #else
 #define val vec3
 #define val_swizz(v) (v.xyz)
@@ -531,6 +534,7 @@
 #define val_packed val
 #define val_pack(v) (v)
 #define val_unpack(v) (v)
+#define MAP(f,param) vec3(f(param.x), f(param.y), f(param.z))
 #endif
 
 #if PS == 6
@@ -723,46 +727,46 @@ const float p_scale = 1.0/p_area;
 #define sample(tex, pos, size, pt, off) tex((pos) + (pt) * vec2(off))
 #endif
 
-#define load_(off) sample(HOOKED_tex, HOOKED_pos, HOOKED_size, HOOKED_pt, off)
+#define GET_(off) sample(HOOKED_tex, HOOKED_pos, HOOKED_size, HOOKED_pt, off)
 
 #if RF_ && defined(LUMA_raw)
-#define load2_(off) sample(_INJ_RF_LUMA_tex, _INJ_RF_LUMA_pos, _INJ_RF_LUMA_size, _INJ_RF_LUMA_pt, off)
+#define GET_RF_(off) sample(_INJ_RF_LUMA_tex, _INJ_RF_LUMA_pos, _INJ_RF_LUMA_size, _INJ_RF_LUMA_pt, off)
 #define gather_offs(off, off_arr) (_INJ_RF_LUMA_mul * vec4(textureGatherOffsets(_INJ_RF_LUMA_raw, _INJ_RF_LUMA_pos + vec2(off) * _INJ_RF_LUMA_pt, off_arr)))
 #define gather(off) _INJ_RF_LUMA_gather(_INJ_RF_LUMA_pos + (off) * _INJ_RF_LUMA_pt, 0)
 #elif RF_ && D1W
-#define load2_(off) sample(RF_tex, RF_pos, RF_size, RF_pt, off)
+#define GET_RF_(off) sample(RF_tex, RF_pos, RF_size, RF_pt, off)
 #define gather_offs(off, off_arr) (RF_mul * vec4(textureGatherOffsets(RF_raw, RF_pos + vec2(off) * RF_pt, off_arr)))
 #define gather(off) RF_gather(RF_pos + (off) * RF_pt, 0)
 #elif RF_
-#define load2_(off) sample(RF_tex, RF_pos, RF_size, RF_pt, off)
+#define GET_RF_(off) sample(RF_tex, RF_pos, RF_size, RF_pt, off)
 #else
-#define load2_(off) load_(off)
+#define GET_RF_(off) GET_(off)
 #define gather_offs(off, off_arr) (HOOKED_mul * vec4(textureGatherOffsets(HOOKED_raw, HOOKED_pos + vec2(off) * HOOKED_pt, off_arr)))
 #define gather(off) HOOKED_gather(HOOKED_pos + (off)*HOOKED_pt, 0)
 #endif
 
 #if T
-val load(vec3 off)
+val GET(vec3 off)
 {
 	  switch (min(int(off.z), frame)) {
-	  case 0: return val_swizz(load_(off));  
+	  case 0: return val_swizz(GET_(off));  
 
 	  }
 }
-val load2(vec3 off)
+val GET_RF(vec3 off)
 {
-	  return off.z == 0 ? val_swizz(load2_(off)) : load(off);  
+	  return off.z == 0 ? val_swizz(GET_RF_(off)) : GET(off);  
 }
 #else
-#define load(off) val_swizz(load_(off))
-#define load2(off) val_swizz(load2_(off))
+#define GET(off) val_swizz(GET_(off))
+#define GET_RF(off) val_swizz(GET_RF_(off))
 #endif
 
-val poi2 = load2(vec3(0));   // guide pixel-of-interest
+val poi2 = GET_RF(vec3(0));   // guide pixel-of-interest
 #if GUIDE_INPUT
 #define poi poi2
 #else
-vec4 poi_ = load_(vec3(0));  
+vec4 poi_ = GET_(vec3(0));  
 val poi = val_swizz(poi_);   // pixel-of-interest
 #endif
 
@@ -812,13 +816,7 @@ val range(val pdiff_sq)
 	  const float h = max(S, 0.0) * 0.013;  
 	  const float pdiff_scale = 1.0/(h*h);  
 	  pdiff_sq = sqrt(pdiff_sq * pdiff_scale);  
-#if defined(LUMA_raw)
-	  return RK(pdiff_sq);  
-#elif defined(CHROMA_raw)
-	  return vec2(RK(pdiff_sq.x), RK(pdiff_sq.y));  
-#else
-	  return vec3(RK(pdiff_sq.x), RK(pdiff_sq.y), RK(pdiff_sq.z));  
-#endif
+	  return MAP(RK, pdiff_sq);  
 }
 
 val patch_comparison(vec3 r, vec3 r2)
@@ -828,26 +826,30 @@ val patch_comparison(vec3 r, vec3 r2)
 
 	  FOR_ROTATION FOR_REFLECTION {
 	  	  val pdiff_sq = val(0);  
+	  	  val total_weight = val(0);  
+
 	  	  FOR_PATCH(p) {
 	  	  	  vec3 transformed_p = vec3(ref(rot(p.xy, ri), rfi), p.z);  
-	  	  	  val diff_sq = load2(p + r2) - load2((transformed_p + r) * SF);  
+	  	  	  val diff_sq = GET_RF(p + r2) - GET_RF((transformed_p + r) * SF);  
 	  	  	  diff_sq *= diff_sq;  
-	  	  	  diff_sq = 1 - (1 - diff_sq) * spatial_p(p.xy);  
-	  	  	  pdiff_sq += diff_sq;  
+
+	  	  	  float weight = spatial_p(p.xy);  
+	  	  	  pdiff_sq += diff_sq * weight;  
+	  	  	  total_weight += weight;  
 	  	  }
-	  	  min_rot = min(min_rot, pdiff_sq);  
+
+	  	  min_rot = min(min_rot, pdiff_sq / total_weight);  
 	  }
 
-	  return min_rot * p_scale;  
+	  return min_rot;  
 }
 
 #define NO_GATHER (PD == 0 && NG == 0 && SAMPLE == 0) // never textureGather if any of these conditions are false
 #define REGULAR_ROTATIONS (RI == 0 || RI == 1 || RI == 3 || RI == 7)
 
-#if (defined(LUMA_gather) || D1W) && ((PS == 0 || ((PS == 3 || PS == 7) && RI != 7) || PS == 8) && P == 3) && PST == 0 && REGULAR_ROTATIONS && NO_GATHER
+#if (defined(LUMA_gather) || D1W) && ((PS == 0 || ((PS == 3 || PS == 7) && RI != 7) || PS == 8) && P == 3) && REGULAR_ROTATIONS && NO_GATHER
 // 3x3 diamond/plus patch_comparison_gather
 // XXX extend to support arbitrary sizes (probably requires code generation)
-// XXX support PSS
 const ivec2 offsets_adj[4] = { ivec2(0,-1), ivec2(1,0), ivec2(0,1), ivec2(-1,0) };  
 const ivec2 offsets_adj_sf[4] = { ivec2(0,-1) * SF, ivec2(1,0) * SF, ivec2(0,1) * SF, ivec2(-1,0) * SF };  
 vec4 poi_patch_adj = gather_offs(0, offsets_adj);  
@@ -886,11 +888,11 @@ float patch_comparison_gather(vec3 r, vec3 r2)
 	  	  	  }
 #endif
 
-	  	  	  vec4 diff_sq = POW2(poi_patch_adj - transformer_adj);  
+	  	  	  vec4 pdiff_sq = POW2(poi_patch_adj - transformer_adj) * spatial_p(vec2(1,0));  
 #if PS == 0 || PS == 8
-	  	  	  diff_sq += POW2(poi_patch_diag - transformer_diag);  
+	  	  	  pdiff_sq += POW2(poi_patch_diag - transformer_diag) * spatial_p(vec2(1,1));  
 #endif
-	  	  	  min_rot = min(dot(diff_sq, vec4(1)), min_rot);  
+	  	  	  min_rot = min(dot(pdiff_sq, vec4(1)), min_rot);  
 
 // un-reflect
 #if RFI
@@ -927,41 +929,46 @@ float patch_comparison_gather(vec3 r, vec3 r2)
 	  	  transformer_diag = transformer_diag.zwxy;  
 #endif
 	  } // FOR_ROTATION
-	  float center_diff = poi2.x - load2(r).x;  
-	  return (center_diff * center_diff + min_rot) * p_scale;  
+	  
+#if PS == 0 || PS == 8
+	  float total_weight = spatial_p(vec2(0,0)) + 4 * spatial_p(vec2(0,1)) + 4 * spatial_p(vec2(1,1));  
+#else
+	  float total_weight = spatial_p(vec2(0,0)) + 4 * spatial_p(vec2(0,1));  
+#endif
+
+	  float center_diff = poi2.x - GET_RF(r).x;  
+	  return (POW2(center_diff) + min_rot) / total_weight;  
 }
 #elif (defined(LUMA_gather) || D1W) && PS == 4 && P == 3 && RI == 0 && RFI == 0 && NO_GATHER
 const ivec2 offsets[4] = { ivec2(0,-1), ivec2(-1,0), ivec2(0,0), ivec2(1,0) };  
 const ivec2 offsets_sf[4] = { ivec2(0,-1) * SF, ivec2(-1,0) * SF, ivec2(0,0) * SF, ivec2(1,0) * SF };  
 vec4 poi_patch = gather_offs(0, offsets);  
+vec4 spatial_p_weights = vec4(spatial_p(vec2(0,-1)), spatial_p(vec2(-1,0)), spatial_p(vec2(0,0)), spatial_p(vec2(1,0)));  
 float patch_comparison_gather(vec3 r, vec3 r2)
 {
 	  vec4 pdiff = poi_patch - gather_offs(r, offsets_sf);  
-	  return dot(pdiff * pdiff, vec4(1)) * p_scale;  
+	  return dot(POW2(pdiff) * spatial_p_weights, vec4(1)) / dot(spatial_p_weights, vec4(1));  
 }
 #elif (defined(LUMA_gather) || D1W) && PS == 6 && RI == 0 && RFI == 0 && NO_GATHER
 // tiled even square patch_comparison_gather
 // XXX extend to support odd square?
 float patch_comparison_gather(vec3 r, vec3 r2)
 {
-	  vec2 tile;  
-	  float min_rot = p_area;  
-
 	  /* gather order:
 	   * w z
 	   * x y
 	   */
+	  vec2 tile;  
 	  float pdiff_sq = 0;  
+	  float total_weight = 0;  
 	  for (tile.x = -hp;   tile.x < hp;   tile.x+=2) for (tile.y = -hp;   tile.y < hp;   tile.y+=2) {
-	  	  vec4 diff_sq = gather(tile + r.xy) - gather(tile + r2.xy);  
-	  	  diff_sq *= diff_sq;  
-	  	  diff_sq = 1 - (1 - diff_sq) * vec4(spatial_p(tile+vec2(0,1)), spatial_p(tile+vec2(1,1)),
-	  	  	                                   spatial_p(tile+vec2(1,0)), spatial_p(tile+vec2(0,0)));  
-	  	  pdiff_sq += dot(diff_sq, vec4(1));  
+	  	  vec4 diff = gather(tile + r.xy) - gather(tile + r2.xy);  
+	  	  vec4 weights = vec4(spatial_p(tile+vec2(0,1)), spatial_p(tile+vec2(1,1)), spatial_p(tile+vec2(1,0)), spatial_p(tile+vec2(0,0)));  
+	  	  pdiff_sq += dot(POW2(diff) * weights, vec4(1));  
+	  	  total_weight += dot(weights, vec4(1));  
 	  }
-	  min_rot = min(min_rot, pdiff_sq);  
 
-	  return min_rot * p_scale;  
+	  return pdiff_sq / total_weight;  
 }
 #else
 #define patch_comparison_gather patch_comparison
@@ -1021,7 +1028,7 @@ vec4 hook()
 	  	  float spatial_weight = spatial_r(tr);  
 	  	  tr.xy += me.xy;  
 
-	  	  val px = load(tr);  
+	  	  val px = GET(tr);  
 
 #if SKIP_PATCH
 	  	  val weight = val(1);  
@@ -1056,14 +1063,10 @@ vec4 hook()
 	  	  r_index++;  
 #elif WD == 1 // weight discard (moving cumulative average)
 	  	  val wd_scale = val(1.0/r_iter);  
+
 	  	  val below_threshold = WDS * abs(min(val(0.0), weight - (total_weight * wd_scale * WDT * WD1TK(sqrt(wd_scale*WDP)))));  
-#if defined(LUMA_raw)
-	  	  val wdkf = WDK(below_threshold);  
-#elif defined(CHROMA_raw)
-	  	  val wdkf = vec2(WDK(below_threshold.x), WDK(below_threshold.y));  
-#else
-	  	  val wdkf = vec3(WDK(below_threshold.x), WDK(below_threshold.y), WDK(below_threshold.y));  
-#endif
+	  	  val wdkf = MAP(WDK, below_threshold);  
+
 	  	  wd_sum += px * weight * wdkf;  
 	  	  wd_total_weight += weight * wdkf;  
 	  	  r_iter++;  
@@ -1086,13 +1089,7 @@ vec4 hook()
 	  	  val px = val_unpack(all_pixels[i]);  
 
 	  	  val below_threshold = WDS * abs(min(val(0.0), weight - (avg_weight * WDT)));  
-#if defined(LUMA_raw)
-	  	  weight *= WDK(below_threshold);  
-#elif defined(CHROMA_raw)
-	  	  weight *= vec2(WDK(below_threshold.x), WDK(below_threshold.y));  
-#else
-	  	  weight *= vec3(WDK(below_threshold.x), WDK(below_threshold.y), WDK(below_threshold.z));  
-#endif
+	  	  weight *= MAP(WDK, below_threshold);  
 
 	  	  sum += px * weight;  
 	  	  total_weight += weight;  
@@ -1301,8 +1298,9 @@ return _INJ_RF_LUMA_texOff(0);
 
 /* textureGather applicable configurations:
  *
- * - PS={0,3,7,8}:P=3:PST=0:RI={0,1,3,7}:RFI={0,1,2}
- * - PS={0,8}:P=3:PST=0:RI={0,1,3,7}:RFI={0,1,2}
+ * - PS={0,3,7,8}:P=3:RI={0,1,3,7}:RFI={0,1,2}
+ * - PS={0,8}:P=3:RI={0,1,3,7}:RFI={0,1,2}
+ * - PS=4:P=3:PST=0:RI=0:RFI=0
  * - PS=6:RI=0:RFI=0
  *   - Currently the only scalable variant
  *
@@ -1613,6 +1611,7 @@ return _INJ_RF_LUMA_texOff(0);
 #define val_packed val
 #define val_pack(v) (v)
 #define val_unpack(v) (v)
+#define MAP(f,param) f(param)
 #elif defined(CHROMA_raw)
 #define val vec2
 #define val_swizz(v) (v.xy)
@@ -1620,6 +1619,7 @@ return _INJ_RF_LUMA_texOff(0);
 #define val_packed uint
 #define val_pack(v) packUnorm2x16(v)
 #define val_unpack(v) unpackUnorm2x16(v)
+#define MAP(f,param) vec2(f(param.x), f(param.y))
 #else
 #define val vec3
 #define val_swizz(v) (v.xyz)
@@ -1627,6 +1627,7 @@ return _INJ_RF_LUMA_texOff(0);
 #define val_packed val
 #define val_pack(v) (v)
 #define val_unpack(v) (v)
+#define MAP(f,param) vec3(f(param.x), f(param.y), f(param.z))
 #endif
 
 #if PS == 6
@@ -1819,46 +1820,46 @@ const float p_scale = 1.0/p_area;
 #define sample(tex, pos, size, pt, off) tex((pos) + (pt) * vec2(off))
 #endif
 
-#define load_(off) sample(HOOKED_tex, HOOKED_pos, HOOKED_size, HOOKED_pt, off)
+#define GET_(off) sample(HOOKED_tex, HOOKED_pos, HOOKED_size, HOOKED_pt, off)
 
 #if _INJ_RF_ && defined(LUMA_raw)
-#define load2_(off) sample(_INJ_RF_LUMA_tex, _INJ_RF_LUMA_pos, _INJ_RF_LUMA_size, _INJ_RF_LUMA_pt, off)
+#define GET_RF_(off) sample(_INJ_RF_LUMA_tex, _INJ_RF_LUMA_pos, _INJ_RF_LUMA_size, _INJ_RF_LUMA_pt, off)
 #define gather_offs(off, off_arr) (_INJ_RF_LUMA_mul * vec4(textureGatherOffsets(_INJ_RF_LUMA_raw, _INJ_RF_LUMA_pos + vec2(off) * _INJ_RF_LUMA_pt, off_arr)))
 #define gather(off) _INJ_RF_LUMA_gather(_INJ_RF_LUMA_pos + (off) * _INJ_RF_LUMA_pt, 0)
 #elif _INJ_RF_ && D1W
-#define load2_(off) sample(_INJ_RF_tex, _INJ_RF_pos, _INJ_RF_size, _INJ_RF_pt, off)
+#define GET_RF_(off) sample(_INJ_RF_tex, _INJ_RF_pos, _INJ_RF_size, _INJ_RF_pt, off)
 #define gather_offs(off, off_arr) (_INJ_RF_mul * vec4(textureGatherOffsets(_INJ_RF_raw, _INJ_RF_pos + vec2(off) * _INJ_RF_pt, off_arr)))
 #define gather(off) _INJ_RF_gather(_INJ_RF_pos + (off) * _INJ_RF_pt, 0)
 #elif _INJ_RF_
-#define load2_(off) sample(_INJ_RF_tex, _INJ_RF_pos, _INJ_RF_size, _INJ_RF_pt, off)
+#define GET_RF_(off) sample(_INJ_RF_tex, _INJ_RF_pos, _INJ_RF_size, _INJ_RF_pt, off)
 #else
-#define load2_(off) load_(off)
+#define GET_RF_(off) GET_(off)
 #define gather_offs(off, off_arr) (HOOKED_mul * vec4(textureGatherOffsets(HOOKED_raw, HOOKED_pos + vec2(off) * HOOKED_pt, off_arr)))
 #define gather(off) HOOKED_gather(HOOKED_pos + (off)*HOOKED_pt, 0)
 #endif
 
 #if T
-val load(vec3 off)
+val GET(vec3 off)
 {
 	 switch (min(int(off.z), frame)) {
-	 case 0: return val_swizz(load_(off)); 
+	 case 0: return val_swizz(GET_(off)); 
 
 	 }
 }
-val load2(vec3 off)
+val GET_RF(vec3 off)
 {
-	 return off.z == 0 ? val_swizz(load2_(off)) : load(off); 
+	 return off.z == 0 ? val_swizz(GET_RF_(off)) : GET(off); 
 }
 #else
-#define load(off) val_swizz(load_(off))
-#define load2(off) val_swizz(load2_(off))
+#define GET(off) val_swizz(GET_(off))
+#define GET_RF(off) val_swizz(GET_RF_(off))
 #endif
 
-val poi2 = load2(vec3(0));  // guide pixel-of-interest
+val poi2 = GET_RF(vec3(0));  // guide pixel-of-interest
 #if GUIDE_INPUT
 #define poi poi2
 #else
-vec4 poi_ = load_(vec3(0)); 
+vec4 poi_ = GET_(vec3(0)); 
 val poi = val_swizz(poi_);  // pixel-of-interest
 #endif
 
@@ -1908,13 +1909,7 @@ val range(val pdiff_sq)
 	 const float h = max(S, 0.0) * 0.013; 
 	 const float pdiff_scale = 1.0/(h*h); 
 	 pdiff_sq = sqrt(pdiff_sq * pdiff_scale); 
-#if defined(LUMA_raw)
-	 return RK(pdiff_sq); 
-#elif defined(CHROMA_raw)
-	 return vec2(RK(pdiff_sq.x), RK(pdiff_sq.y)); 
-#else
-	 return vec3(RK(pdiff_sq.x), RK(pdiff_sq.y), RK(pdiff_sq.z)); 
-#endif
+	 return MAP(RK, pdiff_sq); 
 }
 
 val patch_comparison(vec3 r, vec3 r2)
@@ -1924,26 +1919,30 @@ val patch_comparison(vec3 r, vec3 r2)
 
 	 FOR_ROTATION FOR_REFLECTION {
 	 	 val pdiff_sq = val(0); 
+	 	 val total_weight = val(0); 
+
 	 	 FOR_PATCH(p) {
 	 	 	 vec3 transformed_p = vec3(ref(rot(p.xy, ri), rfi), p.z); 
-	 	 	 val diff_sq = load2(p + r2) - load2((transformed_p + r) * SF); 
+	 	 	 val diff_sq = GET_RF(p + r2) - GET_RF((transformed_p + r) * SF); 
 	 	 	 diff_sq *= diff_sq; 
-	 	 	 diff_sq = 1 - (1 - diff_sq) * spatial_p(p.xy); 
-	 	 	 pdiff_sq += diff_sq; 
+
+	 	 	 float weight = spatial_p(p.xy); 
+	 	 	 pdiff_sq += diff_sq * weight; 
+	 	 	 total_weight += weight; 
 	 	 }
-	 	 min_rot = min(min_rot, pdiff_sq); 
+
+	 	 min_rot = min(min_rot, pdiff_sq / total_weight); 
 	 }
 
-	 return min_rot * p_scale; 
+	 return min_rot; 
 }
 
 #define NO_GATHER (PD == 0 && NG == 0 && SAMPLE == 0) // never textureGather if any of these conditions are false
 #define REGULAR_ROTATIONS (RI == 0 || RI == 1 || RI == 3 || RI == 7)
 
-#if (defined(LUMA_gather) || D1W) && ((PS == 0 || ((PS == 3 || PS == 7) && RI != 7) || PS == 8) && P == 3) && PST == 0 && REGULAR_ROTATIONS && NO_GATHER
+#if (defined(LUMA_gather) || D1W) && ((PS == 0 || ((PS == 3 || PS == 7) && RI != 7) || PS == 8) && P == 3) && REGULAR_ROTATIONS && NO_GATHER
 // 3x3 diamond/plus patch_comparison_gather
 // XXX extend to support arbitrary sizes (probably requires code generation)
-// XXX support PSS
 const ivec2 offsets_adj[4] = { ivec2(0,-1), ivec2(1,0), ivec2(0,1), ivec2(-1,0) }; 
 const ivec2 offsets_adj_sf[4] = { ivec2(0,-1) * SF, ivec2(1,0) * SF, ivec2(0,1) * SF, ivec2(-1,0) * SF }; 
 vec4 poi_patch_adj = gather_offs(0, offsets_adj); 
@@ -1982,11 +1981,11 @@ float patch_comparison_gather(vec3 r, vec3 r2)
 	 	 	 }
 #endif
 
-	 	 	 vec4 diff_sq = POW2(poi_patch_adj - transformer_adj); 
+	 	 	 vec4 pdiff_sq = POW2(poi_patch_adj - transformer_adj) * spatial_p(vec2(1,0)); 
 #if PS == 0 || PS == 8
-	 	 	 diff_sq += POW2(poi_patch_diag - transformer_diag); 
+	 	 	 pdiff_sq += POW2(poi_patch_diag - transformer_diag) * spatial_p(vec2(1,1)); 
 #endif
-	 	 	 min_rot = min(dot(diff_sq, vec4(1)), min_rot); 
+	 	 	 min_rot = min(dot(pdiff_sq, vec4(1)), min_rot); 
 
 // un-reflect
 #if RFI
@@ -2023,41 +2022,46 @@ float patch_comparison_gather(vec3 r, vec3 r2)
 	 	 transformer_diag = transformer_diag.zwxy; 
 #endif
 	 } // FOR_ROTATION
-	 float center_diff = poi2.x - load2(r).x; 
-	 return (center_diff * center_diff + min_rot) * p_scale; 
+	 
+#if PS == 0 || PS == 8
+	 float total_weight = spatial_p(vec2(0,0)) + 4 * spatial_p(vec2(0,1)) + 4 * spatial_p(vec2(1,1)); 
+#else
+	 float total_weight = spatial_p(vec2(0,0)) + 4 * spatial_p(vec2(0,1)); 
+#endif
+
+	 float center_diff = poi2.x - GET_RF(r).x; 
+	 return (POW2(center_diff) + min_rot) / total_weight; 
 }
 #elif (defined(LUMA_gather) || D1W) && PS == 4 && P == 3 && RI == 0 && RFI == 0 && NO_GATHER
 const ivec2 offsets[4] = { ivec2(0,-1), ivec2(-1,0), ivec2(0,0), ivec2(1,0) }; 
 const ivec2 offsets_sf[4] = { ivec2(0,-1) * SF, ivec2(-1,0) * SF, ivec2(0,0) * SF, ivec2(1,0) * SF }; 
 vec4 poi_patch = gather_offs(0, offsets); 
+vec4 spatial_p_weights = vec4(spatial_p(vec2(0,-1)), spatial_p(vec2(-1,0)), spatial_p(vec2(0,0)), spatial_p(vec2(1,0))); 
 float patch_comparison_gather(vec3 r, vec3 r2)
 {
 	 vec4 pdiff = poi_patch - gather_offs(r, offsets_sf); 
-	 return dot(pdiff * pdiff, vec4(1)) * p_scale; 
+	 return dot(POW2(pdiff) * spatial_p_weights, vec4(1)) / dot(spatial_p_weights, vec4(1)); 
 }
 #elif (defined(LUMA_gather) || D1W) && PS == 6 && RI == 0 && RFI == 0 && NO_GATHER
 // tiled even square patch_comparison_gather
 // XXX extend to support odd square?
 float patch_comparison_gather(vec3 r, vec3 r2)
 {
-	 vec2 tile; 
-	 float min_rot = p_area; 
-
 	 /* gather order:
 	  * w z
 	  * x y
 	  */
+	 vec2 tile; 
 	 float pdiff_sq = 0; 
+	 float total_weight = 0; 
 	 for (tile.x = -hp;  tile.x < hp;  tile.x+=2) for (tile.y = -hp;  tile.y < hp;  tile.y+=2) {
-	 	 vec4 diff_sq = gather(tile + r.xy) - gather(tile + r2.xy); 
-	 	 diff_sq *= diff_sq; 
-	 	 diff_sq = 1 - (1 - diff_sq) * vec4(spatial_p(tile+vec2(0,1)), spatial_p(tile+vec2(1,1)),
-	 	 	                                  spatial_p(tile+vec2(1,0)), spatial_p(tile+vec2(0,0))); 
-	 	 pdiff_sq += dot(diff_sq, vec4(1)); 
+	 	 vec4 diff = gather(tile + r.xy) - gather(tile + r2.xy); 
+	 	 vec4 weights = vec4(spatial_p(tile+vec2(0,1)), spatial_p(tile+vec2(1,1)), spatial_p(tile+vec2(1,0)), spatial_p(tile+vec2(0,0))); 
+	 	 pdiff_sq += dot(POW2(diff) * weights, vec4(1)); 
+	 	 total_weight += dot(weights, vec4(1)); 
 	 }
-	 min_rot = min(min_rot, pdiff_sq); 
 
-	 return min_rot * p_scale; 
+	 return pdiff_sq / total_weight; 
 }
 #else
 #define patch_comparison_gather patch_comparison
@@ -2117,7 +2121,7 @@ vec4 hook()
 	 	 float spatial_weight = spatial_r(tr); 
 	 	 tr.xy += me.xy; 
 
-	 	 val px = load(tr); 
+	 	 val px = GET(tr); 
 
 #if SKIP_PATCH
 	 	 val weight = val(1); 
@@ -2152,14 +2156,10 @@ vec4 hook()
 	 	 r_index++; 
 #elif WD == 1 // weight discard (moving cumulative average)
 	 	 val wd_scale = val(1.0/r_iter); 
+
 	 	 val below_threshold = WDS * abs(min(val(0.0), weight - (total_weight * wd_scale * WDT * WD1TK(sqrt(wd_scale*WDP))))); 
-#if defined(LUMA_raw)
-	 	 val wdkf = WDK(below_threshold); 
-#elif defined(CHROMA_raw)
-	 	 val wdkf = vec2(WDK(below_threshold.x), WDK(below_threshold.y)); 
-#else
-	 	 val wdkf = vec3(WDK(below_threshold.x), WDK(below_threshold.y), WDK(below_threshold.y)); 
-#endif
+	 	 val wdkf = MAP(WDK, below_threshold); 
+
 	 	 wd_sum += px * weight * wdkf; 
 	 	 wd_total_weight += weight * wdkf; 
 	 	 r_iter++; 
@@ -2182,13 +2182,7 @@ vec4 hook()
 	 	 val px = val_unpack(all_pixels[i]); 
 
 	 	 val below_threshold = WDS * abs(min(val(0.0), weight - (avg_weight * WDT))); 
-#if defined(LUMA_raw)
-	 	 weight *= WDK(below_threshold); 
-#elif defined(CHROMA_raw)
-	 	 weight *= vec2(WDK(below_threshold.x), WDK(below_threshold.y)); 
-#else
-	 	 weight *= vec3(WDK(below_threshold.x), WDK(below_threshold.y), WDK(below_threshold.z)); 
-#endif
+	 	 weight *= MAP(WDK, below_threshold); 
 
 	 	 sum += px * weight; 
 	 	 total_weight += weight; 
@@ -2279,7 +2273,7 @@ vec4 hook()
 //!BIND HOOKED
 //!BIND RF_LUMA
 //!BIND RF
-//!DESC Non-local means (nlmeans.glsl)
+//!DESC Non-local means (HQX/nlmeans.glsl)
 
 // User variables
 
@@ -2396,8 +2390,9 @@ vec4 hook()
 
 /* textureGather applicable configurations:
  *
- * - PS={0,3,7,8}:P=3:PST=0:RI={0,1,3,7}:RFI={0,1,2}
- * - PS={0,8}:P=3:PST=0:RI={0,1,3,7}:RFI={0,1,2}
+ * - PS={0,3,7,8}:P=3:RI={0,1,3,7}:RFI={0,1,2}
+ * - PS={0,8}:P=3:RI={0,1,3,7}:RFI={0,1,2}
+ * - PS=4:P=3:PST=0:RI=0:RFI=0
  * - PS=6:RI=0:RFI=0
  *   - Currently the only scalable variant
  *
@@ -2708,6 +2703,7 @@ vec4 hook()
 #define val_packed val
 #define val_pack(v) (v)
 #define val_unpack(v) (v)
+#define MAP(f,param) f(param)
 #elif defined(CHROMA_raw)
 #define val vec2
 #define val_swizz(v) (v.xy)
@@ -2715,6 +2711,7 @@ vec4 hook()
 #define val_packed uint
 #define val_pack(v) packUnorm2x16(v)
 #define val_unpack(v) unpackUnorm2x16(v)
+#define MAP(f,param) vec2(f(param.x), f(param.y))
 #else
 #define val vec3
 #define val_swizz(v) (v.xyz)
@@ -2722,6 +2719,7 @@ vec4 hook()
 #define val_packed val
 #define val_pack(v) (v)
 #define val_unpack(v) (v)
+#define MAP(f,param) vec3(f(param.x), f(param.y), f(param.z))
 #endif
 
 #if PS == 6
@@ -2914,46 +2912,46 @@ const float p_scale = 1.0/p_area;
 #define sample(tex, pos, size, pt, off) tex((pos) + (pt) * vec2(off))
 #endif
 
-#define load_(off) sample(HOOKED_tex, HOOKED_pos, HOOKED_size, HOOKED_pt, off)
+#define GET_(off) sample(HOOKED_tex, HOOKED_pos, HOOKED_size, HOOKED_pt, off)
 
 #if RF_ && defined(LUMA_raw)
-#define load2_(off) sample(RF_LUMA_tex, RF_LUMA_pos, RF_LUMA_size, RF_LUMA_pt, off)
+#define GET_RF_(off) sample(RF_LUMA_tex, RF_LUMA_pos, RF_LUMA_size, RF_LUMA_pt, off)
 #define gather_offs(off, off_arr) (RF_LUMA_mul * vec4(textureGatherOffsets(RF_LUMA_raw, RF_LUMA_pos + vec2(off) * RF_LUMA_pt, off_arr)))
 #define gather(off) RF_LUMA_gather(RF_LUMA_pos + (off) * RF_LUMA_pt, 0)
 #elif RF_ && D1W
-#define load2_(off) sample(RF_tex, RF_pos, RF_size, RF_pt, off)
+#define GET_RF_(off) sample(RF_tex, RF_pos, RF_size, RF_pt, off)
 #define gather_offs(off, off_arr) (RF_mul * vec4(textureGatherOffsets(RF_raw, RF_pos + vec2(off) * RF_pt, off_arr)))
 #define gather(off) RF_gather(RF_pos + (off) * RF_pt, 0)
 #elif RF_
-#define load2_(off) sample(RF_tex, RF_pos, RF_size, RF_pt, off)
+#define GET_RF_(off) sample(RF_tex, RF_pos, RF_size, RF_pt, off)
 #else
-#define load2_(off) load_(off)
+#define GET_RF_(off) GET_(off)
 #define gather_offs(off, off_arr) (HOOKED_mul * vec4(textureGatherOffsets(HOOKED_raw, HOOKED_pos + vec2(off) * HOOKED_pt, off_arr)))
 #define gather(off) HOOKED_gather(HOOKED_pos + (off)*HOOKED_pt, 0)
 #endif
 
 #if T
-val load(vec3 off)
+val GET(vec3 off)
 {
 	switch (min(int(off.z), frame)) {
-	case 0: return val_swizz(load_(off));
+	case 0: return val_swizz(GET_(off));
 
 	}
 }
-val load2(vec3 off)
+val GET_RF(vec3 off)
 {
-	return off.z == 0 ? val_swizz(load2_(off)) : load(off);
+	return off.z == 0 ? val_swizz(GET_RF_(off)) : GET(off);
 }
 #else
-#define load(off) val_swizz(load_(off))
-#define load2(off) val_swizz(load2_(off))
+#define GET(off) val_swizz(GET_(off))
+#define GET_RF(off) val_swizz(GET_RF_(off))
 #endif
 
-val poi2 = load2(vec3(0)); // guide pixel-of-interest
+val poi2 = GET_RF(vec3(0)); // guide pixel-of-interest
 #if GUIDE_INPUT
 #define poi poi2
 #else
-vec4 poi_ = load_(vec3(0));
+vec4 poi_ = GET_(vec3(0));
 val poi = val_swizz(poi_); // pixel-of-interest
 #endif
 
@@ -3003,13 +3001,7 @@ val range(val pdiff_sq)
 	const float h = max(S, 0.0) * 0.013;
 	const float pdiff_scale = 1.0/(h*h);
 	pdiff_sq = sqrt(pdiff_sq * pdiff_scale);
-#if defined(LUMA_raw)
-	return RK(pdiff_sq);
-#elif defined(CHROMA_raw)
-	return vec2(RK(pdiff_sq.x), RK(pdiff_sq.y));
-#else
-	return vec3(RK(pdiff_sq.x), RK(pdiff_sq.y), RK(pdiff_sq.z));
-#endif
+	return MAP(RK, pdiff_sq);
 }
 
 val patch_comparison(vec3 r, vec3 r2)
@@ -3019,26 +3011,30 @@ val patch_comparison(vec3 r, vec3 r2)
 
 	FOR_ROTATION FOR_REFLECTION {
 		val pdiff_sq = val(0);
+		val total_weight = val(0);
+
 		FOR_PATCH(p) {
 			vec3 transformed_p = vec3(ref(rot(p.xy, ri), rfi), p.z);
-			val diff_sq = load2(p + r2) - load2((transformed_p + r) * SF);
+			val diff_sq = GET_RF(p + r2) - GET_RF((transformed_p + r) * SF);
 			diff_sq *= diff_sq;
-			diff_sq = 1 - (1 - diff_sq) * spatial_p(p.xy);
-			pdiff_sq += diff_sq;
+
+			float weight = spatial_p(p.xy);
+			pdiff_sq += diff_sq * weight;
+			total_weight += weight;
 		}
-		min_rot = min(min_rot, pdiff_sq);
+
+		min_rot = min(min_rot, pdiff_sq / total_weight);
 	}
 
-	return min_rot * p_scale;
+	return min_rot;
 }
 
 #define NO_GATHER (PD == 0 && NG == 0 && SAMPLE == 0) // never textureGather if any of these conditions are false
 #define REGULAR_ROTATIONS (RI == 0 || RI == 1 || RI == 3 || RI == 7)
 
-#if (defined(LUMA_gather) || D1W) && ((PS == 0 || ((PS == 3 || PS == 7) && RI != 7) || PS == 8) && P == 3) && PST == 0 && REGULAR_ROTATIONS && NO_GATHER
+#if (defined(LUMA_gather) || D1W) && ((PS == 0 || ((PS == 3 || PS == 7) && RI != 7) || PS == 8) && P == 3) && REGULAR_ROTATIONS && NO_GATHER
 // 3x3 diamond/plus patch_comparison_gather
 // XXX extend to support arbitrary sizes (probably requires code generation)
-// XXX support PSS
 const ivec2 offsets_adj[4] = { ivec2(0,-1), ivec2(1,0), ivec2(0,1), ivec2(-1,0) };
 const ivec2 offsets_adj_sf[4] = { ivec2(0,-1) * SF, ivec2(1,0) * SF, ivec2(0,1) * SF, ivec2(-1,0) * SF };
 vec4 poi_patch_adj = gather_offs(0, offsets_adj);
@@ -3077,11 +3073,11 @@ float patch_comparison_gather(vec3 r, vec3 r2)
 			}
 #endif
 
-			vec4 diff_sq = POW2(poi_patch_adj - transformer_adj);
+			vec4 pdiff_sq = POW2(poi_patch_adj - transformer_adj) * spatial_p(vec2(1,0));
 #if PS == 0 || PS == 8
-			diff_sq += POW2(poi_patch_diag - transformer_diag);
+			pdiff_sq += POW2(poi_patch_diag - transformer_diag) * spatial_p(vec2(1,1));
 #endif
-			min_rot = min(dot(diff_sq, vec4(1)), min_rot);
+			min_rot = min(dot(pdiff_sq, vec4(1)), min_rot);
 
 // un-reflect
 #if RFI
@@ -3118,41 +3114,46 @@ float patch_comparison_gather(vec3 r, vec3 r2)
 		transformer_diag = transformer_diag.zwxy;
 #endif
 	} // FOR_ROTATION
-	float center_diff = poi2.x - load2(r).x;
-	return (center_diff * center_diff + min_rot) * p_scale;
+	
+#if PS == 0 || PS == 8
+	float total_weight = spatial_p(vec2(0,0)) + 4 * spatial_p(vec2(0,1)) + 4 * spatial_p(vec2(1,1));
+#else
+	float total_weight = spatial_p(vec2(0,0)) + 4 * spatial_p(vec2(0,1));
+#endif
+
+	float center_diff = poi2.x - GET_RF(r).x;
+	return (POW2(center_diff) + min_rot) / total_weight;
 }
 #elif (defined(LUMA_gather) || D1W) && PS == 4 && P == 3 && RI == 0 && RFI == 0 && NO_GATHER
 const ivec2 offsets[4] = { ivec2(0,-1), ivec2(-1,0), ivec2(0,0), ivec2(1,0) };
 const ivec2 offsets_sf[4] = { ivec2(0,-1) * SF, ivec2(-1,0) * SF, ivec2(0,0) * SF, ivec2(1,0) * SF };
 vec4 poi_patch = gather_offs(0, offsets);
+vec4 spatial_p_weights = vec4(spatial_p(vec2(0,-1)), spatial_p(vec2(-1,0)), spatial_p(vec2(0,0)), spatial_p(vec2(1,0)));
 float patch_comparison_gather(vec3 r, vec3 r2)
 {
 	vec4 pdiff = poi_patch - gather_offs(r, offsets_sf);
-	return dot(pdiff * pdiff, vec4(1)) * p_scale;
+	return dot(POW2(pdiff) * spatial_p_weights, vec4(1)) / dot(spatial_p_weights, vec4(1));
 }
 #elif (defined(LUMA_gather) || D1W) && PS == 6 && RI == 0 && RFI == 0 && NO_GATHER
 // tiled even square patch_comparison_gather
 // XXX extend to support odd square?
 float patch_comparison_gather(vec3 r, vec3 r2)
 {
-	vec2 tile;
-	float min_rot = p_area;
-
 	/* gather order:
 	 * w z
 	 * x y
 	 */
+	vec2 tile;
 	float pdiff_sq = 0;
+	float total_weight = 0;
 	for (tile.x = -hp; tile.x < hp; tile.x+=2) for (tile.y = -hp; tile.y < hp; tile.y+=2) {
-		vec4 diff_sq = gather(tile + r.xy) - gather(tile + r2.xy);
-		diff_sq *= diff_sq;
-		diff_sq = 1 - (1 - diff_sq) * vec4(spatial_p(tile+vec2(0,1)), spatial_p(tile+vec2(1,1)),
-			                                 spatial_p(tile+vec2(1,0)), spatial_p(tile+vec2(0,0)));
-		pdiff_sq += dot(diff_sq, vec4(1));
+		vec4 diff = gather(tile + r.xy) - gather(tile + r2.xy);
+		vec4 weights = vec4(spatial_p(tile+vec2(0,1)), spatial_p(tile+vec2(1,1)), spatial_p(tile+vec2(1,0)), spatial_p(tile+vec2(0,0)));
+		pdiff_sq += dot(POW2(diff) * weights, vec4(1));
+		total_weight += dot(weights, vec4(1));
 	}
-	min_rot = min(min_rot, pdiff_sq);
 
-	return min_rot * p_scale;
+	return pdiff_sq / total_weight;
 }
 #else
 #define patch_comparison_gather patch_comparison
@@ -3212,7 +3213,7 @@ vec4 hook()
 		float spatial_weight = spatial_r(tr);
 		tr.xy += me.xy;
 
-		val px = load(tr);
+		val px = GET(tr);
 
 #if SKIP_PATCH
 		val weight = val(1);
@@ -3247,14 +3248,10 @@ vec4 hook()
 		r_index++;
 #elif WD == 1 // weight discard (moving cumulative average)
 		val wd_scale = val(1.0/r_iter);
+
 		val below_threshold = WDS * abs(min(val(0.0), weight - (total_weight * wd_scale * WDT * WD1TK(sqrt(wd_scale*WDP)))));
-#if defined(LUMA_raw)
-		val wdkf = WDK(below_threshold);
-#elif defined(CHROMA_raw)
-		val wdkf = vec2(WDK(below_threshold.x), WDK(below_threshold.y));
-#else
-		val wdkf = vec3(WDK(below_threshold.x), WDK(below_threshold.y), WDK(below_threshold.y));
-#endif
+		val wdkf = MAP(WDK, below_threshold);
+
 		wd_sum += px * weight * wdkf;
 		wd_total_weight += weight * wdkf;
 		r_iter++;
@@ -3277,13 +3274,7 @@ vec4 hook()
 		val px = val_unpack(all_pixels[i]);
 
 		val below_threshold = WDS * abs(min(val(0.0), weight - (avg_weight * WDT)));
-#if defined(LUMA_raw)
-		weight *= WDK(below_threshold);
-#elif defined(CHROMA_raw)
-		weight *= vec2(WDK(below_threshold.x), WDK(below_threshold.y));
-#else
-		weight *= vec3(WDK(below_threshold.x), WDK(below_threshold.y), WDK(below_threshold.z));
-#endif
+		weight *= MAP(WDK, below_threshold);
 
 		sum += px * weight;
 		total_weight += weight;
