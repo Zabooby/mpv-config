@@ -120,14 +120,16 @@
  */
 #ifdef LUMA_raw
 #define AS 0
-#define ASF 0.1625
-#define ASA 5.0
-#define ASP 0.5
+#define ASF 0.3210768548589939
+#define ASA 0.9397860227779741
+#define ASP 0.7654083023321232
+#define ASS 0.4031301466402857
 #else
 #define AS 0
-#define ASF 0.1625
-#define ASA 5.0
-#define ASP 0.5
+#define ASF 0.6267063361944475
+#define ASA 1.9701543289754333
+#define ASP 1.0024630095639717
+#define ASS 0.05977279329812535
 #endif
 
 /* Starting weight
@@ -367,6 +369,7 @@
  *
  * SK: spatial kernel
  * RK: range kernel (takes patch differences)
+ * ASK: adaptive sharpening kernel
  * PSK: intra-patch spatial kernel
  * WDK: weight discard kernel
  * WD1TK (WD=1 only): weight discard tolerance kernel
@@ -377,6 +380,7 @@
  * cos
  * gaussian
  * lanczos
+ * quadratic
  * quadratic_ (unclamped)
  * sinc
  * sinc_ (unclamped)
@@ -389,12 +393,14 @@
 #ifdef LUMA_raw
 #define SK gaussian
 #define RK gaussian
+#define ASK sinc
 #define PSK gaussian
 #define WDK is_zero
 #define WD1TK gaussian
 #else
 #define SK gaussian
 #define RK gaussian
+#define ASK sphinx_
 #define PSK gaussian
 #define WDK is_zero
 #define WD1TK gaussian
@@ -805,6 +811,16 @@ float spatial_r(vec3 v)
 #define spatial_r(v) (1)
 #endif
 
+#if AS
+float spatial_as(vec3 v)
+{
+	  v.xy += 0.5 - fract(HOOKED_pos*HOOKED_size);  
+	  return ASK(length(v*SD)*ASS);  
+}
+#else
+#define spatial_as(v) (1)
+#endif
+
 #if PST && P >= PST
 #define spatial_p(v) PSK(length(v*PSD)*PSS)
 #else
@@ -819,7 +835,7 @@ val range(val pdiff_sq)
 	  return MAP(RK, pdiff_sq);  
 }
 
-val patch_comparison(vec3 r, vec3 r2)
+val patch_comparison(vec3 r)
 {
 	  vec3 p;  
 	  val min_rot = val(p_area);  
@@ -829,8 +845,8 @@ val patch_comparison(vec3 r, vec3 r2)
 	  	  val total_weight = val(0);  
 
 	  	  FOR_PATCH(p) {
-	  	  	  vec3 transformed_p = vec3(ref(rot(p.xy, ri), rfi), p.z);  
-	  	  	  val diff_sq = GET_RF(p + r2) - GET_RF((transformed_p + r) * SF);  
+	  	  	  vec3 transformed_p = SF * vec3(ref(rot(p.xy, ri), rfi), p.z);  
+	  	  	  val diff_sq = GET_RF(p) - GET_RF(transformed_p + r);  
 	  	  	  diff_sq *= diff_sq;  
 
 	  	  	  float weight = spatial_p(p.xy);  
@@ -858,7 +874,7 @@ const ivec2 offsets_diag[4] = { ivec2(-1,-1), ivec2(1,-1), ivec2(1,1), ivec2(-1,
 const ivec2 offsets_diag_sf[4] = { ivec2(-1,-1) * SF, ivec2(1,-1) * SF, ivec2(1,1) * SF, ivec2(-1,1) * SF };  
 vec4 poi_patch_diag = gather_offs(0, offsets_diag);  
 #endif
-float patch_comparison_gather(vec3 r, vec3 r2)
+float patch_comparison_gather(vec3 r)
 {
 	  float min_rot = p_area - 1;  
 	  vec4 transformer_adj = gather_offs(r, offsets_adj_sf);  
@@ -944,7 +960,7 @@ const ivec2 offsets[4] = { ivec2(0,-1), ivec2(-1,0), ivec2(0,0), ivec2(1,0) };
 const ivec2 offsets_sf[4] = { ivec2(0,-1) * SF, ivec2(-1,0) * SF, ivec2(0,0) * SF, ivec2(1,0) * SF };  
 vec4 poi_patch = gather_offs(0, offsets);  
 vec4 spatial_p_weights = vec4(spatial_p(vec2(0,-1)), spatial_p(vec2(-1,0)), spatial_p(vec2(0,0)), spatial_p(vec2(1,0)));  
-float patch_comparison_gather(vec3 r, vec3 r2)
+float patch_comparison_gather(vec3 r)
 {
 	  vec4 pdiff = poi_patch - gather_offs(r, offsets_sf);  
 	  return dot(POW2(pdiff) * spatial_p_weights, vec4(1)) / dot(spatial_p_weights, vec4(1));  
@@ -952,7 +968,7 @@ float patch_comparison_gather(vec3 r, vec3 r2)
 #elif (defined(LUMA_gather) || D1W) && PS == 6 && RI == 0 && RFI == 0 && NO_GATHER
 // tiled even square patch_comparison_gather
 // XXX extend to support odd square?
-float patch_comparison_gather(vec3 r, vec3 r2)
+float patch_comparison_gather(vec3 r)
 {
 	  /* gather order:
 	   * w z
@@ -962,7 +978,7 @@ float patch_comparison_gather(vec3 r, vec3 r2)
 	  float pdiff_sq = 0;  
 	  float total_weight = 0;  
 	  for (tile.x = -hp;   tile.x < hp;   tile.x+=2) for (tile.y = -hp;   tile.y < hp;   tile.y+=2) {
-	  	  vec4 diff = gather(tile + r.xy) - gather(tile + r2.xy);  
+	  	  vec4 diff = gather(tile + r.xy) - gather(tile);  
 	  	  vec4 weights = vec4(spatial_p(tile+vec2(0,1)), spatial_p(tile+vec2(1,1)), spatial_p(tile+vec2(1,0)), spatial_p(tile+vec2(0,0)));  
 	  	  pdiff_sq += dot(POW2(diff) * weights, vec4(1));  
 	  	  total_weight += dot(weights, vec4(1));  
@@ -993,8 +1009,8 @@ vec4 hook()
 #endif
 
 #if AS
-	  val total_weight_s = val(0);  
-	  val sum_s = val(0);  
+	  val total_weight_as = val(0);  
+	  val sum_as = val(0);  
 #endif
 
 #if WD == 2 // weight discard (mean)
@@ -1033,7 +1049,7 @@ vec4 hook()
 #if SKIP_PATCH
 	  	  val weight = val(1);  
 #else
-	  	  val pdiff_sq = (r.z == 0) ? val(patch_comparison_gather(tr, vec3(0))) : patch_comparison(tr, vec3(0));  
+	  	  val pdiff_sq = (r.z == 0) ? val(patch_comparison_gather(tr)) : patch_comparison(tr);  
 	  	  val weight = range(pdiff_sq);  
 #endif
 
@@ -1052,9 +1068,10 @@ vec4 hook()
 	  	  weight *= spatial_weight;  
 
 #if AS
-	  	  spatial_weight *= int(r.z == 0);   // ignore temporal
-	  	  sum_s += px * spatial_weight;  
-	  	  total_weight_s += spatial_weight;  
+	  	  float spatial_as_weight = spatial_as(tr);  
+	  	  spatial_as_weight *= int(r.z == 0);   // ignore temporal
+	  	  sum_as += px * spatial_as_weight;  
+	  	  total_weight_as += spatial_as_weight;  
 #endif
 
 #if WD == 2 // weight discard (mean)
@@ -1122,7 +1139,7 @@ vec4 hook()
 #define AS_base poi
 #endif
 #if AS
-	  val usm = result - sum_s/total_weight_s;  
+	  val usm = result - sum_as/total_weight_as;  
 	  usm = exp(log(abs(usm))*ASP) * sign(usm);   // avoiding pow() since it's buggy on nvidia
 	  usm *= gaussian(abs((AS_base + usm - 0.5) / 1.5) * ASA);  
 	  usm *= ASF;  
@@ -1213,14 +1230,16 @@ return _INJ_RF_LUMA_texOff(0);
  */
 #ifdef LUMA_raw
 #define AS 0
-#define ASF 0.1625
-#define ASA 5.0
-#define ASP 0.5
+#define ASF 0.3210768548589939
+#define ASA 0.9397860227779741
+#define ASP 0.7654083023321232
+#define ASS 0.4031301466402857
 #else
 #define AS 0
-#define ASF 0.1625
-#define ASA 5.0
-#define ASP 0.5
+#define ASF 0.6267063361944475
+#define ASA 1.9701543289754333
+#define ASP 1.0024630095639717
+#define ASS 0.05977279329812535
 #endif
 
 /* Starting weight
@@ -1460,6 +1479,7 @@ return _INJ_RF_LUMA_texOff(0);
  *
  * SK: spatial kernel
  * RK: range kernel (takes patch differences)
+ * ASK: adaptive sharpening kernel
  * PSK: intra-patch spatial kernel
  * WDK: weight discard kernel
  * WD1TK (WD=1 only): weight discard tolerance kernel
@@ -1470,6 +1490,7 @@ return _INJ_RF_LUMA_texOff(0);
  * cos
  * gaussian
  * lanczos
+ * quadratic
  * quadratic_ (unclamped)
  * sinc
  * sinc_ (unclamped)
@@ -1482,12 +1503,14 @@ return _INJ_RF_LUMA_texOff(0);
 #ifdef LUMA_raw
 #define SK gaussian
 #define RK gaussian
+#define ASK sinc
 #define PSK gaussian
 #define WDK is_zero
 #define WD1TK gaussian
 #else
 #define SK gaussian
 #define RK gaussian
+#define ASK sphinx_
 #define PSK gaussian
 #define WDK is_zero
 #define WD1TK gaussian
@@ -1898,6 +1921,16 @@ float spatial_r(vec3 v)
 #define spatial_r(v) (1)
 #endif
 
+#if AS
+float spatial_as(vec3 v)
+{
+	 v.xy += 0.5 - fract(HOOKED_pos*HOOKED_size); 
+	 return ASK(length(v*SD)*ASS); 
+}
+#else
+#define spatial_as(v) (1)
+#endif
+
 #if PST && P >= PST
 #define spatial_p(v) PSK(length(v*PSD)*PSS)
 #else
@@ -1912,7 +1945,7 @@ val range(val pdiff_sq)
 	 return MAP(RK, pdiff_sq); 
 }
 
-val patch_comparison(vec3 r, vec3 r2)
+val patch_comparison(vec3 r)
 {
 	 vec3 p; 
 	 val min_rot = val(p_area); 
@@ -1922,8 +1955,8 @@ val patch_comparison(vec3 r, vec3 r2)
 	 	 val total_weight = val(0); 
 
 	 	 FOR_PATCH(p) {
-	 	 	 vec3 transformed_p = vec3(ref(rot(p.xy, ri), rfi), p.z); 
-	 	 	 val diff_sq = GET_RF(p + r2) - GET_RF((transformed_p + r) * SF); 
+	 	 	 vec3 transformed_p = SF * vec3(ref(rot(p.xy, ri), rfi), p.z); 
+	 	 	 val diff_sq = GET_RF(p) - GET_RF(transformed_p + r); 
 	 	 	 diff_sq *= diff_sq; 
 
 	 	 	 float weight = spatial_p(p.xy); 
@@ -1951,7 +1984,7 @@ const ivec2 offsets_diag[4] = { ivec2(-1,-1), ivec2(1,-1), ivec2(1,1), ivec2(-1,
 const ivec2 offsets_diag_sf[4] = { ivec2(-1,-1) * SF, ivec2(1,-1) * SF, ivec2(1,1) * SF, ivec2(-1,1) * SF }; 
 vec4 poi_patch_diag = gather_offs(0, offsets_diag); 
 #endif
-float patch_comparison_gather(vec3 r, vec3 r2)
+float patch_comparison_gather(vec3 r)
 {
 	 float min_rot = p_area - 1; 
 	 vec4 transformer_adj = gather_offs(r, offsets_adj_sf); 
@@ -2037,7 +2070,7 @@ const ivec2 offsets[4] = { ivec2(0,-1), ivec2(-1,0), ivec2(0,0), ivec2(1,0) };
 const ivec2 offsets_sf[4] = { ivec2(0,-1) * SF, ivec2(-1,0) * SF, ivec2(0,0) * SF, ivec2(1,0) * SF }; 
 vec4 poi_patch = gather_offs(0, offsets); 
 vec4 spatial_p_weights = vec4(spatial_p(vec2(0,-1)), spatial_p(vec2(-1,0)), spatial_p(vec2(0,0)), spatial_p(vec2(1,0))); 
-float patch_comparison_gather(vec3 r, vec3 r2)
+float patch_comparison_gather(vec3 r)
 {
 	 vec4 pdiff = poi_patch - gather_offs(r, offsets_sf); 
 	 return dot(POW2(pdiff) * spatial_p_weights, vec4(1)) / dot(spatial_p_weights, vec4(1)); 
@@ -2045,7 +2078,7 @@ float patch_comparison_gather(vec3 r, vec3 r2)
 #elif (defined(LUMA_gather) || D1W) && PS == 6 && RI == 0 && RFI == 0 && NO_GATHER
 // tiled even square patch_comparison_gather
 // XXX extend to support odd square?
-float patch_comparison_gather(vec3 r, vec3 r2)
+float patch_comparison_gather(vec3 r)
 {
 	 /* gather order:
 	  * w z
@@ -2055,7 +2088,7 @@ float patch_comparison_gather(vec3 r, vec3 r2)
 	 float pdiff_sq = 0; 
 	 float total_weight = 0; 
 	 for (tile.x = -hp;  tile.x < hp;  tile.x+=2) for (tile.y = -hp;  tile.y < hp;  tile.y+=2) {
-	 	 vec4 diff = gather(tile + r.xy) - gather(tile + r2.xy); 
+	 	 vec4 diff = gather(tile + r.xy) - gather(tile); 
 	 	 vec4 weights = vec4(spatial_p(tile+vec2(0,1)), spatial_p(tile+vec2(1,1)), spatial_p(tile+vec2(1,0)), spatial_p(tile+vec2(0,0))); 
 	 	 pdiff_sq += dot(POW2(diff) * weights, vec4(1)); 
 	 	 total_weight += dot(weights, vec4(1)); 
@@ -2086,8 +2119,8 @@ vec4 hook()
 #endif
 
 #if AS
-	 val total_weight_s = val(0); 
-	 val sum_s = val(0); 
+	 val total_weight_as = val(0); 
+	 val sum_as = val(0); 
 #endif
 
 #if WD == 2 // weight discard (mean)
@@ -2126,7 +2159,7 @@ vec4 hook()
 #if SKIP_PATCH
 	 	 val weight = val(1); 
 #else
-	 	 val pdiff_sq = (r.z == 0) ? val(patch_comparison_gather(tr, vec3(0))) : patch_comparison(tr, vec3(0)); 
+	 	 val pdiff_sq = (r.z == 0) ? val(patch_comparison_gather(tr)) : patch_comparison(tr); 
 	 	 val weight = range(pdiff_sq); 
 #endif
 
@@ -2145,9 +2178,10 @@ vec4 hook()
 	 	 weight *= spatial_weight; 
 
 #if AS
-	 	 spatial_weight *= int(r.z == 0);  // ignore temporal
-	 	 sum_s += px * spatial_weight; 
-	 	 total_weight_s += spatial_weight; 
+	 	 float spatial_as_weight = spatial_as(tr); 
+	 	 spatial_as_weight *= int(r.z == 0);  // ignore temporal
+	 	 sum_as += px * spatial_as_weight; 
+	 	 total_weight_as += spatial_as_weight; 
 #endif
 
 #if WD == 2 // weight discard (mean)
@@ -2215,7 +2249,7 @@ vec4 hook()
 #define AS_base poi
 #endif
 #if AS
-	 val usm = result - sum_s/total_weight_s; 
+	 val usm = result - sum_as/total_weight_as; 
 	 usm = exp(log(abs(usm))*ASP) * sign(usm);  // avoiding pow() since it's buggy on nvidia
 	 usm *= gaussian(abs((AS_base + usm - 0.5) / 1.5) * ASA); 
 	 usm *= ASF; 
@@ -2305,14 +2339,16 @@ vec4 hook()
  */
 #ifdef LUMA_raw
 #define AS 0
-#define ASF 0.1625
-#define ASA 5.0
-#define ASP 0.5
+#define ASF 0.3210768548589939
+#define ASA 0.9397860227779741
+#define ASP 0.7654083023321232
+#define ASS 0.4031301466402857
 #else
 #define AS 0
-#define ASF 0.1625
-#define ASA 5.0
-#define ASP 0.5
+#define ASF 0.6267063361944475
+#define ASA 1.9701543289754333
+#define ASP 1.0024630095639717
+#define ASS 0.05977279329812535
 #endif
 
 /* Starting weight
@@ -2552,6 +2588,7 @@ vec4 hook()
  *
  * SK: spatial kernel
  * RK: range kernel (takes patch differences)
+ * ASK: adaptive sharpening kernel
  * PSK: intra-patch spatial kernel
  * WDK: weight discard kernel
  * WD1TK (WD=1 only): weight discard tolerance kernel
@@ -2562,6 +2599,7 @@ vec4 hook()
  * cos
  * gaussian
  * lanczos
+ * quadratic
  * quadratic_ (unclamped)
  * sinc
  * sinc_ (unclamped)
@@ -2574,12 +2612,14 @@ vec4 hook()
 #ifdef LUMA_raw
 #define SK gaussian
 #define RK gaussian
+#define ASK sinc
 #define PSK gaussian
 #define WDK is_zero
 #define WD1TK gaussian
 #else
 #define SK gaussian
 #define RK gaussian
+#define ASK sphinx_
 #define PSK gaussian
 #define WDK is_zero
 #define WD1TK gaussian
@@ -2990,6 +3030,16 @@ float spatial_r(vec3 v)
 #define spatial_r(v) (1)
 #endif
 
+#if AS
+float spatial_as(vec3 v)
+{
+	v.xy += 0.5 - fract(HOOKED_pos*HOOKED_size);
+	return ASK(length(v*SD)*ASS);
+}
+#else
+#define spatial_as(v) (1)
+#endif
+
 #if PST && P >= PST
 #define spatial_p(v) PSK(length(v*PSD)*PSS)
 #else
@@ -3004,7 +3054,7 @@ val range(val pdiff_sq)
 	return MAP(RK, pdiff_sq);
 }
 
-val patch_comparison(vec3 r, vec3 r2)
+val patch_comparison(vec3 r)
 {
 	vec3 p;
 	val min_rot = val(p_area);
@@ -3014,8 +3064,8 @@ val patch_comparison(vec3 r, vec3 r2)
 		val total_weight = val(0);
 
 		FOR_PATCH(p) {
-			vec3 transformed_p = vec3(ref(rot(p.xy, ri), rfi), p.z);
-			val diff_sq = GET_RF(p + r2) - GET_RF((transformed_p + r) * SF);
+			vec3 transformed_p = SF * vec3(ref(rot(p.xy, ri), rfi), p.z);
+			val diff_sq = GET_RF(p) - GET_RF(transformed_p + r);
 			diff_sq *= diff_sq;
 
 			float weight = spatial_p(p.xy);
@@ -3043,7 +3093,7 @@ const ivec2 offsets_diag[4] = { ivec2(-1,-1), ivec2(1,-1), ivec2(1,1), ivec2(-1,
 const ivec2 offsets_diag_sf[4] = { ivec2(-1,-1) * SF, ivec2(1,-1) * SF, ivec2(1,1) * SF, ivec2(-1,1) * SF };
 vec4 poi_patch_diag = gather_offs(0, offsets_diag);
 #endif
-float patch_comparison_gather(vec3 r, vec3 r2)
+float patch_comparison_gather(vec3 r)
 {
 	float min_rot = p_area - 1;
 	vec4 transformer_adj = gather_offs(r, offsets_adj_sf);
@@ -3129,7 +3179,7 @@ const ivec2 offsets[4] = { ivec2(0,-1), ivec2(-1,0), ivec2(0,0), ivec2(1,0) };
 const ivec2 offsets_sf[4] = { ivec2(0,-1) * SF, ivec2(-1,0) * SF, ivec2(0,0) * SF, ivec2(1,0) * SF };
 vec4 poi_patch = gather_offs(0, offsets);
 vec4 spatial_p_weights = vec4(spatial_p(vec2(0,-1)), spatial_p(vec2(-1,0)), spatial_p(vec2(0,0)), spatial_p(vec2(1,0)));
-float patch_comparison_gather(vec3 r, vec3 r2)
+float patch_comparison_gather(vec3 r)
 {
 	vec4 pdiff = poi_patch - gather_offs(r, offsets_sf);
 	return dot(POW2(pdiff) * spatial_p_weights, vec4(1)) / dot(spatial_p_weights, vec4(1));
@@ -3137,7 +3187,7 @@ float patch_comparison_gather(vec3 r, vec3 r2)
 #elif (defined(LUMA_gather) || D1W) && PS == 6 && RI == 0 && RFI == 0 && NO_GATHER
 // tiled even square patch_comparison_gather
 // XXX extend to support odd square?
-float patch_comparison_gather(vec3 r, vec3 r2)
+float patch_comparison_gather(vec3 r)
 {
 	/* gather order:
 	 * w z
@@ -3147,7 +3197,7 @@ float patch_comparison_gather(vec3 r, vec3 r2)
 	float pdiff_sq = 0;
 	float total_weight = 0;
 	for (tile.x = -hp; tile.x < hp; tile.x+=2) for (tile.y = -hp; tile.y < hp; tile.y+=2) {
-		vec4 diff = gather(tile + r.xy) - gather(tile + r2.xy);
+		vec4 diff = gather(tile + r.xy) - gather(tile);
 		vec4 weights = vec4(spatial_p(tile+vec2(0,1)), spatial_p(tile+vec2(1,1)), spatial_p(tile+vec2(1,0)), spatial_p(tile+vec2(0,0)));
 		pdiff_sq += dot(POW2(diff) * weights, vec4(1));
 		total_weight += dot(weights, vec4(1));
@@ -3178,8 +3228,8 @@ vec4 hook()
 #endif
 
 #if AS
-	val total_weight_s = val(0);
-	val sum_s = val(0);
+	val total_weight_as = val(0);
+	val sum_as = val(0);
 #endif
 
 #if WD == 2 // weight discard (mean)
@@ -3218,7 +3268,7 @@ vec4 hook()
 #if SKIP_PATCH
 		val weight = val(1);
 #else
-		val pdiff_sq = (r.z == 0) ? val(patch_comparison_gather(tr, vec3(0))) : patch_comparison(tr, vec3(0));
+		val pdiff_sq = (r.z == 0) ? val(patch_comparison_gather(tr)) : patch_comparison(tr);
 		val weight = range(pdiff_sq);
 #endif
 
@@ -3237,9 +3287,10 @@ vec4 hook()
 		weight *= spatial_weight;
 
 #if AS
-		spatial_weight *= int(r.z == 0); // ignore temporal
-		sum_s += px * spatial_weight;
-		total_weight_s += spatial_weight;
+		float spatial_as_weight = spatial_as(tr);
+		spatial_as_weight *= int(r.z == 0); // ignore temporal
+		sum_as += px * spatial_as_weight;
+		total_weight_as += spatial_as_weight;
 #endif
 
 #if WD == 2 // weight discard (mean)
@@ -3307,7 +3358,7 @@ vec4 hook()
 #define AS_base poi
 #endif
 #if AS
-	val usm = result - sum_s/total_weight_s;
+	val usm = result - sum_as/total_weight_as;
 	usm = exp(log(abs(usm))*ASP) * sign(usm); // avoiding pow() since it's buggy on nvidia
 	usm *= gaussian(abs((AS_base + usm - 0.5) / 1.5) * ASA);
 	usm *= ASF;
