@@ -461,13 +461,6 @@
 #define V 0
 #endif
 
-// Blur factor (0.0 returns the input image, 1.0 returns the output image)
-#ifdef LUMA_raw
-#define BF 1.0
-#else
-#define BF 1.0
-#endif
-
 // Force disable textureGather
 #ifdef LUMA_raw
 #define NG 0
@@ -1128,9 +1121,9 @@ vec4 hook()
 
 #endif
 #if T && TRF
-	  imageStore(PREV1, ivec2(HOOKED_pos*imageSize(PREV1)), unval(result));  
+	  imageStore(PREV1, ivec2(HOOKED_pos*HOOKED_size), unval(result));  
 #elif T
-	  imageStore(PREV1, ivec2(HOOKED_pos*imageSize(PREV1)), unval(poi2));  
+	  imageStore(PREV1, ivec2(HOOKED_pos*HOOKED_size), unval(poi2));  
 #endif
 
 #if AS == 1 // sharpen+denoise
@@ -1181,7 +1174,7 @@ vec4 hook()
 	  return vec4(0.5);  
 #endif
 
-	  return unval(mix(poi, result, BF));  
+	  return unval(result);  
 }
 
 // End of source code injected from ../LQ/nlmeans.glsl 
@@ -1576,13 +1569,6 @@ return _INJ_RF_LUMA_texOff(0);
 #define V 0
 #else
 #define V 0
-#endif
-
-// Blur factor (0.0 returns the input image, 1.0 returns the output image)
-#ifdef LUMA_raw
-#define BF 1.0
-#else
-#define BF 1.0
 #endif
 
 // Force disable textureGather
@@ -2245,9 +2231,9 @@ vec4 hook()
 
 #endif
 #if T && TRF
-	 imageStore(PREV1, ivec2(HOOKED_pos*imageSize(PREV1)), unval(result)); 
+	 imageStore(PREV1, ivec2(HOOKED_pos*HOOKED_size), unval(result)); 
 #elif T
-	 imageStore(PREV1, ivec2(HOOKED_pos*imageSize(PREV1)), unval(poi2)); 
+	 imageStore(PREV1, ivec2(HOOKED_pos*HOOKED_size), unval(poi2)); 
 #endif
 
 #if AS == 1 // sharpen+denoise
@@ -2298,7 +2284,7 @@ vec4 hook()
 	 return vec4(0.5); 
 #endif
 
-	 return unval(mix(poi, result, BF)); 
+	 return unval(result); 
 }
 
 // End of source code injected from ../nlmeans.glsl 
@@ -2692,13 +2678,6 @@ vec4 hook()
 #define V 0
 #else
 #define V 0
-#endif
-
-// Blur factor (0.0 returns the input image, 1.0 returns the output image)
-#ifdef LUMA_raw
-#define BF 1.0
-#else
-#define BF 1.0
 #endif
 
 // Force disable textureGather
@@ -3361,9 +3340,9 @@ vec4 hook()
 
 #endif
 #if T && TRF
-	imageStore(PREV1, ivec2(HOOKED_pos*imageSize(PREV1)), unval(result));
+	imageStore(PREV1, ivec2(HOOKED_pos*HOOKED_size), unval(result));
 #elif T
-	imageStore(PREV1, ivec2(HOOKED_pos*imageSize(PREV1)), unval(poi2));
+	imageStore(PREV1, ivec2(HOOKED_pos*HOOKED_size), unval(poi2));
 #endif
 
 #if AS == 1 // sharpen+denoise
@@ -3414,5 +3393,5 @@ vec4 hook()
 	return vec4(0.5);
 #endif
 
-	return unval(mix(poi, result, BF));
+	return unval(result);
 }
