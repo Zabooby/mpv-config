@@ -127,8 +127,7 @@ mpv
 │   │   ├── F8.glsl
 │   │   ├── F8_LA.glsl
 │   │   ├── FSR.glsl
-│   │   ├── krigbl.glsl
-│   │   ├── nlmeans_hq_m.glsl                 
+│   │   ├── krigbl.glsl          
 │   │   ├── nlmeans_hqx.glsl
 │   │   ├── NVSharpen.glsl
 │   │   ├── ravu_L_r4.hook

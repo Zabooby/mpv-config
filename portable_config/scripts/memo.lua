@@ -196,7 +196,7 @@ end
 function menu_json(menu_items, native)
     local menu = {
         type = "memo-history",
-        title = "History (memo)",
+        title = "History",
         items = menu_items,
         selected_index = 1,
         on_close = {"script-message-to", script_name, "memo-clear"}
@@ -332,7 +332,7 @@ function draw_menu(delay)
     ass:draw_stop()
     ass:new_event()
 
-    ass:append("{\\pos(10," .. (0.1 * font_size) .. ")\\fs" .. font_size .. "\\bord2\\q2\\b1}History (memo){\\b0}\\N")
+    ass:append("{\\pos(10," .. (0.1 * font_size) .. ")\\fs" .. font_size .. "\\bord2\\q2\\b1}History{\\b0}\\N")
     ass:new_event()
 
     local scrolled_lines = get_scrolled_lines()
