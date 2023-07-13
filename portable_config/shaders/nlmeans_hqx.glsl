@@ -178,6 +178,24 @@
 #define WDS 1.0
 #endif
 
+/* Spatial correlation
+ *
+ * Prefers weights that are clustered together, reduces the weight of outliers.
+ *
+ * Has some performance impact due to the need to store all of the 
+ * pixels+weights and loop over them twice. This is shared with WD=2, so 
+ * there's not much reason to use C=1 without WD=2.
+ *
+ * CS: higher numbers encourage more correlation
+ */
+#ifdef LUMA_raw
+#define C 0
+#define CS 0.11643442361134813
+#else
+#define C 0
+#define CS 0.11643442361134813
+#endif
+
 /* Extremes preserve
  *
  * Reduce denoising in very bright/dark areas.
@@ -374,6 +392,7 @@
  * PSK: intra-patch spatial kernel
  * WDK: weight discard kernel
  * WD1TK (WD=1 only): weight discard tolerance kernel
+ * CK: spatial correlation kernel
  *
  * List of available kernels:
  *
@@ -398,6 +417,7 @@
 #define PSK gaussian
 #define WDK is_zero
 #define WD1TK gaussian
+#define CK gaussian
 #else
 #define SK gaussian
 #define RK gaussian
@@ -405,6 +425,7 @@
 #define PSK gaussian
 #define WDK is_zero
 #define WD1TK gaussian
+#define CK gaussian
 #endif
 
 /* Sampling method
@@ -450,8 +471,8 @@
  * 0: off
  * 1: absolute difference between input/output to the power of 0.25
  * 2: difference between input/output centered on 0.5
- * 3: post-WD weight map
- * 4: pre-WD weight map
+ * 3: post-WD/post-C weight map
+ * 4: pre-WD/pre-C weight map
  * 5: unsharp mask
  * 6: EP
  */
@@ -720,6 +741,7 @@ const int p_area = P_AREA(P*P);
 
 const float r_scale = 1.0/r_area;  
 const float p_scale = 1.0/p_area;  
+const float hr_scale = 1.0/hr;  
 
 #if SAMPLE == 0
 #define sample(tex, pos, size, pt, off) tex((pos) + (pt) * (vec2(off) + 0.5 - fract((pos) * (size))))
@@ -991,7 +1013,6 @@ vec4 hook()
 	  val result = val(0);  
 
 	  vec3 r = vec3(0);  
-	  vec3 p = vec3(0);  
 	  vec3 me = vec3(0);  
 
 #if T && ME == 1 // temporal & motion estimation
@@ -1007,14 +1028,18 @@ vec4 hook()
 	  val sum_as = val(0);  
 #endif
 
-#if WD == 2 // weight discard (mean)
+#if WD == 2 || C == 1 // weight discard (mean), spatial correlation
 	  int r_index = 0;  
 	  val_packed all_weights[r_area];  
 	  val_packed all_pixels[r_area];  
-#elif WD == 1 // weight discard (moving cumulative average)
+#endif
+#if WD == 1 // weight discard (moving cumulative average)
 	  int r_iter = 1;  
 	  val wd_total_weight = val(0);  
 	  val wd_sum = val(0);  
+#endif
+#if C == 1 // spatial correlation
+	  vec3 avg_coord = vec3(0);  
 #endif
 
 	  FOR_FRAME(r) {
@@ -1035,7 +1060,6 @@ vec4 hook()
 	  FOR_RESEARCH(r) {
 	  	  // r coords with appropriate transformations applied
 	  	  vec3 tr = vec3(r.xy + floor(r.xy * RSF), r.z);  
-	  	  float spatial_weight = spatial_r(tr);  
 	  	  tr.xy += me.xy;  
 
 	  	  val px = GET(tr);  
@@ -1059,7 +1083,7 @@ vec4 hook()
 	  	  weight = val(weight.x);  
 #endif
 
-	  	  weight *= spatial_weight;  
+	  	  weight *= spatial_r(r);  
 
 #if AS
 	  	  float spatial_as_weight = spatial_as(tr);  
@@ -1067,7 +1091,7 @@ vec4 hook()
 	  	  total_weight_as += spatial_as_weight;  
 #endif
 
-#if WD == 2 // weight discard (mean)
+#if WD == 2 || C == 1 // weight discard (mean), spatial correlation
 	  	  all_weights[r_index] = val_pack(weight);  
 	  	  all_pixels[r_index] = val_pack(px);  
 	  	  r_index++;  
@@ -1081,6 +1105,9 @@ vec4 hook()
 	  	  wd_total_weight += weight * wdkf;  
 	  	  r_iter++;  
 #endif
+#if C == 1 // spatial correlation
+	  	  avg_coord += r * r_scale;  
+#endif
 
 	  	  sum += px * weight;  
 	  	  total_weight += weight;  
@@ -1088,27 +1115,88 @@ vec4 hook()
 	  } // FOR_FRAME
 
 	  val avg_weight = total_weight * r_scale;  
-	  val old_avg_weight = avg_weight;  
 
+#if defined(LUMA_raw) && V == 4
+	  return unval(avg_weight);  
+#elif defined(CHROMA_raw) && V == 4
+	  return vec4(0.5);   // XXX visualize for chroma
+#endif
+
+#if WD == 2 || C == 1 // weight discard (mean), spatial correlation
 #if WD == 2 // weight discard (mean)
 	  total_weight = val(0);  
 	  sum = val(0);  
+#endif
 
-	  for (int i = 0;   i < r_area;   i++) {
-	  	  val weight = val_unpack(all_weights[i]);  
-	  	  val px = val_unpack(all_pixels[i]);  
+#if C == 1 // spatial correlation
+	  val cov_rx = val(0);   val cov_ry = val(0);   val cov_rz = val(0);  
+	  vec3 var_coord = vec3(0);  
+	  val var_weight = val(0);  
+#endif
 
+	  r_index = 0;  
+	  FOR_FRAME(r) FOR_RESEARCH(r) {
+	  	  val px = val_unpack(all_pixels[r_index]);  
+	  	  val weight = val_unpack(all_weights[r_index]);  
+
+#if WD == 2 // weight discard (mean)
 	  	  val below_threshold = WDS * abs(min(val(0.0), weight - (avg_weight * WDT)));  
 	  	  weight *= MAP(WDK, below_threshold);  
+#endif
 
+#if C == 1 // spatial correlation
+	  	  cov_rx += (r.x - avg_coord.x) * (weight - avg_weight);  
+	  	  cov_ry += (r.y - avg_coord.y) * (weight - avg_weight);  
+	  	  cov_rz += (r.z - avg_coord.z) * (weight - avg_weight);  
+	  	  var_coord += POW2(r - avg_coord);  
+	  	  var_weight += POW2(weight - avg_weight);  
+#endif
+
+#if WD == 2 // weight discard (mean)
 	  	  sum += px * weight;  
 	  	  total_weight += weight;  
-	  }
-#elif WD == 1 // weight discard (moving cumulative average)
+#endif
+#if WD == 2 && C == 1 // weight discard (mean) AND spatial correlation
+	  	  all_weights[r_index] = val_pack(weight);  
+	  	  all_pixels[r_index] = val_pack(px);  
+#endif
+
+	  	  r_index++;  
+	  } // FOR_FRAME FOR_RESEARCH
+#endif
+
+#if WD == 1 // weight discard (moving cumulative average)
 	  total_weight = wd_total_weight;  
 	  sum = wd_sum;  
 #endif
-#if WD // weight discard
+
+#if C == 1 // spatial correlation
+	  total_weight = val(0);  
+	  sum = val(0);  
+
+	  cov_rx *= r_scale;   cov_ry *= r_scale;   cov_rz *= r_scale;   var_coord *= r_scale;   var_weight *= r_scale;  
+
+	  val corr_rx = cov_rx / max(EPSILON, sqrt(var_coord.x) * sqrt(var_weight));  
+	  val corr_ry = cov_ry / max(EPSILON, sqrt(var_coord.y) * sqrt(var_weight));  
+	  val corr_rz = cov_rz / max(EPSILON, sqrt(var_coord.z) * sqrt(var_weight));  
+
+	  r_index = 0;  
+	  FOR_FRAME(r) FOR_RESEARCH(r) {
+	  	  val px = val_unpack(all_pixels[r_index]);  
+	  	  val weight = val_unpack(all_weights[r_index]);  
+
+	  	  weight *= CK(abs(corr_rx - r.x * hr_scale) * abs(corr_rx) * CS);  
+	  	  weight *= CK(abs(corr_ry - r.y * hr_scale) * abs(corr_ry) * CS);  
+	  	  weight *= CK(abs(corr_rz - r.z * hr_scale) * abs(corr_rz) * CS);  
+
+	  	  sum += px * weight;  
+	  	  total_weight += weight;  
+
+	  	  r_index++;  
+	  }
+#endif
+
+#if WD || C // weight discard, spatial correlation
 	  avg_weight = total_weight * r_scale;  
 #endif
 
@@ -1159,10 +1247,8 @@ vec4 hook()
 	  result = clamp(pow(abs(poi - result), val(0.25)), 0.0, 1.0);  
 #elif V == 2
 	  result = (poi - result) * 0.5 + 0.5;  
-#elif V == 3 // post-WD weight map
+#elif V == 3
 	  result = avg_weight;  
-#elif V == 4 // pre-WD edge map
-	  result = old_avg_weight;  
 #elif V == 5
 	  result = 0.5 + usm;  
 #elif V == 6
@@ -1286,6 +1372,24 @@ return _INJ_RF_LUMA_texOff(0);
 #define WDT 0.002713346103131793
 #define WDP 5.692202343435388
 #define WDS 1.0
+#endif
+
+/* Spatial correlation
+ *
+ * Prefers weights that are clustered together, reduces the weight of outliers.
+ *
+ * Has some performance impact due to the need to store all of the 
+ * pixels+weights and loop over them twice. This is shared with WD=2, so 
+ * there's not much reason to use C=1 without WD=2.
+ *
+ * CS: higher numbers encourage more correlation
+ */
+#ifdef LUMA_raw
+#define C 1
+#define CS 0.11643442361134813
+#else
+#define C 0
+#define CS 0.11643442361134813
 #endif
 
 /* Extremes preserve
@@ -1484,6 +1588,7 @@ return _INJ_RF_LUMA_texOff(0);
  * PSK: intra-patch spatial kernel
  * WDK: weight discard kernel
  * WD1TK (WD=1 only): weight discard tolerance kernel
+ * CK: spatial correlation kernel
  *
  * List of available kernels:
  *
@@ -1508,6 +1613,7 @@ return _INJ_RF_LUMA_texOff(0);
 #define PSK gaussian
 #define WDK is_zero
 #define WD1TK gaussian
+#define CK gaussian
 #else
 #define SK gaussian
 #define RK gaussian
@@ -1515,6 +1621,7 @@ return _INJ_RF_LUMA_texOff(0);
 #define PSK gaussian
 #define WDK is_zero
 #define WD1TK gaussian
+#define CK gaussian
 #endif
 
 /* Sampling method
@@ -1560,8 +1667,8 @@ return _INJ_RF_LUMA_texOff(0);
  * 0: off
  * 1: absolute difference between input/output to the power of 0.25
  * 2: difference between input/output centered on 0.5
- * 3: post-WD weight map
- * 4: pre-WD weight map
+ * 3: post-WD/post-C weight map
+ * 4: pre-WD/pre-C weight map
  * 5: unsharp mask
  * 6: EP
  */
@@ -1830,6 +1937,7 @@ const int p_area = P_AREA(P*P);
 
 const float r_scale = 1.0/r_area; 
 const float p_scale = 1.0/p_area; 
+const float hr_scale = 1.0/hr; 
 
 #if SAMPLE == 0
 #define sample(tex, pos, size, pt, off) tex((pos) + (pt) * (vec2(off) + 0.5 - fract((pos) * (size))))
@@ -2101,7 +2209,6 @@ vec4 hook()
 	 val result = val(0); 
 
 	 vec3 r = vec3(0); 
-	 vec3 p = vec3(0); 
 	 vec3 me = vec3(0); 
 
 #if T && ME == 1 // temporal & motion estimation
@@ -2117,14 +2224,18 @@ vec4 hook()
 	 val sum_as = val(0); 
 #endif
 
-#if WD == 2 // weight discard (mean)
+#if WD == 2 || C == 1 // weight discard (mean), spatial correlation
 	 int r_index = 0; 
 	 val_packed all_weights[r_area]; 
 	 val_packed all_pixels[r_area]; 
-#elif WD == 1 // weight discard (moving cumulative average)
+#endif
+#if WD == 1 // weight discard (moving cumulative average)
 	 int r_iter = 1; 
 	 val wd_total_weight = val(0); 
 	 val wd_sum = val(0); 
+#endif
+#if C == 1 // spatial correlation
+	 vec3 avg_coord = vec3(0); 
 #endif
 
 	 FOR_FRAME(r) {
@@ -2145,7 +2256,6 @@ vec4 hook()
 	 FOR_RESEARCH(r) {
 	 	 // r coords with appropriate transformations applied
 	 	 vec3 tr = vec3(r.xy + floor(r.xy * RSF), r.z); 
-	 	 float spatial_weight = spatial_r(tr); 
 	 	 tr.xy += me.xy; 
 
 	 	 val px = GET(tr); 
@@ -2169,7 +2279,7 @@ vec4 hook()
 	 	 weight = val(weight.x); 
 #endif
 
-	 	 weight *= spatial_weight; 
+	 	 weight *= spatial_r(r); 
 
 #if AS
 	 	 float spatial_as_weight = spatial_as(tr); 
@@ -2177,7 +2287,7 @@ vec4 hook()
 	 	 total_weight_as += spatial_as_weight; 
 #endif
 
-#if WD == 2 // weight discard (mean)
+#if WD == 2 || C == 1 // weight discard (mean), spatial correlation
 	 	 all_weights[r_index] = val_pack(weight); 
 	 	 all_pixels[r_index] = val_pack(px); 
 	 	 r_index++; 
@@ -2191,6 +2301,9 @@ vec4 hook()
 	 	 wd_total_weight += weight * wdkf; 
 	 	 r_iter++; 
 #endif
+#if C == 1 // spatial correlation
+	 	 avg_coord += r * r_scale; 
+#endif
 
 	 	 sum += px * weight; 
 	 	 total_weight += weight; 
@@ -2198,27 +2311,88 @@ vec4 hook()
 	 } // FOR_FRAME
 
 	 val avg_weight = total_weight * r_scale; 
-	 val old_avg_weight = avg_weight; 
 
+#if defined(LUMA_raw) && V == 4
+	 return unval(avg_weight); 
+#elif defined(CHROMA_raw) && V == 4
+	 return vec4(0.5);  // XXX visualize for chroma
+#endif
+
+#if WD == 2 || C == 1 // weight discard (mean), spatial correlation
 #if WD == 2 // weight discard (mean)
 	 total_weight = val(0); 
 	 sum = val(0); 
+#endif
 
-	 for (int i = 0;  i < r_area;  i++) {
-	 	 val weight = val_unpack(all_weights[i]); 
-	 	 val px = val_unpack(all_pixels[i]); 
+#if C == 1 // spatial correlation
+	 val cov_rx = val(0);  val cov_ry = val(0);  val cov_rz = val(0); 
+	 vec3 var_coord = vec3(0); 
+	 val var_weight = val(0); 
+#endif
 
+	 r_index = 0; 
+	 FOR_FRAME(r) FOR_RESEARCH(r) {
+	 	 val px = val_unpack(all_pixels[r_index]); 
+	 	 val weight = val_unpack(all_weights[r_index]); 
+
+#if WD == 2 // weight discard (mean)
 	 	 val below_threshold = WDS * abs(min(val(0.0), weight - (avg_weight * WDT))); 
 	 	 weight *= MAP(WDK, below_threshold); 
+#endif
 
+#if C == 1 // spatial correlation
+	 	 cov_rx += (r.x - avg_coord.x) * (weight - avg_weight); 
+	 	 cov_ry += (r.y - avg_coord.y) * (weight - avg_weight); 
+	 	 cov_rz += (r.z - avg_coord.z) * (weight - avg_weight); 
+	 	 var_coord += POW2(r - avg_coord); 
+	 	 var_weight += POW2(weight - avg_weight); 
+#endif
+
+#if WD == 2 // weight discard (mean)
 	 	 sum += px * weight; 
 	 	 total_weight += weight; 
-	 }
-#elif WD == 1 // weight discard (moving cumulative average)
+#endif
+#if WD == 2 && C == 1 // weight discard (mean) AND spatial correlation
+	 	 all_weights[r_index] = val_pack(weight); 
+	 	 all_pixels[r_index] = val_pack(px); 
+#endif
+
+	 	 r_index++; 
+	 } // FOR_FRAME FOR_RESEARCH
+#endif
+
+#if WD == 1 // weight discard (moving cumulative average)
 	 total_weight = wd_total_weight; 
 	 sum = wd_sum; 
 #endif
-#if WD // weight discard
+
+#if C == 1 // spatial correlation
+	 total_weight = val(0); 
+	 sum = val(0); 
+
+	 cov_rx *= r_scale;  cov_ry *= r_scale;  cov_rz *= r_scale;  var_coord *= r_scale;  var_weight *= r_scale; 
+
+	 val corr_rx = cov_rx / max(EPSILON, sqrt(var_coord.x) * sqrt(var_weight)); 
+	 val corr_ry = cov_ry / max(EPSILON, sqrt(var_coord.y) * sqrt(var_weight)); 
+	 val corr_rz = cov_rz / max(EPSILON, sqrt(var_coord.z) * sqrt(var_weight)); 
+
+	 r_index = 0; 
+	 FOR_FRAME(r) FOR_RESEARCH(r) {
+	 	 val px = val_unpack(all_pixels[r_index]); 
+	 	 val weight = val_unpack(all_weights[r_index]); 
+
+	 	 weight *= CK(abs(corr_rx - r.x * hr_scale) * abs(corr_rx) * CS); 
+	 	 weight *= CK(abs(corr_ry - r.y * hr_scale) * abs(corr_ry) * CS); 
+	 	 weight *= CK(abs(corr_rz - r.z * hr_scale) * abs(corr_rz) * CS); 
+
+	 	 sum += px * weight; 
+	 	 total_weight += weight; 
+
+	 	 r_index++; 
+	 }
+#endif
+
+#if WD || C // weight discard, spatial correlation
 	 avg_weight = total_weight * r_scale; 
 #endif
 
@@ -2269,10 +2443,8 @@ vec4 hook()
 	 result = clamp(pow(abs(poi - result), val(0.25)), 0.0, 1.0); 
 #elif V == 2
 	 result = (poi - result) * 0.5 + 0.5; 
-#elif V == 3 // post-WD weight map
+#elif V == 3
 	 result = avg_weight; 
-#elif V == 4 // pre-WD edge map
-	 result = old_avg_weight; 
 #elif V == 5
 	 result = 0.5 + usm; 
 #elif V == 6
@@ -2395,6 +2567,24 @@ vec4 hook()
 #define WDT 0.002713346103131793
 #define WDP 5.692202343435388
 #define WDS 1.0
+#endif
+
+/* Spatial correlation
+ *
+ * Prefers weights that are clustered together, reduces the weight of outliers.
+ *
+ * Has some performance impact due to the need to store all of the 
+ * pixels+weights and loop over them twice. This is shared with WD=2, so 
+ * there's not much reason to use C=1 without WD=2.
+ *
+ * CS: higher numbers encourage more correlation
+ */
+#ifdef LUMA_raw
+#define C 1
+#define CS 0.11643442361134813
+#else
+#define C 0
+#define CS 0.11643442361134813
 #endif
 
 /* Extremes preserve
@@ -2593,6 +2783,7 @@ vec4 hook()
  * PSK: intra-patch spatial kernel
  * WDK: weight discard kernel
  * WD1TK (WD=1 only): weight discard tolerance kernel
+ * CK: spatial correlation kernel
  *
  * List of available kernels:
  *
@@ -2617,6 +2808,7 @@ vec4 hook()
 #define PSK gaussian
 #define WDK is_zero
 #define WD1TK gaussian
+#define CK gaussian
 #else
 #define SK gaussian
 #define RK gaussian
@@ -2624,6 +2816,7 @@ vec4 hook()
 #define PSK gaussian
 #define WDK is_zero
 #define WD1TK gaussian
+#define CK gaussian
 #endif
 
 /* Sampling method
@@ -2669,8 +2862,8 @@ vec4 hook()
  * 0: off
  * 1: absolute difference between input/output to the power of 0.25
  * 2: difference between input/output centered on 0.5
- * 3: post-WD weight map
- * 4: pre-WD weight map
+ * 3: post-WD/post-C weight map
+ * 4: pre-WD/pre-C weight map
  * 5: unsharp mask
  * 6: EP
  */
@@ -2939,6 +3132,7 @@ const int p_area = P_AREA(P*P);
 
 const float r_scale = 1.0/r_area;
 const float p_scale = 1.0/p_area;
+const float hr_scale = 1.0/hr;
 
 #if SAMPLE == 0
 #define sample(tex, pos, size, pt, off) tex((pos) + (pt) * (vec2(off) + 0.5 - fract((pos) * (size))))
@@ -3210,7 +3404,6 @@ vec4 hook()
 	val result = val(0);
 
 	vec3 r = vec3(0);
-	vec3 p = vec3(0);
 	vec3 me = vec3(0);
 
 #if T && ME == 1 // temporal & motion estimation
@@ -3226,14 +3419,18 @@ vec4 hook()
 	val sum_as = val(0);
 #endif
 
-#if WD == 2 // weight discard (mean)
+#if WD == 2 || C == 1 // weight discard (mean), spatial correlation
 	int r_index = 0;
 	val_packed all_weights[r_area];
 	val_packed all_pixels[r_area];
-#elif WD == 1 // weight discard (moving cumulative average)
+#endif
+#if WD == 1 // weight discard (moving cumulative average)
 	int r_iter = 1;
 	val wd_total_weight = val(0);
 	val wd_sum = val(0);
+#endif
+#if C == 1 // spatial correlation
+	vec3 avg_coord = vec3(0);
 #endif
 
 	FOR_FRAME(r) {
@@ -3254,7 +3451,6 @@ vec4 hook()
 	FOR_RESEARCH(r) {
 		// r coords with appropriate transformations applied
 		vec3 tr = vec3(r.xy + floor(r.xy * RSF), r.z);
-		float spatial_weight = spatial_r(tr);
 		tr.xy += me.xy;
 
 		val px = GET(tr);
@@ -3278,7 +3474,7 @@ vec4 hook()
 		weight = val(weight.x);
 #endif
 
-		weight *= spatial_weight;
+		weight *= spatial_r(r);
 
 #if AS
 		float spatial_as_weight = spatial_as(tr);
@@ -3286,7 +3482,7 @@ vec4 hook()
 		total_weight_as += spatial_as_weight;
 #endif
 
-#if WD == 2 // weight discard (mean)
+#if WD == 2 || C == 1 // weight discard (mean), spatial correlation
 		all_weights[r_index] = val_pack(weight);
 		all_pixels[r_index] = val_pack(px);
 		r_index++;
@@ -3300,6 +3496,9 @@ vec4 hook()
 		wd_total_weight += weight * wdkf;
 		r_iter++;
 #endif
+#if C == 1 // spatial correlation
+		avg_coord += r * r_scale;
+#endif
 
 		sum += px * weight;
 		total_weight += weight;
@@ -3307,27 +3506,88 @@ vec4 hook()
 	} // FOR_FRAME
 
 	val avg_weight = total_weight * r_scale;
-	val old_avg_weight = avg_weight;
 
+#if defined(LUMA_raw) && V == 4
+	return unval(avg_weight);
+#elif defined(CHROMA_raw) && V == 4
+	return vec4(0.5); // XXX visualize for chroma
+#endif
+
+#if WD == 2 || C == 1 // weight discard (mean), spatial correlation
 #if WD == 2 // weight discard (mean)
 	total_weight = val(0);
 	sum = val(0);
+#endif
 
-	for (int i = 0; i < r_area; i++) {
-		val weight = val_unpack(all_weights[i]);
-		val px = val_unpack(all_pixels[i]);
+#if C == 1 // spatial correlation
+	val cov_rx = val(0); val cov_ry = val(0); val cov_rz = val(0);
+	vec3 var_coord = vec3(0);
+	val var_weight = val(0);
+#endif
 
+	r_index = 0;
+	FOR_FRAME(r) FOR_RESEARCH(r) {
+		val px = val_unpack(all_pixels[r_index]);
+		val weight = val_unpack(all_weights[r_index]);
+
+#if WD == 2 // weight discard (mean)
 		val below_threshold = WDS * abs(min(val(0.0), weight - (avg_weight * WDT)));
 		weight *= MAP(WDK, below_threshold);
+#endif
 
+#if C == 1 // spatial correlation
+		cov_rx += (r.x - avg_coord.x) * (weight - avg_weight);
+		cov_ry += (r.y - avg_coord.y) * (weight - avg_weight);
+		cov_rz += (r.z - avg_coord.z) * (weight - avg_weight);
+		var_coord += POW2(r - avg_coord);
+		var_weight += POW2(weight - avg_weight);
+#endif
+
+#if WD == 2 // weight discard (mean)
 		sum += px * weight;
 		total_weight += weight;
-	}
-#elif WD == 1 // weight discard (moving cumulative average)
+#endif
+#if WD == 2 && C == 1 // weight discard (mean) AND spatial correlation
+		all_weights[r_index] = val_pack(weight);
+		all_pixels[r_index] = val_pack(px);
+#endif
+
+		r_index++;
+	} // FOR_FRAME FOR_RESEARCH
+#endif
+
+#if WD == 1 // weight discard (moving cumulative average)
 	total_weight = wd_total_weight;
 	sum = wd_sum;
 #endif
-#if WD // weight discard
+
+#if C == 1 // spatial correlation
+	total_weight = val(0);
+	sum = val(0);
+
+	cov_rx *= r_scale; cov_ry *= r_scale; cov_rz *= r_scale; var_coord *= r_scale; var_weight *= r_scale;
+
+	val corr_rx = cov_rx / max(EPSILON, sqrt(var_coord.x) * sqrt(var_weight));
+	val corr_ry = cov_ry / max(EPSILON, sqrt(var_coord.y) * sqrt(var_weight));
+	val corr_rz = cov_rz / max(EPSILON, sqrt(var_coord.z) * sqrt(var_weight));
+
+	r_index = 0;
+	FOR_FRAME(r) FOR_RESEARCH(r) {
+		val px = val_unpack(all_pixels[r_index]);
+		val weight = val_unpack(all_weights[r_index]);
+
+		weight *= CK(abs(corr_rx - r.x * hr_scale) * abs(corr_rx) * CS);
+		weight *= CK(abs(corr_ry - r.y * hr_scale) * abs(corr_ry) * CS);
+		weight *= CK(abs(corr_rz - r.z * hr_scale) * abs(corr_rz) * CS);
+
+		sum += px * weight;
+		total_weight += weight;
+
+		r_index++;
+	}
+#endif
+
+#if WD || C // weight discard, spatial correlation
 	avg_weight = total_weight * r_scale;
 #endif
 
@@ -3378,10 +3638,8 @@ vec4 hook()
 	result = clamp(pow(abs(poi - result), val(0.25)), 0.0, 1.0);
 #elif V == 2
 	result = (poi - result) * 0.5 + 0.5;
-#elif V == 3 // post-WD weight map
+#elif V == 3
 	result = avg_weight;
-#elif V == 4 // pre-WD edge map
-	result = old_avg_weight;
 #elif V == 5
 	result = 0.5 + usm;
 #elif V == 6
