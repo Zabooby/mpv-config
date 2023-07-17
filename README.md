@@ -60,7 +60,9 @@ mpv
 │   ├── mpv-uninstall.bat                 # Run with administrator priviledges to uninstall mpv
 │   └── updater.ps1
 │
-├── portable_config                       # This is where my config is placed 
+├── portable_config                       # This is where my config is placed
+│   ├── cache
+│   │ 
 │   ├── fonts
 │   │   ├── ClearSans-Bold.ttf
 │   │   ├── JetBrainsMono-Regular.ttf
