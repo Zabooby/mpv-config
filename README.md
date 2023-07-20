@@ -61,7 +61,7 @@ mpv
 │   └── updater.ps1
 │
 ├── portable_config                       # This is where my config is placed
-│   ├── cache
+│   ├── cache                             # Created automatically   
 │   │ 
 │   ├── fonts
 │   │   ├── ClearSans-Bold.ttf
@@ -71,6 +71,7 @@ mpv
 |   |   └── uosc-textures.ttf
 │   │
 │   ├── script-opts                       # Contains configuration files for scripts
+|   |   ├── console.conf
 |   |   ├── evafast.conf 
 |   |   ├── memo.conf
 |   |   ├── memo-history.log              # Created automatically 
@@ -79,7 +80,7 @@ mpv
 │   │   └── webtorrent.conf               # Specify where to save downloaded videos here
 │   │
 │   ├── scripts      
-│   │   ├── uosc_shared                    
+│   │   ├── uosc              
 │   │       ├── elements 
 |   |           ├── BufferingIndicator.lua
 |   |           ├── Button.lua
@@ -116,7 +117,6 @@ mpv
 |   |   ├── memo.lua
 |   |   ├── sview.lua
 │   │   ├── thumbfast.lua                     
-│   │   ├── uosc.lua
 │   │   └── webtorrent.js                 # Point here when setting up webtorrent script
 │   │
 │   ├── shaders                           # Contains external shaders
