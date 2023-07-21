@@ -68,9 +68,9 @@
 
 // Denoising factor (sigma, higher means more blur)
 #ifdef LUMA_raw
-#define S 3.6280599151151334
+#define S 3.6168941519884963
 #else
-#define S 5.100920322105462
+#define S 5.228925068733646
 #endif
 
 /* Adaptive sharpening
@@ -95,17 +95,17 @@
  */
 #ifdef LUMA_raw
 #define AS 0
-#define ASF 0.3210768548589939
-#define ASA 0.9397860227779741
-#define ASP 0.7654083023321232
-#define ASS 0.4031301466402857
+#define ASF 0.24159050282277234
+#define ASA 0.9705376614364192
+#define ASP 0.679345675735829
+#define ASS 0.3745673450834435
 #define ASI 0
 #else
 #define AS 0
-#define ASF 0.6267063361944475
-#define ASA 1.9701543289754333
-#define ASP 1.0024630095639717
-#define ASS 0.05977279329812535
+#define ASF 0.49435642075860164
+#define ASA 0.9239336966789411
+#define ASP 0.8844773136788092
+#define ASS 0.04221585861872303
 #define ASI 0
 #endif
 
@@ -115,9 +115,9 @@
  * pixel-of-interest. Lower numbers may help handle heavy noise.
  */
 #ifdef LUMA_raw
-#define SW 0.717967659498257
+#define SW 0.742862923455842
 #else
-#define SW 0.6429313578248627
+#define SW 0.6683395597722627
 #endif
 
 /* Spatial kernel
@@ -134,12 +134,12 @@
  */
 #ifdef LUMA_raw
 #define SST 1
-#define SS 0.5072938692870894
+#define SS 0.5209736219422769
 #define PST 0
 #define PSS 0.0
 #else
 #define SST 1
-#define SS 0.31580805565941705
+#define SS 0.32444557191341866
 #define PST 0
 #define PSS 0.0
 #endif
@@ -250,13 +250,13 @@
  */
 #ifdef LUMA_raw
 #define WD 1
-#define WDT 0.5509878334105431
-#define WDP 5.402102275251726
+#define WDT 0.5281028478124096
+#define WDP 4.730528086592124
 #define WDS 1.0
 #else
 #define WD 1
-#define WDT 0.9385150042004405
-#define WDP 5.692202343435388
+#define WDT 0.9417535892431848
+#define WDP 5.274888581134373
 #define WDS 1.0
 #endif
 
@@ -271,10 +271,10 @@
  */
 #ifdef LUMA_raw
 #define C 0
-#define CS 0.11643442361134813
+#define CS 0.11029390001250727
 #else
 #define C 0
-#define CS 0.11643442361134813
+#define CS 0.11029390001250727
 #endif
 
 /* Robust filtering
@@ -408,12 +408,12 @@
  */
 #ifdef LUMA_raw
 #define SO 0.0
-#define RO 0.0
+#define RO 9.773746446023492e-05
 #define PSO 0.0
 #define ASO 0.0
 #else
 #define SO 0.0
-#define RO 0.0
+#define RO 0.00015152392427859513
 #define PSO 0.0
 #define ASO 0.0
 #endif
@@ -1282,9 +1282,9 @@ vec4 hook()
 
 // Denoising factor (sigma, higher means more blur)
 #ifdef LUMA_raw
-#define S 1.4460272592109746
+#define S 1.5100368270594222
 #else
-#define S 1.359261923810611
+#define S 1.1938600037262965
 #endif
 
 /* Adaptive sharpening
@@ -1309,17 +1309,17 @@ vec4 hook()
  */
 #ifdef LUMA_raw
 #define AS 0
-#define ASF 0.5483900509943984
-#define ASA 1.1990767842629195
-#define ASP 1.0006451175014668
-#define ASS 0.3537519927847657
+#define ASF 0.5073015913084239
+#define ASA 1.2507376773041337
+#define ASP 0.9779000193609839
+#define ASS 0.3536013978812405
 #define ASI 0
 #else
 #define AS 0
-#define ASF 0.4804227336582368
-#define ASA 2.0325416266014185
-#define ASP 1.2022557068138862
-#define ASS 0.0682805004673164
+#define ASF 0.691397862110103
+#define ASA 1.4038435993185387
+#define ASP 1.306480175292214
+#define ASS 0.057067447417175975
 #define ASI 0
 #endif
 
@@ -1329,9 +1329,9 @@ vec4 hook()
  * pixel-of-interest. Lower numbers may help handle heavy noise.
  */
 #ifdef LUMA_raw
-#define SW 1.812902116179249
+#define SW 1.724986593611501
 #else
-#define SW 1.4903543760666318
+#define SW 1.3409924565119054
 #endif
 
 /* Spatial kernel
@@ -1348,12 +1348,12 @@ vec4 hook()
  */
 #ifdef LUMA_raw
 #define SST 1
-#define SS 0.2952259847265974
+#define SS 0.36284567215031627
 #define PST 0
 #define PSS 0.0
 #else
 #define SST 1
-#define SS 0.17336705987012963
+#define SS 0.2627184507564747
 #define PST 0
 #define PSS 0.0
 #endif
@@ -1464,7 +1464,7 @@ vec4 hook()
  */
 #ifdef LUMA_raw
 #define WD 2
-#define WDT 0.07232509380556876
+#define WDT 0.10614185911846982
 #define WDP 5.402102275251726
 #define WDS 1.0
 #else
@@ -1485,10 +1485,10 @@ vec4 hook()
  */
 #ifdef LUMA_raw
 #define C 1
-#define CS 0.1060139658565394
+#define CS 0.07265138933038029
 #else
 #define C 0
-#define CS 0.11643442361134813
+#define CS 0.11029390001250727
 #endif
 
 /* Robust filtering
@@ -1622,12 +1622,12 @@ vec4 hook()
  */
 #ifdef LUMA_raw
 #define SO 0.0
-#define RO 0.0
+#define RO 3.660120938709089e-05
 #define PSO 0.0
 #define ASO 0.0
 #else
 #define SO 0.0
-#define RO 0.0
+#define RO 9.243129782763913e-05
 #define PSO 0.0
 #define ASO 0.0
 #endif
