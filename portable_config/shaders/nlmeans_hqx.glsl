@@ -21,12 +21,7 @@
 
 // Description: HQX/nlmeans.glsl: Very slow, should offer the best quality.
 
-/* This shader is highly configurable via user variables below. Although the 
- * default settings should offer good quality at a reasonable speed, you are 
- * encouraged to tweak them to your preferences.
- */
-
-// The following is shader code injected from ../LQ/nlmeans.glsl
+// The following is shader code injected from ./nlmeans_template
 /* vi: ft=c
  *
  * Based on vf_nlmeans.c from FFmpeg.
@@ -48,17 +43,12 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Description: LQ/nlmeans.glsl: Faster, but lower quality.
-
-/* This shader is highly configurable via user variables below. Although the 
- * default settings should offer good quality at a reasonable speed, you are 
- * encouraged to tweak them to your preferences.
- */
+// Description: nlmeans.glsl: Default profile, general purpose, tuned for low noise
 
 //!HOOK LUMA
 //!HOOK CHROMA
 //!BIND HOOKED
-//!DESC Non-local means (LQ/nlmeans.glsl)
+//!DESC Non-local means (nlmeans.glsl)
 //!SAVE RF_LUMA
 
 // User variables
@@ -68,18 +58,12 @@
 
 // Denoising factor (sigma, higher means more blur)
 #ifdef LUMA_raw
-#define S 3.6168941519884963
+#define S 3.8473904368984075
 #else
-#define S 5.228925068733646
+#define S 3.8473904368984075
 #endif
 
-/* Adaptive sharpening
- *
- * Performs an unsharp mask by subtracting the spatial kernel's blur from the 
- * NLM blur. For sharpen+denoise the sharpening is limited to edge areas and 
- * denoising is done everywhere else.
- *
- * Use V=4 to visualize which areas are sharpened (black means sharpen).
+/* Noise resistant adaptive sharpening
  *
  * AS:
  * 	 - 0: disable
@@ -95,29 +79,28 @@
  */
 #ifdef LUMA_raw
 #define AS 0
-#define ASF 0.24159050282277234
-#define ASA 0.9705376614364192
-#define ASP 0.679345675735829
-#define ASS 0.3745673450834435
+#define ASF 0.3210768548589939
+#define ASA 0.9397860227779741
+#define ASP 0.7654083023321232
+#define ASS 0.4031301466402857
 #define ASI 0
 #else
 #define AS 0
-#define ASF 0.49435642075860164
-#define ASA 0.9239336966789411
-#define ASP 0.8844773136788092
-#define ASS 0.04221585861872303
+#define ASF 0.6267063361944475
+#define ASA 1.9701543289754333
+#define ASP 1.0024630095639717
+#define ASS 0.05977279329812535
 #define ASI 0
 #endif
 
 /* Starting weight
  *
- * Also known as the center weight. This represents the weight of the 
- * pixel-of-interest. Lower numbers may help handle heavy noise.
+ * AKA the center weight, the weight of the pixel-of-interest.
  */
 #ifdef LUMA_raw
-#define SW 0.742862923455842
+#define SW 0.5627357248813225
 #else
-#define SW 0.6683395597722627
+#define SW 0.5627357248813225
 #endif
 
 /* Spatial kernel
@@ -125,7 +108,7 @@
  * Increasing the spatial sigma (SS) reduces the weight of further 
  * pixels.
  *
- * The intra-patch variants are supposed to help with larger patch sizes.
+ * The intra-patch variants might help with larger patch sizes.
  *
  * SST: enables spatial kernel if R>=PST, 0 fully disables
  * SS: spatial sigma
@@ -134,25 +117,25 @@
  */
 #ifdef LUMA_raw
 #define SST 1
-#define SS 0.5209736219422769
+#define SS 0.6182137482442042
 #define PST 0
 #define PSS 0.0
 #else
 #define SST 1
-#define SS 0.32444557191341866
+#define SS 0.6182137482442042
 #define PST 0
 #define PSS 0.0
 #endif
 
 /* Extremes preserve
  *
+ * This setting is dependent on code generation from shader_cfg, so this 
+ * setting can only be enabled via shader_cfg.
+ *
  * Reduce denoising in very bright/dark areas.
  *
- * Disabled by default now. If you want to reenable this, set EP=3/ in 
- * Makefile.nlm and rebuild.
- *
- * The downscaling factor of the EP shader stage affects what is considered a 
- * bright/dark area.
+ * The downscaling factor of the EP shader stage affects the size of the area 
+ * checked for luminance.
  *
  * This is incompatible with RGB. If you have RGB hooks enabled then you will 
  * have to delete the EP shader stage or specify EP=0 through shader_cfg.
@@ -198,7 +181,7 @@
  * P should be an odd number. Higher values are slower and not always better.
  *
  * R should be an odd number greater than or equal to 3. Higher values are 
- * generally better, but slower, blurrier, and gives diminishing returns.
+ * generally better, but slower.
  */
 #ifdef LUMA_raw
 #define P 3
@@ -230,7 +213,7 @@
 #define PS 4
 #else
 #define RS 3
-#define PS 3
+#define PS 4
 #endif
 
 /* Weight discard
@@ -250,31 +233,14 @@
  */
 #ifdef LUMA_raw
 #define WD 1
-#define WDT 0.5281028478124096
-#define WDP 4.730528086592124
+#define WDT 0.4682805866636827
+#define WDP 3.3851102145153416
 #define WDS 1.0
 #else
 #define WD 1
-#define WDT 0.9417535892431848
-#define WDP 5.274888581134373
+#define WDT 0.4682805866636827
+#define WDP 3.3851102145153416
 #define WDS 1.0
-#endif
-
-/* Spatial correlation
- *
- * May have some impact on speed due to the need to store all of the 
- * pixels+weights and loop over them twice. This is shared with WD=2, the 
- * C=1:WD=2 should behave similar to WD=2 on its own.
- *
- * C: 0 for disabled, 1 for enabled
- * CS: higher numbers reduce outlier weights
- */
-#ifdef LUMA_raw
-#define C 0
-#define CS 0.11029390001250727
-#else
-#define C 0
-#define CS 0.11029390001250727
 #endif
 
 /* Robust filtering
@@ -358,7 +324,6 @@
  * PSK: intra-patch spatial kernel
  * WDK: weight discard kernel
  * WD1TK (WD=1 only): weight discard tolerance kernel
- * CK: spatial correlation kernel
  *
  * List of available kernels:
  *
@@ -380,18 +345,18 @@
 #define SK gaussian
 #define RK gaussian
 #define ASK sinc
+#define ASAK gaussian
 #define PSK gaussian
 #define WDK is_zero
 #define WD1TK gaussian
-#define CK gaussian
 #else
 #define SK gaussian
 #define RK gaussian
 #define ASK sphinx_
+#define ASAK gaussian
 #define PSK gaussian
 #define WDK is_zero
 #define WD1TK gaussian
-#define CK gaussian
 #endif
 
 /* Negative kernel parameter offsets
@@ -413,7 +378,7 @@
 #define ASO 0.0
 #else
 #define SO 0.0
-#define RO 0.00015152392427859513
+#define RO 9.773746446023492e-05
 #define PSO 0.0
 #define ASO 0.0
 #endif
@@ -451,9 +416,9 @@
 
 // Use the guide image as the input image
 #ifdef LUMA_raw
-#define GUIDE_INPUT 0
+#define GI 0
 #else
-#define GUIDE_INPUT 0
+#define GI 0
 #endif
 
 /* Visualization
@@ -461,8 +426,8 @@
  * 0: off
  * 1: absolute difference between input/output to the power of 0.25
  * 2: difference between input/output centered on 0.5
- * 3: post-WD/post-C weight map
- * 4: pre-WD/pre-C weight map
+ * 3: post-WD weight map
+ * 4: pre-WD weight map
  * 5: unsharp mask
  * 6: EP
  */
@@ -739,7 +704,13 @@ const float hr_scale = 1.0/hr;
 #define sample(tex, pos, size, pt, off) tex((pos) + (pt) * vec2(off))
 #endif
 
+#if GI && defined(LUMA_raw)
+#define GET_(off) sample(RF_LUMA_tex, RF_LUMA_pos, RF_LUMA_size, RF_LUMA_pt, off)
+#elif GI
+#define GET_(off) sample(RF_tex, RF_pos, RF_size, RF_pt, off)
+#else
 #define GET_(off) sample(HOOKED_tex, HOOKED_pos, HOOKED_size, HOOKED_pt, off)
+#endif
 
 #if RF_ && defined(LUMA_raw)
 #define GET_RF_(off) sample(RF_LUMA_tex, RF_LUMA_pos, RF_LUMA_size, RF_LUMA_pt, off)
@@ -775,12 +746,8 @@ val GET_RF(vec3 off)
 #endif
 
 val poi2 = GET_RF(vec3(0));  // guide pixel-of-interest
-#if GUIDE_INPUT
-#define poi poi2
-#else
 vec4 poi_ = GET_(vec3(0)); 
 val poi = val_swizz(poi_);  // pixel-of-interest
-#endif
 
 #if RI // rotation
 vec2 rot(vec2 p, float d)
@@ -1018,7 +985,7 @@ vec4 hook()
 	 val sum_as = val(0); 
 #endif
 
-#if WD == 2 || C == 1 // weight discard (mean), spatial correlation
+#if WD == 2 // weight discard (mean)
 	 int r_index = 0; 
 	 val_packed all_weights[r_area]; 
 	 val_packed all_pixels[r_area]; 
@@ -1027,9 +994,6 @@ vec4 hook()
 	 int r_iter = 1; 
 	 val wd_total_weight = val(0); 
 	 val wd_sum = val(0); 
-#endif
-#if C == 1 // spatial correlation
-	 vec3 avg_coord = vec3(0); 
 #endif
 
 	 FOR_FRAME(r) {
@@ -1081,7 +1045,7 @@ vec4 hook()
 	 	 total_weight_as += spatial_as_weight; 
 #endif
 
-#if WD == 2 || C == 1 // weight discard (mean), spatial correlation
+#if WD == 2 // weight discard (mean)
 	 	 all_weights[r_index] = val_pack(weight); 
 	 	 all_pixels[r_index] = val_pack(px); 
 	 	 r_index++; 
@@ -1094,9 +1058,6 @@ vec4 hook()
 	 	 wd_sum += px * weight * wdkf; 
 	 	 wd_total_weight += weight * wdkf; 
 	 	 r_iter++; 
-#endif
-#if C == 1 // spatial correlation
-	 	 avg_coord += r * r_scale; 
 #endif
 
 	 	 sum += px * weight; 
@@ -1112,45 +1073,20 @@ vec4 hook()
 	 return vec4(0.5);  // XXX visualize for chroma
 #endif
 
-#if WD == 2 || C == 1 // weight discard (mean), spatial correlation
 #if WD == 2 // weight discard (mean)
 	 total_weight = val(0); 
 	 sum = val(0); 
-#endif
-
-#if C == 1 // spatial correlation
-	 val cov_rx = val(0);  val cov_ry = val(0);  val cov_rz = val(0); 
-	 vec3 var_coord = vec3(0); 
-	 val var_weight = val(0); 
-#endif
 
 	 r_index = 0; 
 	 FOR_FRAME(r) FOR_RESEARCH(r) {
 	 	 val px = val_unpack(all_pixels[r_index]); 
 	 	 val weight = val_unpack(all_weights[r_index]); 
 
-#if WD == 2 // weight discard (mean)
 	 	 val below_threshold = WDS * abs(min(val(0.0), weight - (avg_weight * WDT))); 
 	 	 weight *= MAP(WDK, below_threshold); 
-#endif
 
-#if C == 1 // spatial correlation
-	 	 cov_rx += (r.x - avg_coord.x) * (weight - avg_weight); 
-	 	 cov_ry += (r.y - avg_coord.y) * (weight - avg_weight); 
-	 	 cov_rz += (r.z - avg_coord.z) * (weight - avg_weight); 
-	 	 var_coord += POW2(r - avg_coord); 
-	 	 var_weight += POW2(weight - avg_weight); 
-#endif
-
-#if WD == 2 // weight discard (mean)
 	 	 sum += px * weight; 
 	 	 total_weight += weight; 
-#endif
-#if WD == 2 && C == 1 // weight discard (mean) AND spatial correlation
-	 	 all_weights[r_index] = val_pack(weight); 
-	 	 all_pixels[r_index] = val_pack(px); 
-#endif
-
 	 	 r_index++; 
 	 } // FOR_FRAME FOR_RESEARCH
 #endif
@@ -1160,33 +1096,7 @@ vec4 hook()
 	 sum = wd_sum; 
 #endif
 
-#if C == 1 // spatial correlation
-	 total_weight = val(0); 
-	 sum = val(0); 
-
-	 cov_rx *= r_scale;  cov_ry *= r_scale;  cov_rz *= r_scale;  var_coord *= r_scale;  var_weight *= r_scale; 
-
-	 val corr_rx = cov_rx / max(val(EPSILON), sqrt(var_coord.x) * sqrt(var_weight)); 
-	 val corr_ry = cov_ry / max(val(EPSILON), sqrt(var_coord.y) * sqrt(var_weight)); 
-	 val corr_rz = cov_rz / max(val(EPSILON), sqrt(var_coord.z) * sqrt(var_weight)); 
-
-	 r_index = 0; 
-	 FOR_FRAME(r) FOR_RESEARCH(r) {
-	 	 val px = val_unpack(all_pixels[r_index]); 
-	 	 val weight = val_unpack(all_weights[r_index]); 
-
-	 	 weight *= CK(abs(corr_rx - r.x * hr_scale) * abs(corr_rx) * CS); 
-	 	 weight *= CK(abs(corr_ry - r.y * hr_scale) * abs(corr_ry) * CS); 
-	 	 weight *= CK(abs(corr_rz - r.z * hr_scale) * abs(corr_rz) * CS); 
-
-	 	 sum += px * weight; 
-	 	 total_weight += weight; 
-
-	 	 r_index++; 
-	 }
-#endif
-
-#if WD || C // weight discard, spatial correlation
+#if WD // weight discard
 	 avg_weight = total_weight * r_scale; 
 #endif
 
@@ -1219,7 +1129,7 @@ vec4 hook()
 #if AS // sharpening
 	 val usm = AS_input - sum_as/max(val(EPSILON),total_weight_as); 
 	 usm = exp(log(abs(usm))*ASP) * sign(usm);  // avoiding pow() since it's buggy on nvidia
-	 usm *= gaussian(abs((AS_base + usm - 0.5) / 1.5) * ASA); 
+	 usm *= ASAK(abs((AS_base + usm - 0.5) / 1.5) * ASA); 
 	 usm *= ASF; 
 	 result = AS_base + usm; 
 #endif
@@ -1253,7 +1163,7 @@ vec4 hook()
 	 return unval(result); 
 }
 
-// End of source code injected from ../LQ/nlmeans.glsl 
+// End of source code injected from ./nlmeans_template 
 
 //!HOOK LUMA
 //!HOOK CHROMA
@@ -1282,18 +1192,12 @@ vec4 hook()
 
 // Denoising factor (sigma, higher means more blur)
 #ifdef LUMA_raw
-#define S 1.5100368270594222
+#define S 1.4123628758613087
 #else
-#define S 1.1938600037262965
+#define S 0.9253892422450551
 #endif
 
-/* Adaptive sharpening
- *
- * Performs an unsharp mask by subtracting the spatial kernel's blur from the 
- * NLM blur. For sharpen+denoise the sharpening is limited to edge areas and 
- * denoising is done everywhere else.
- *
- * Use V=4 to visualize which areas are sharpened (black means sharpen).
+/* Noise resistant adaptive sharpening
  *
  * AS:
  * 	- 0: disable
@@ -1309,29 +1213,28 @@ vec4 hook()
  */
 #ifdef LUMA_raw
 #define AS 0
-#define ASF 0.5073015913084239
-#define ASA 1.2507376773041337
-#define ASP 0.9779000193609839
-#define ASS 0.3536013978812405
+#define ASF 0.3210768548589939
+#define ASA 0.9397860227779741
+#define ASP 0.7654083023321232
+#define ASS 0.4031301466402857
 #define ASI 0
 #else
 #define AS 0
-#define ASF 0.691397862110103
-#define ASA 1.4038435993185387
-#define ASP 1.306480175292214
-#define ASS 0.057067447417175975
+#define ASF 0.6267063361944475
+#define ASA 1.9701543289754333
+#define ASP 1.0024630095639717
+#define ASS 0.05977279329812535
 #define ASI 0
 #endif
 
 /* Starting weight
  *
- * Also known as the center weight. This represents the weight of the 
- * pixel-of-interest. Lower numbers may help handle heavy noise.
+ * AKA the center weight, the weight of the pixel-of-interest.
  */
 #ifdef LUMA_raw
-#define SW 1.724986593611501
+#define SW 1.479506293466543
 #else
-#define SW 1.3409924565119054
+#define SW 1.8378817803292125
 #endif
 
 /* Spatial kernel
@@ -1339,7 +1242,7 @@ vec4 hook()
  * Increasing the spatial sigma (SS) reduces the weight of further 
  * pixels.
  *
- * The intra-patch variants are supposed to help with larger patch sizes.
+ * The intra-patch variants might help with larger patch sizes.
  *
  * SST: enables spatial kernel if R>=PST, 0 fully disables
  * SS: spatial sigma
@@ -1348,25 +1251,25 @@ vec4 hook()
  */
 #ifdef LUMA_raw
 #define SST 1
-#define SS 0.36284567215031627
+#define SS 0.15716533171344688
 #define PST 0
 #define PSS 0.0
 #else
 #define SST 1
-#define SS 0.2627184507564747
+#define SS 0.06439372912711039
 #define PST 0
 #define PSS 0.0
 #endif
 
 /* Extremes preserve
  *
+ * This setting is dependent on code generation from shader_cfg, so this 
+ * setting can only be enabled via shader_cfg.
+ *
  * Reduce denoising in very bright/dark areas.
  *
- * Disabled by default now. If you want to reenable this, set EP=3/ in 
- * Makefile.nlm and rebuild.
- *
- * The downscaling factor of the EP shader stage affects what is considered a 
- * bright/dark area.
+ * The downscaling factor of the EP shader stage affects the size of the area 
+ * checked for luminance.
  *
  * This is incompatible with RGB. If you have RGB hooks enabled then you will 
  * have to delete the EP shader stage or specify EP=0 through shader_cfg.
@@ -1412,7 +1315,7 @@ vec4 hook()
  * P should be an odd number. Higher values are slower and not always better.
  *
  * R should be an odd number greater than or equal to 3. Higher values are 
- * generally better, but slower, blurrier, and gives diminishing returns.
+ * generally better, but slower.
  */
 #ifdef LUMA_raw
 #define P 5
@@ -1464,7 +1367,7 @@ vec4 hook()
  */
 #ifdef LUMA_raw
 #define WD 2
-#define WDT 0.10614185911846982
+#define WDT 0.10137024910106543
 #define WDP 5.402102275251726
 #define WDS 1.0
 #else
@@ -1472,23 +1375,6 @@ vec4 hook()
 #define WDT 0.002713346103131793
 #define WDP 5.692202343435388
 #define WDS 1.0
-#endif
-
-/* Spatial correlation
- *
- * May have some impact on speed due to the need to store all of the 
- * pixels+weights and loop over them twice. This is shared with WD=2, the 
- * C=1:WD=2 should behave similar to WD=2 on its own.
- *
- * C: 0 for disabled, 1 for enabled
- * CS: higher numbers reduce outlier weights
- */
-#ifdef LUMA_raw
-#define C 1
-#define CS 0.07265138933038029
-#else
-#define C 0
-#define CS 0.11029390001250727
 #endif
 
 /* Robust filtering
@@ -1572,7 +1458,6 @@ vec4 hook()
  * PSK: intra-patch spatial kernel
  * WDK: weight discard kernel
  * WD1TK (WD=1 only): weight discard tolerance kernel
- * CK: spatial correlation kernel
  *
  * List of available kernels:
  *
@@ -1594,18 +1479,18 @@ vec4 hook()
 #define SK gaussian
 #define RK gaussian
 #define ASK sinc
+#define ASAK gaussian
 #define PSK gaussian
 #define WDK is_zero
 #define WD1TK gaussian
-#define CK gaussian
 #else
 #define SK gaussian
 #define RK gaussian
 #define ASK sphinx_
+#define ASAK gaussian
 #define PSK gaussian
 #define WDK is_zero
 #define WD1TK gaussian
-#define CK gaussian
 #endif
 
 /* Negative kernel parameter offsets
@@ -1622,12 +1507,12 @@ vec4 hook()
  */
 #ifdef LUMA_raw
 #define SO 0.0
-#define RO 3.660120938709089e-05
+#define RO 2.7028563788352117e-05
 #define PSO 0.0
 #define ASO 0.0
 #else
 #define SO 0.0
-#define RO 9.243129782763913e-05
+#define RO 0.00010588039538821138
 #define PSO 0.0
 #define ASO 0.0
 #endif
@@ -1665,9 +1550,9 @@ vec4 hook()
 
 // Use the guide image as the input image
 #ifdef LUMA_raw
-#define GUIDE_INPUT 0
+#define GI 1
 #else
-#define GUIDE_INPUT 0
+#define GI 1
 #endif
 
 /* Visualization
@@ -1675,8 +1560,8 @@ vec4 hook()
  * 0: off
  * 1: absolute difference between input/output to the power of 0.25
  * 2: difference between input/output centered on 0.5
- * 3: post-WD/post-C weight map
- * 4: pre-WD/pre-C weight map
+ * 3: post-WD weight map
+ * 4: pre-WD weight map
  * 5: unsharp mask
  * 6: EP
  */
@@ -1953,7 +1838,13 @@ const float hr_scale = 1.0/hr;
 #define sample(tex, pos, size, pt, off) tex((pos) + (pt) * vec2(off))
 #endif
 
+#if GI && defined(LUMA_raw)
+#define GET_(off) sample(RF_LUMA_tex, RF_LUMA_pos, RF_LUMA_size, RF_LUMA_pt, off)
+#elif GI
+#define GET_(off) sample(RF_tex, RF_pos, RF_size, RF_pt, off)
+#else
 #define GET_(off) sample(HOOKED_tex, HOOKED_pos, HOOKED_size, HOOKED_pt, off)
+#endif
 
 #if RF_ && defined(LUMA_raw)
 #define GET_RF_(off) sample(RF_LUMA_tex, RF_LUMA_pos, RF_LUMA_size, RF_LUMA_pt, off)
@@ -1989,12 +1880,8 @@ val GET_RF(vec3 off)
 #endif
 
 val poi2 = GET_RF(vec3(0)); // guide pixel-of-interest
-#if GUIDE_INPUT
-#define poi poi2
-#else
 vec4 poi_ = GET_(vec3(0));
 val poi = val_swizz(poi_); // pixel-of-interest
-#endif
 
 #if RI // rotation
 vec2 rot(vec2 p, float d)
@@ -2232,7 +2119,7 @@ vec4 hook()
 	val sum_as = val(0);
 #endif
 
-#if WD == 2 || C == 1 // weight discard (mean), spatial correlation
+#if WD == 2 // weight discard (mean)
 	int r_index = 0;
 	val_packed all_weights[r_area];
 	val_packed all_pixels[r_area];
@@ -2241,9 +2128,6 @@ vec4 hook()
 	int r_iter = 1;
 	val wd_total_weight = val(0);
 	val wd_sum = val(0);
-#endif
-#if C == 1 // spatial correlation
-	vec3 avg_coord = vec3(0);
 #endif
 
 	FOR_FRAME(r) {
@@ -2295,7 +2179,7 @@ vec4 hook()
 		total_weight_as += spatial_as_weight;
 #endif
 
-#if WD == 2 || C == 1 // weight discard (mean), spatial correlation
+#if WD == 2 // weight discard (mean)
 		all_weights[r_index] = val_pack(weight);
 		all_pixels[r_index] = val_pack(px);
 		r_index++;
@@ -2308,9 +2192,6 @@ vec4 hook()
 		wd_sum += px * weight * wdkf;
 		wd_total_weight += weight * wdkf;
 		r_iter++;
-#endif
-#if C == 1 // spatial correlation
-		avg_coord += r * r_scale;
 #endif
 
 		sum += px * weight;
@@ -2326,45 +2207,20 @@ vec4 hook()
 	return vec4(0.5); // XXX visualize for chroma
 #endif
 
-#if WD == 2 || C == 1 // weight discard (mean), spatial correlation
 #if WD == 2 // weight discard (mean)
 	total_weight = val(0);
 	sum = val(0);
-#endif
-
-#if C == 1 // spatial correlation
-	val cov_rx = val(0); val cov_ry = val(0); val cov_rz = val(0);
-	vec3 var_coord = vec3(0);
-	val var_weight = val(0);
-#endif
 
 	r_index = 0;
 	FOR_FRAME(r) FOR_RESEARCH(r) {
 		val px = val_unpack(all_pixels[r_index]);
 		val weight = val_unpack(all_weights[r_index]);
 
-#if WD == 2 // weight discard (mean)
 		val below_threshold = WDS * abs(min(val(0.0), weight - (avg_weight * WDT)));
 		weight *= MAP(WDK, below_threshold);
-#endif
 
-#if C == 1 // spatial correlation
-		cov_rx += (r.x - avg_coord.x) * (weight - avg_weight);
-		cov_ry += (r.y - avg_coord.y) * (weight - avg_weight);
-		cov_rz += (r.z - avg_coord.z) * (weight - avg_weight);
-		var_coord += POW2(r - avg_coord);
-		var_weight += POW2(weight - avg_weight);
-#endif
-
-#if WD == 2 // weight discard (mean)
 		sum += px * weight;
 		total_weight += weight;
-#endif
-#if WD == 2 && C == 1 // weight discard (mean) AND spatial correlation
-		all_weights[r_index] = val_pack(weight);
-		all_pixels[r_index] = val_pack(px);
-#endif
-
 		r_index++;
 	} // FOR_FRAME FOR_RESEARCH
 #endif
@@ -2374,33 +2230,7 @@ vec4 hook()
 	sum = wd_sum;
 #endif
 
-#if C == 1 // spatial correlation
-	total_weight = val(0);
-	sum = val(0);
-
-	cov_rx *= r_scale; cov_ry *= r_scale; cov_rz *= r_scale; var_coord *= r_scale; var_weight *= r_scale;
-
-	val corr_rx = cov_rx / max(val(EPSILON), sqrt(var_coord.x) * sqrt(var_weight));
-	val corr_ry = cov_ry / max(val(EPSILON), sqrt(var_coord.y) * sqrt(var_weight));
-	val corr_rz = cov_rz / max(val(EPSILON), sqrt(var_coord.z) * sqrt(var_weight));
-
-	r_index = 0;
-	FOR_FRAME(r) FOR_RESEARCH(r) {
-		val px = val_unpack(all_pixels[r_index]);
-		val weight = val_unpack(all_weights[r_index]);
-
-		weight *= CK(abs(corr_rx - r.x * hr_scale) * abs(corr_rx) * CS);
-		weight *= CK(abs(corr_ry - r.y * hr_scale) * abs(corr_ry) * CS);
-		weight *= CK(abs(corr_rz - r.z * hr_scale) * abs(corr_rz) * CS);
-
-		sum += px * weight;
-		total_weight += weight;
-
-		r_index++;
-	}
-#endif
-
-#if WD || C // weight discard, spatial correlation
+#if WD // weight discard
 	avg_weight = total_weight * r_scale;
 #endif
 
@@ -2433,7 +2263,7 @@ vec4 hook()
 #if AS // sharpening
 	val usm = AS_input - sum_as/max(val(EPSILON),total_weight_as);
 	usm = exp(log(abs(usm))*ASP) * sign(usm); // avoiding pow() since it's buggy on nvidia
-	usm *= gaussian(abs((AS_base + usm - 0.5) / 1.5) * ASA);
+	usm *= ASAK(abs((AS_base + usm - 0.5) / 1.5) * ASA);
 	usm *= ASF;
 	result = AS_base + usm;
 #endif
