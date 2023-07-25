@@ -37,6 +37,7 @@ local options = {
     up_binding = "UP WHEEL_UP",
     down_binding = "DOWN WHEEL_DOWN",
     select_binding = "RIGHT ENTER",
+    append_binding = "Shift+RIGHT Shift+ENTER",
     close_binding = "LEFT ESC",
 }
 
@@ -108,26 +109,28 @@ if history == nil then
     end
     history = fakeio
 end
-local last_state = nil
 history:setvbuf("full")
 
 local event_loop_exhausted = false
 local uosc_available = false
 local menu_shown = false
+local last_state = nil
 local menu_data = nil
+local search_words = nil
 
 function utf8_char_bytes(str, i)
     local char_byte = str:byte(i)
+    local max_bytes = #str - i + 1
     if char_byte < 0xC0 then
-        return 1
+        return math.min(max_bytes, 1)
     elseif char_byte < 0xE0 then
-        return 2
+        return math.min(max_bytes, 2)
     elseif char_byte < 0xF0 then
-        return 3
+        return math.min(max_bytes, 3)
     elseif char_byte < 0xF8 then
-        return 4
+        return math.min(max_bytes, 4)
     else
-        return 1
+        return math.min(max_bytes, 1)
     end
 end
 
@@ -196,7 +199,7 @@ end
 function menu_json(menu_items, native)
     local menu = {
         type = "memo-history",
-        title = "History",
+        title = "History (memo)",
         items = menu_items,
         selected_index = 1,
         on_close = {"script-message-to", script_name, "memo-clear"}
@@ -268,9 +271,11 @@ function close_menu()
     unbind_keys(options.up_binding, "move_up")
     unbind_keys(options.down_binding, "move_down")
     unbind_keys(options.select_binding, "select")
+    unbind_keys(options.append_binding, "append")
     unbind_keys(options.close_binding, "close")
     last_state = nil
     menu_data = nil
+    search_words = nil
     menu_shown = false
     osd:update()
     osd.hidden = true
@@ -293,7 +298,6 @@ function open_menu()
         menu_data.selected_index = math.min(menu_data.selected_index + 1, #menu_data.items)
         draw_menu()
     end, { repeatable = true })
-    bind_keys(options.close_binding, "close", close_menu)
     bind_keys(options.select_binding, "select", function()
         local item = menu_data.items[menu_data.selected_index]
         if not item then return end
@@ -302,6 +306,28 @@ function open_menu()
         end
         mp.commandv(unpack(item.value))
     end)
+    bind_keys(options.append_binding, "append", function()
+        local item = menu_data.items[menu_data.selected_index]
+        if not item then return end
+        if not item.keep_open then
+            close_menu()
+        end
+        if item.value[1] == "loadfile" then
+            -- bail if file is already in playlist
+            local directory = mp.get_property("working-directory", "")
+            local playlist = mp.get_property_native("playlist", {})
+            for i = 1, #playlist do
+                local playlist_file = playlist[i].filename
+                playlist_file = mp.utils.join_path(playlist_file:find("^%a[%a%d-_]+:") == nil and directory or "", playlist_file)
+                if item.value[2] == playlist_file then
+                    return
+                end
+            end
+            table.insert(item.value, "append-play")
+        end
+        mp.commandv(unpack(item.value))
+    end)
+    bind_keys(options.close_binding, "close", close_menu)
     osd.hidden = false
     draw_menu()
 end
@@ -332,7 +358,7 @@ function draw_menu(delay)
     ass:draw_stop()
     ass:new_event()
 
-    ass:append("{\\pos(10," .. (0.1 * font_size) .. ")\\fs" .. font_size .. "\\bord2\\q2\\b1}History{\\b0}\\N")
+    ass:append("{\\pos(10," .. (0.1 * font_size) .. ")\\fs" .. font_size .. "\\bord2\\q2\\b1}History (memo){\\b0}\\N")
     ass:new_event()
 
     local scrolled_lines = get_scrolled_lines()
@@ -343,7 +369,7 @@ function draw_menu(delay)
 
     if #menu_data.items > 0 then
         local menu_index = 0
-        for i=1, #menu_data.items do
+        for i = 1, #menu_data.items do
             local item = menu_data.items[i]
             if item.title then
                 local icon
@@ -410,12 +436,7 @@ function show_history(entries, next_page, prev_page, update, return_items)
 
     local should_close = menu_shown and not prev_page and not next_page and not update
     if should_close then
-        menu_shown = false
-        if uosc_available then
-            mp.commandv("script-message-to", "uosc", "open-menu", menu_json({}))
-        else
-            close_menu()
-        end
+        memo_close()
         if not return_items then
             return
         end
@@ -440,15 +461,10 @@ function show_history(entries, next_page, prev_page, update, return_items)
 
     if last_state then
         if prev_page then
-            if state.current_page == 1 then
-                return
-            end
+            if state.current_page == 1 then return end
             state.current_page = state.current_page - 1
         elseif next_page then
-            if state.cursor == 0 and not state.pages[state.current_page + 1] then
-                return
-            end
-
+            if state.cursor == 0 and not state.pages[state.current_page + 1] then return end
             state.current_page = state.current_page + 1
         end
     end
@@ -524,6 +540,14 @@ function show_history(entries, next_page, prev_page, update, return_items)
             return
         end
 
+        if search_words and not options.use_titles then
+            for _, word in ipairs(search_words) do
+                if full_path:lower():find(word) == nil then
+                    return
+                end
+            end
+        end
+
         local dirname, basename
 
         if full_path:find("^%a[%a%d-_]+:") ~= nil then
@@ -573,23 +597,33 @@ function show_history(entries, next_page, prev_page, update, return_items)
 
         title = title:gsub("\n", " ")
 
-        local title_chars, title_width = utf8_table(title)
-        if options.truncate_titles > 0 and title_width > options.truncate_titles then
-            local extension = string.match(title, "%.([^.][^.][^.]?[^.]?)$") or ""
-            local extra = #extension + 4
-            local title_sub, end_index = utf8_subwidth(title_chars, 1, options.truncate_titles - 3 - extra)
-            local title_trim = title_sub:gsub("[] ._'()?![]+$", "")
-            local around_extension = ""
-            if title_trim == "" then
-                title_trim = utf8_subwidth(title_chars, 1, options.truncate_titles - 3)
-            else
-                extra = extra + #title_sub - #title_trim
-                around_extension = utf8_subwidth_back(title_chars, extra)
+        if search_words and options.use_titles then
+            for _, word in ipairs(search_words) do
+                if title:lower():find(word) == nil then
+                    return
+                end
             end
-            if title_trim == "" then
-                title = utf8_subwidth(title_chars, 1, options.truncate_titles)
-            else
-                title = title_trim .. "..." .. around_extension
+        end
+
+        if options.truncate_titles > 0 then
+            local title_chars, title_width = utf8_table(title)
+            if title_width > options.truncate_titles then
+                local extension = string.match(title, "%.([^.][^.][^.]?[^.]?)$") or ""
+                local extra = #extension + 4
+                local title_sub, end_index = utf8_subwidth(title_chars, 1, options.truncate_titles - 3 - extra)
+                local title_trim = title_sub:gsub("[] ._'()?![]+$", "")
+                local around_extension = ""
+                if title_trim == "" then
+                    title_trim = utf8_subwidth(title_chars, 1, options.truncate_titles - 3)
+                else
+                    extra = extra + #title_sub - #title_trim
+                    around_extension = utf8_subwidth_back(title_chars, extra)
+                end
+                if title_trim == "" then
+                    title = utf8_subwidth(title_chars, 1, options.truncate_titles)
+                else
+                    title = title_trim .. "..." .. around_extension
+                end
             end
         end
 
@@ -615,7 +649,7 @@ function show_history(entries, next_page, prev_page, update, return_items)
         if not return_items and attempts > 0 and attempts % options.entries == 0 and #menu_items ~= item_count then
             item_count = #menu_items
             local temp_items = {unpack(menu_items)}
-            for i=1, options.entries - item_count do
+            for i = 1, options.entries - item_count do
                 table.insert(temp_items, {value = {"ignore"}, keep_open = true})
             end
 
@@ -710,9 +744,19 @@ mp.register_script_message("uosc-version", function(version)
     uosc_available = not semver_comp(version, min_version)
 end)
 
+function memo_close()
+    menu_shown = false
+    if uosc_available then
+        mp.commandv("script-message-to", "uosc", "open-menu", menu_json({}))
+    else
+        close_menu()
+    end
+end
+
 function memo_clear()
     if event_loop_exhausted then return end
     last_state = nil
+    search_words = nil
     menu_shown = false
 end
 
@@ -724,7 +768,24 @@ function memo_next()
     show_history(options.entries, true)
 end
 
+function memo_search(...)
+    -- close REPL
+    mp.commandv("keypress", "ESC")
+
+    local words = {...}
+    if #words > 0 then
+        -- escape keywords
+        for i, word in ipairs(words) do
+            words[i] = word:lower():gsub("%W", "%%%1")
+        end
+        search_words = words
+    end
+
+    show_history(options.entries, false)
+end
+
 mp.register_script_message("memo-clear", memo_clear)
+mp.register_script_message("memo-search:", memo_search)
 
 mp.command_native_async({"script-message-to", "uosc", "get-version", script_name}, function() end)
 
@@ -734,7 +795,7 @@ mp.add_key_binding(nil, "memo-last", function()
     if event_loop_exhausted then return end
 
     local items
-    if last_state and last_state.current_page == 1 and options.hide_duplicates and options.hide_deleted and options.entries >= 2 then
+    if last_state and last_state.current_page == 1 and options.hide_duplicates and options.hide_deleted and options.entries >= 2 and not search_words then
         -- menu is open and we for sure have everything we need
         items = last_state.pages[1]
         last_state = nil
@@ -746,6 +807,7 @@ mp.add_key_binding(nil, "memo-last", function()
         options.hide_duplicates = true
         options.hide_deleted = true
         last_state = nil
+        search_words = nil
         items = show_history(2, false, false, false, true)
         options = options_bak
     end
@@ -767,9 +829,16 @@ mp.add_key_binding(nil, "memo-last", function()
     end
     mp.osd_message("[memo] no recent files to open")
 end)
+mp.add_key_binding(nil, "memo-search", function()
+    if menu_shown then
+        memo_close()
+    end
+    mp.commandv("script-message-to", "console", "type", "script-message memo-search: ")
+end)
 mp.add_key_binding("h", "memo-history", function()
     if event_loop_exhausted then return end
     last_state = nil
+    search_words = nil
     show_history(options.entries, false)
 end)
 
