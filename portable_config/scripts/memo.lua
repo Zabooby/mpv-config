@@ -45,7 +45,7 @@ local script_name = mp.get_script_name()
 
 mp.utils = require "mp.utils"
 mp.options = require "mp.options"
-mp.options.read_options(options, "memo")
+mp.options.read_options(options, "memo", function(list) end)
 
 local assdraw = require "mp.assdraw"
 
@@ -352,16 +352,16 @@ function draw_menu(delay)
     local curtain_opacity = 0.7
 
     local alpha = 255 - math.ceil(255 * curtain_opacity)
-    ass.text = string.format("{\\pos(0,0)\\r\\an7\\1c&H000000&\\alpha&H%X&}", alpha)
+    ass.text = string.format("{\\pos(0,0)\\r\\an1\\1c&H000000&\\alpha&H%X&}", alpha)
     ass:draw_start()
     ass:rect_cw(0, 0, width, height)
     ass:draw_stop()
     ass:new_event()
 
-    ass:append("{\\pos(10," .. (0.1 * font_size) .. ")\\fs" .. font_size .. "\\bord2\\q2\\b1}History (memo){\\b0}\\N")
+    ass:append("{\\pos("..(0.3 * font_size).."," .. (margin_top * height + 0.1 * font_size) .. ")\\fs" .. font_size .. "\\bord2\\q2\\b1}History (memo){\\b0}")
     ass:new_event()
 
-    local scrolled_lines = get_scrolled_lines()
+    local scrolled_lines = get_scrolled_lines() - 1
     local pos_y = margin_top * height - scrolled_lines * font_size
     local clip_top = math.floor(margin_top * height + font_size + 0.2 * font_size + 0.5)
     local clip_bottom = math.floor((1 - margin_bottom) * height + 0.5)
@@ -373,24 +373,30 @@ function draw_menu(delay)
             local item = menu_data.items[i]
             if item.title then
                 local icon
+                local separator = menu_data.selected_index == i and "{\\alpha&HFF&}●{\\alpha&H00&}  - " or "{\\alpha&HFF&}●{\\alpha&H00&} - "
                 if item.icon == "spinner" then
-                    icon = "⟳ "
+                    separator = "⟳ "
                 elseif item.icon == "navigate_next" then
-                    icon = menu_data.selected_index == i and "▶ - " or "▷- "
+                    icon = menu_data.selected_index == i and "▶" or "▷"
                 elseif item.icon == "navigate_before" then
-                    icon = menu_data.selected_index == i and "◀ - " or "◁- "
+                    icon = menu_data.selected_index == i and "◀" or "◁"
                 else
-                    icon = menu_data.selected_index == i and "●  - " or "○ - "
+                    icon = menu_data.selected_index == i and "●" or "○"
                 end
                 ass:new_event()
-                ass:pos(10, pos_y + menu_index * font_size)
-                ass:append("{\\fnmonospace\\an7\\fs" .. font_size .. "\\bord2\\q2}" .. icon .. "{\\r\\an7\\fs" .. font_size .. "\\bord2\\q2\\clip(" .. clipping_coordinates .. ")}" .. ass_clean(item.title) .. "\\N")
+                ass:pos(0.3 * font_size, pos_y + menu_index * font_size)
+                ass:append("{\\fnmonospace\\an1\\fs" .. font_size .. "\\bord2\\q2\\clip(" .. clipping_coordinates .. ")}"..separator.."{\\r\\an7\\fs" .. font_size .. "\\bord2\\q2}" .. ass_clean(item.title))
+                if icon then
+                    ass:new_event()
+                    ass:pos(0.6 * font_size, pos_y + menu_index * font_size)
+                    ass:append("{\\fnmonospace\\an2\\fs" .. font_size .. "\\bord2\\q2\\clip(" .. clipping_coordinates .. ")}" .. icon)
+                end
                 menu_index = menu_index + 1
             end
         end
     else
-        ass:pos(10, pos_y)
-        ass:append("{\\an7\\fs" .. font_size .. "\\bord2\\q2\\clip(" .. clipping_coordinates .. ")}")
+        ass:pos(0.3 * font_size, pos_y)
+        ass:append("{\\an1\\fs" .. font_size .. "\\bord2\\q2\\clip(" .. clipping_coordinates .. ")}")
         ass:append("No entries")
     end
 
@@ -706,8 +712,6 @@ function show_history(entries, next_page, prev_page, update, return_items)
 end
 
 function file_load()
-    mp.options.read_options(options, "memo")
-
     if options.enabled then
         write_history()
     end
