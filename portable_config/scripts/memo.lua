@@ -358,7 +358,7 @@ function draw_menu(delay)
     ass:draw_stop()
     ass:new_event()
 
-    ass:append("{\\pos("..(0.3 * font_size).."," .. (margin_top * height + 0.1 * font_size) .. ")\\fs" .. font_size .. "\\bord2\\q2\\b1}History (memo){\\b0}")
+    ass:append("{\\pos("..(0.3 * font_size).."," .. (margin_top * height + 0.1 * font_size) .. ")\\an7\\fs" .. font_size .. "\\bord2\\q2\\b1}" .. menu_data.title .. "{\\b0}")
     ass:new_event()
 
     local scrolled_lines = get_scrolled_lines() - 1
