@@ -117,6 +117,39 @@ local menu_shown = false
 local last_state = nil
 local menu_data = nil
 local search_words = nil
+local search_query = nil
+
+local data_protocols = {
+    edl = true,
+    data = true,
+    null = true,
+    memory = true,
+    hex = true,
+    fd = true,
+    fdclose = true,
+    mf = true
+}
+
+local stacked_protocols = {
+    ffmpeg = true,
+    lavf = true,
+    appending = true,
+    file = true,
+    archive = true,
+    slice = true
+}
+
+local device_protocols = {
+    bd = true,
+    br = true,
+    bluray = true,
+    bdnav = true,
+    bluraynav = true,
+    cdda = true,
+    dvb = true,
+    dvd = true,
+    dvdnav = true
+}
 
 function utf8_char_bytes(str, i)
     local char_byte = str:byte(i)
@@ -197,9 +230,10 @@ function shallow_copy(t)
 end
 
 function menu_json(menu_items, native)
+    local title = search_query or "History"
     local menu = {
         type = "memo-history",
-        title = "History (memo)",
+        title = title .. " (memo)",
         items = menu_items,
         selected_index = 1,
         on_close = {"script-message-to", script_name, "memo-clear"}
@@ -276,6 +310,7 @@ function close_menu()
     last_state = nil
     menu_data = nil
     search_words = nil
+    search_query = nil
     menu_shown = false
     osd:update()
     osd.hidden = true
@@ -323,7 +358,7 @@ function open_menu()
                     return
                 end
             end
-            table.insert(item.value, "append-play")
+            item.value[3] = "append-play"
         end
         mp.commandv(unpack(item.value))
     end)
@@ -358,7 +393,7 @@ function draw_menu(delay)
     ass:draw_stop()
     ass:new_event()
 
-    ass:append("{\\pos("..(0.3 * font_size).."," .. (margin_top * height + 0.1 * font_size) .. ")\\an7\\fs" .. font_size .. "\\bord2\\q2\\b1}" .. menu_data.title .. "{\\b0}")
+    ass:append("{\\pos("..(0.3 * font_size).."," .. (margin_top * height + 0.1 * font_size) .. ")\\an7\\fs" .. font_size .. "\\bord2\\q2\\b1}" .. ass_clean(menu_data.title) .. "{\\b0}")
     ass:new_event()
 
     local scrolled_lines = get_scrolled_lines() - 1
@@ -407,7 +442,7 @@ end
 
 function get_full_path()
     local path = mp.get_property("path")
-    if path == nil then return end
+    if path == nil or path == "-" or path == "/dev/stdin" then return end
 
     local directory = path:find("^%a[%a%d-_]+:") == nil and mp.get_property("working-directory", "") or ""
     local full_path = mp.utils.join_path(directory, path)
@@ -415,12 +450,91 @@ function get_full_path()
     return full_path
 end
 
+function path_info(full_path)
+    local protocol_regex = "^(%a[%a%d_-]+):[/\\]?[/\\]?"
+
+    function resolve(effective_path, display_path, last_protocol, is_remote)
+        local protocol_start, protocol_end, protocol = display_path:find(protocol_regex)
+
+        if protocol == "ytdl" then
+            -- for direct video access ytdl://videoID and ytsearch:
+            is_remote = true
+        elseif protocol and not stacked_protocols[protocol] then
+            local input_path, file_options
+            if device_protocols[protocol] then
+                if protocol == "dvb" then
+                    is_remote = true
+                end
+                input_path, file_options = display_path:match("(.-) %-%-opt=(.+)")
+                effective_path = file_options and file_options:match(".+=(.*)")
+                display_path = input_path or display_path:sub(protocol_start, protocol_end)
+            else
+                is_remote = true
+                display_path = display_path:sub(protocol_end + 1)
+            end
+            return display_path, effective_path, protocol, is_remote, file_options
+        end
+
+        if not protocol_end then
+            if last_protocol == "ytdl" then
+                display_path = "ytdl://" .. display_path
+            end
+            return display_path, effective_path, last_protocol, is_remote, nil
+        end
+
+        display_path = display_path:sub(protocol_end + 1)
+
+        if protocol == "archive" then
+            local main_path, filename = display_path:match("(.+)|.+[\\/](.+)")
+            if not main_path then
+                effective_path = display_path:match("(.+)|") or effective_path
+            elseif filename then
+                effective_path = main_path
+                display_path = main_path .. ": " .. filename
+            end
+        elseif protocol == "slice" then
+            if effective_path then
+                effective_path = effective_path:match(".-@(.*)") or effective_path
+            end
+            display_path = display_path:match(".-@(.*)") or display_path
+        end
+
+        return resolve(effective_path, display_path, protocol, is_remote)
+    end
+
+    local display_path, effective_path, effective_protocol, is_remote, file_options = resolve(nil, full_path, nil, false)
+    effective_path = effective_path or display_path
+
+    return display_path, effective_path, effective_protocol, is_remote, file_options
+end
+
 function write_history()
     local full_path = get_full_path()
-    if full_path == nil then return end
+    if full_path == nil then
+        mp.msg.debug("cannot get full path to file")
+        return
+    end
 
-    local protocol = full_path:match("^%a[%a%d-_]+:")
-    if protocol == "null:" then return end
+    local display_path, effective_path, effective_protocol, is_remote, file_options = path_info(full_path)
+    if data_protocols[effective_protocol] then
+        mp.msg.debug("not logging file with " .. effective_protocol .. " protocol")
+        return
+    end
+
+    if effective_protocol == "bd" or effective_protocol == "br" or effective_protocol == "bluray" or effective_protocol == "bdnav" or effective_protocol == "bluraynav" then
+        full_path = full_path .. " --opt=bluray-device=" .. mp.get_property("bluray-device", "")
+    elseif effective_protocol == "cdda" then
+        full_path = full_path .. " --opt=cdrom-device=" .. mp.get_property("cdrom-device", "")
+    elseif effective_protocol == "dvb" then
+        local dvb_program = mp.get_property("dvbin-prog", "")
+        if dvb_program ~= "" then
+            full_path = full_path .. " --opt=dvbin-prog=" .. dvb_program
+        end
+    elseif effective_protocol == "dvd" or effective_protocol == "dvdnav" then
+        full_path = full_path .. " --opt=dvd-angle=" .. mp.get_property("dvd-angle", "1") .. ",dvd-device=" .. mp.get_property("dvd-device", "")
+    end
+
+    mp.msg.debug("logging file " .. full_path)
 
     local playlist_pos = mp.get_property_number("playlist-pos") or -1
     local title = playlist_pos > -1 and mp.get_property("playlist/"..playlist_pos.."/title") or ""
@@ -542,13 +656,16 @@ function show_history(entries, next_page, prev_page, update, return_items)
         local title_length = title_length_str ~= "" and tonumber(title_length_str) or 0
         local full_path = file_info:sub(title_length + 2)
 
-        if options.hide_duplicates and state.known_files[full_path] then
+        local display_path, effective_path, effective_protocol, is_remote, file_options = path_info(full_path)
+        local cache_key = effective_path .. display_path .. (file_options or "")
+
+        if options.hide_duplicates and state.known_files[cache_key] then
             return
         end
 
         if search_words and not options.use_titles then
             for _, word in ipairs(search_words) do
-                if full_path:lower():find(word) == nil then
+                if display_path:lower():find(word, 1, true) == nil then
                     return
                 end
             end
@@ -556,11 +673,11 @@ function show_history(entries, next_page, prev_page, update, return_items)
 
         local dirname, basename
 
-        if full_path:find("^%a[%a%d-_]+:") ~= nil then
-            state.existing_files[full_path] = true
-            state.known_files[full_path] = true
+        if is_remote then
+            state.existing_files[cache_key] = true
+            state.known_files[cache_key] = true
         elseif options.hide_same_dir then
-            dirname, basename = mp.utils.split_path(full_path)
+            dirname, basename = mp.utils.split_path(display_path)
             if state.known_dirs[dirname] then
                 return
             end
@@ -570,15 +687,15 @@ function show_history(entries, next_page, prev_page, update, return_items)
         end
 
         if options.hide_deleted then
-            if state.known_files[full_path] and not state.existing_files[full_path] then
+            if state.known_files[cache_key] and not state.existing_files[cache_key] then
                 return
             end
-            if not state.known_files[full_path] then
-                local stat = mp.utils.file_info(full_path)
+            if not state.known_files[cache_key] then
+                local stat = mp.utils.file_info(effective_path)
                 if stat then
-                    state.existing_files[full_path] = true
+                    state.existing_files[cache_key] = true
                 else
-                    state.known_files[full_path] = true
+                    state.known_files[cache_key] = true
                     return
                 end
             end
@@ -590,14 +707,13 @@ function show_history(entries, next_page, prev_page, update, return_items)
         end
 
         if title == "" then
-            local protocol_stripped, matches = full_path:gsub("^%a[%a%d-_]+:[/\\]*", "")
-            if matches > 0 then
-                title = protocol_stripped
+            if is_remote then
+                title = display_path
             else
                 if not dirname then
-                    dirname, basename = mp.utils.split_path(full_path)
+                    dirname, basename = mp.utils.split_path(display_path)
                 end
-                title = basename ~= "" and basename or full_path
+                title = basename ~= "" and basename or display_path
             end
         end
 
@@ -605,7 +721,7 @@ function show_history(entries, next_page, prev_page, update, return_items)
 
         if search_words and options.use_titles then
             for _, word in ipairs(search_words) do
-                if title:lower():find(word) == nil then
+                if title:lower():find(word, 1, true) == nil then
                     return
                 end
             end
@@ -633,8 +749,16 @@ function show_history(entries, next_page, prev_page, update, return_items)
             end
         end
 
-        state.known_files[full_path] = true
-        table.insert(menu_items, {title = title, hint = timestamp, value = {"loadfile", full_path}})
+        state.known_files[cache_key] = true
+
+        local command = {"loadfile", full_path, "replace"}
+
+        if file_options then
+            command[2] = display_path
+            table.insert(command, file_options)
+        end
+
+        table.insert(menu_items, {title = title, hint = timestamp, value = command})
     end
 
     local item_count = -1
@@ -761,6 +885,7 @@ function memo_clear()
     if event_loop_exhausted then return end
     last_state = nil
     search_words = nil
+    search_query = nil
     menu_shown = false
 end
 
@@ -778,9 +903,11 @@ function memo_search(...)
 
     local words = {...}
     if #words > 0 then
+        search_query = table.concat(words, " ")
+
         -- escape keywords
         for i, word in ipairs(words) do
-            words[i] = word:lower():gsub("%W", "%%%1")
+            words[i] = word:lower()
         end
         search_words = words
     end
