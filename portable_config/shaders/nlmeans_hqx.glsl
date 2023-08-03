@@ -58,9 +58,9 @@
 
 // Denoising factor (sigma, higher means more blur)
 #ifdef LUMA_raw
-#define S 4.947135437644543
+#define S 5.222641502023587
 #else
-#define S 3.98048226693771
+#define S 3.9534977097035666
 #endif
 
 /* Noise resistant adaptive sharpening
@@ -98,9 +98,9 @@
  * AKA the center weight, the weight of the pixel-of-interest.
  */
 #ifdef LUMA_raw
-#define SW 0.44043610021582
+#define SW 0.47250035123519435
 #else
-#define SW 0.6173627441853731
+#define SW 0.5931818344723794
 #endif
 
 /* Spatial kernel
@@ -117,12 +117,12 @@
  */
 #ifdef LUMA_raw
 #define SST 1
-#define SS 1.4284019330577182
+#define SS 1.4233621973030248
 #define PST 0
 #define PSS 0.0
 #else
 #define SST 1
-#define SS 0.639572818242663
+#define SS 0.6312583627349746
 #define PST 0
 #define PSS 0.0
 #endif
@@ -233,13 +233,13 @@
  */
 #ifdef LUMA_raw
 #define WD 1
-#define WDT 0.6060532681312035
-#define WDP 6.280253376205527
+#define WDT 0.608420574120758
+#define WDP 6.322720180463923
 #define WDS 1.0
 #else
 #define WD 1
-#define WDT 0.4251897645538806
-#define WDP 3.1654801713113954
+#define WDT 0.4208801678830611
+#define WDP 3.1184815787752633
 #define WDS 1.0
 #endif
 
@@ -271,7 +271,7 @@
  */
 #ifdef LUMA_raw
 #define RI 0
-#define RFI 2
+#define RFI 0
 #else
 #define RI 0
 #define RFI 0
@@ -373,7 +373,7 @@
  */
 #ifdef LUMA_raw
 #define SO 0.0
-#define RO 0.00015934328733798104
+#define RO 0.0001686142325028964
 #define PSO 0.0
 #define ASO 0.0
 #else
@@ -812,37 +812,11 @@ val range(val pdiff_sq)
 	 return MAP(RK, pdiff_sq); 
 }
 
-val patch_comparison(vec3 r)
-{
-	 vec3 p; 
-	 val min_rot = val(p_area); 
-
-	 FOR_ROTATION FOR_REFLECTION {
-	 	 val pdiff_sq = val(0); 
-	 	 val total_weight = val(0); 
-
-	 	 FOR_PATCH(p) {
-	 	 	 vec3 transformed_p = SF * vec3(ref(rot(p.xy, ri), rfi), p.z); 
-	 	 	 val diff_sq = GET_RF(p) - GET_RF(transformed_p + r); 
-	 	 	 diff_sq *= diff_sq; 
-
-	 	 	 float weight = spatial_p(p.xy); 
-	 	 	 pdiff_sq += diff_sq * weight; 
-	 	 	 total_weight += weight; 
-	 	 }
-
-	 	 min_rot = min(min_rot, pdiff_sq / max(val(EPSILON),total_weight)); 
-	 }
-
-	 return min_rot; 
-}
-
-#define NO_GATHER (PD == 0 && NG == 0 && SAMPLE == 0) // never textureGather if any of these conditions are false
+#define GATHER (PD == 0 && NG == 0 && SAMPLE == 0) // never textureGather if any of these conditions are false
 #define REGULAR_ROTATIONS (RI == 0 || RI == 1 || RI == 3 || RI == 7)
 
-#if (defined(LUMA_gather) || D1W) && ((PS == 0 || ((PS == 3 || PS == 7) && RI != 7) || PS == 8) && P == 3) && REGULAR_ROTATIONS && NO_GATHER
-// 3x3 diamond/plus patch_comparison_gather
-// XXX extend to support arbitrary sizes (probably requires code generation)
+#if (defined(LUMA_gather) || D1W) && ((PS == 0 || ((PS == 3 || PS == 7) && RI != 7) || PS == 8) && P == 3) && REGULAR_ROTATIONS && GATHER
+// 3x3 diamond/plus or square patch_comparison_gather
 const ivec2 offsets_adj[4] = { ivec2(0,-1), ivec2(1,0), ivec2(0,1), ivec2(-1,0) }; 
 const ivec2 offsets_adj_sf[4] = { ivec2(0,-1) * SF, ivec2(1,0) * SF, ivec2(0,1) * SF, ivec2(-1,0) * SF }; 
 vec4 poi_patch_adj = gather_offs(0, offsets_adj); 
@@ -932,7 +906,7 @@ float patch_comparison_gather(vec3 r)
 	 float center_diff = poi2.x - GET_RF(r).x; 
 	 return (POW2(center_diff) + min_rot) / max(EPSILON,total_weight); 
 }
-#elif (defined(LUMA_gather) || D1W) && PS == 4 && P == 3 && RI == 0 && RFI == 0 && NO_GATHER
+#elif (defined(LUMA_gather) || D1W) && PS == 4 && P == 3 && RI == 0 && RFI == 0 && GATHER
 const ivec2 offsets[4] = { ivec2(0,-1), ivec2(-1,0), ivec2(0,0), ivec2(1,0) }; 
 const ivec2 offsets_sf[4] = { ivec2(0,-1) * SF, ivec2(-1,0) * SF, ivec2(0,0) * SF, ivec2(1,0) * SF }; 
 vec4 poi_patch = gather_offs(0, offsets); 
@@ -942,7 +916,7 @@ float patch_comparison_gather(vec3 r)
 	 vec4 pdiff = poi_patch - gather_offs(r, offsets_sf); 
 	 return dot(POW2(pdiff) * spatial_p_weights, vec4(1)) / dot(spatial_p_weights, vec4(1)); 
 }
-#elif (defined(LUMA_gather) || D1W) && PS == 6 && RI == 0 && RFI == 0 && NO_GATHER
+#elif (defined(LUMA_gather) || D1W) && PS == 6 && RI == 0 && RFI == 0 && GATHER
 // tiled even square patch_comparison_gather
 // XXX extend to support odd square?
 float patch_comparison_gather(vec3 r)
@@ -965,7 +939,40 @@ float patch_comparison_gather(vec3 r)
 }
 #else
 #define patch_comparison_gather patch_comparison
+#define STORE_POI_PATCH 1
+val poi_patch[p_area]; 
 #endif
+
+val patch_comparison(vec3 r)
+{
+	 vec3 p; 
+	 val min_rot = val(p_area); 
+
+	 FOR_ROTATION FOR_REFLECTION {
+	 	 val pdiff_sq = val(0); 
+	 	 val total_weight = val(0); 
+
+	 	 int p_index = 0; 
+	 	 FOR_PATCH(p) {
+#ifdef STORE_POI_PATCH
+	 	 	 val poi_p = poi_patch[p_index++]; 
+#else
+	 	 	 val poi_p = GET_RF(p); 
+#endif
+	 	 	 vec3 transformed_p = SF * vec3(ref(rot(p.xy, ri), rfi), p.z); 
+	 	 	 val diff_sq = poi_p - GET_RF(transformed_p + r); 
+	 	 	 diff_sq *= diff_sq; 
+
+	 	 	 float weight = spatial_p(p.xy); 
+	 	 	 pdiff_sq += diff_sq * weight; 
+	 	 	 total_weight += weight; 
+	 	 }
+
+	 	 min_rot = min(min_rot, pdiff_sq / max(val(EPSILON),total_weight)); 
+	 }
+
+	 return min_rot; 
+}
 
 vec4 hook()
 {
@@ -999,6 +1006,13 @@ vec4 hook()
 	 int r_index = 0; 
 	 val_packed all_weights[r_area]; 
 	 val_packed all_pixels[r_area]; 
+#endif
+
+#ifdef STORE_POI_PATCH
+	 vec3 p; 
+	 int p_index = 0; 
+	 FOR_PATCH(p)
+	 	 poi_patch[p_index++] = GET_RF(p); 
 #endif
 	 
 #if WD == 1 // weight discard (moving cumulative average)
@@ -1236,9 +1250,9 @@ vec4 hook()
 
 // Denoising factor (sigma, higher means more blur)
 #ifdef LUMA_raw
-#define S 1.3693258180919905
+#define S 1.2460858139468287
 #else
-#define S 0.9470164823935876
+#define S 0.9289990153587643
 #endif
 
 /* Noise resistant adaptive sharpening
@@ -1276,9 +1290,9 @@ vec4 hook()
  * AKA the center weight, the weight of the pixel-of-interest.
  */
 #ifdef LUMA_raw
-#define SW 1.4561624407628817
+#define SW 1.5239684975111787
 #else
-#define SW 2.6696813202342784
+#define SW 2.582418826087477
 #endif
 
 /* Spatial kernel
@@ -1295,12 +1309,12 @@ vec4 hook()
  */
 #ifdef LUMA_raw
 #define SST 1
-#define SS 0.15870906155678316
+#define SS 0.1643995150533389
 #define PST 0
 #define PSS 0.0
 #else
 #define SST 1
-#define SS 0.06225488264619769
+#define SS 0.05864160661465411
 #define PST 0
 #define PSS 0.0
 #endif
@@ -1388,7 +1402,7 @@ vec4 hook()
  */
 #ifdef LUMA_raw
 #define RS 3
-#define PS 3
+#define PS 0
 #else
 #define RS 3
 #define PS 3
@@ -1411,7 +1425,7 @@ vec4 hook()
  */
 #ifdef LUMA_raw
 #define WD 2
-#define WDT 0.10440013525938178
+#define WDT 0.10942947800513148
 #define WDP 5.402102275251726
 #define WDS 1.0
 #else
@@ -1551,12 +1565,12 @@ vec4 hook()
  */
 #ifdef LUMA_raw
 #define SO 0.0
-#define RO 2.7732665607580593e-05
+#define RO 2.7136140572809943e-05
 #define PSO 0.0
 #define ASO 0.0
 #else
 #define SO 0.0
-#define RO 0.0001203051875037795
+#define RO 0.00011552115158598914
 #define PSO 0.0
 #define ASO 0.0
 #endif
@@ -1990,37 +2004,11 @@ val range(val pdiff_sq)
 	return MAP(RK, pdiff_sq);
 }
 
-val patch_comparison(vec3 r)
-{
-	vec3 p;
-	val min_rot = val(p_area);
-
-	FOR_ROTATION FOR_REFLECTION {
-		val pdiff_sq = val(0);
-		val total_weight = val(0);
-
-		FOR_PATCH(p) {
-			vec3 transformed_p = SF * vec3(ref(rot(p.xy, ri), rfi), p.z);
-			val diff_sq = GET_RF(p) - GET_RF(transformed_p + r);
-			diff_sq *= diff_sq;
-
-			float weight = spatial_p(p.xy);
-			pdiff_sq += diff_sq * weight;
-			total_weight += weight;
-		}
-
-		min_rot = min(min_rot, pdiff_sq / max(val(EPSILON),total_weight));
-	}
-
-	return min_rot;
-}
-
-#define NO_GATHER (PD == 0 && NG == 0 && SAMPLE == 0) // never textureGather if any of these conditions are false
+#define GATHER (PD == 0 && NG == 0 && SAMPLE == 0) // never textureGather if any of these conditions are false
 #define REGULAR_ROTATIONS (RI == 0 || RI == 1 || RI == 3 || RI == 7)
 
-#if (defined(LUMA_gather) || D1W) && ((PS == 0 || ((PS == 3 || PS == 7) && RI != 7) || PS == 8) && P == 3) && REGULAR_ROTATIONS && NO_GATHER
-// 3x3 diamond/plus patch_comparison_gather
-// XXX extend to support arbitrary sizes (probably requires code generation)
+#if (defined(LUMA_gather) || D1W) && ((PS == 0 || ((PS == 3 || PS == 7) && RI != 7) || PS == 8) && P == 3) && REGULAR_ROTATIONS && GATHER
+// 3x3 diamond/plus or square patch_comparison_gather
 const ivec2 offsets_adj[4] = { ivec2(0,-1), ivec2(1,0), ivec2(0,1), ivec2(-1,0) };
 const ivec2 offsets_adj_sf[4] = { ivec2(0,-1) * SF, ivec2(1,0) * SF, ivec2(0,1) * SF, ivec2(-1,0) * SF };
 vec4 poi_patch_adj = gather_offs(0, offsets_adj);
@@ -2110,7 +2098,7 @@ float patch_comparison_gather(vec3 r)
 	float center_diff = poi2.x - GET_RF(r).x;
 	return (POW2(center_diff) + min_rot) / max(EPSILON,total_weight);
 }
-#elif (defined(LUMA_gather) || D1W) && PS == 4 && P == 3 && RI == 0 && RFI == 0 && NO_GATHER
+#elif (defined(LUMA_gather) || D1W) && PS == 4 && P == 3 && RI == 0 && RFI == 0 && GATHER
 const ivec2 offsets[4] = { ivec2(0,-1), ivec2(-1,0), ivec2(0,0), ivec2(1,0) };
 const ivec2 offsets_sf[4] = { ivec2(0,-1) * SF, ivec2(-1,0) * SF, ivec2(0,0) * SF, ivec2(1,0) * SF };
 vec4 poi_patch = gather_offs(0, offsets);
@@ -2120,7 +2108,7 @@ float patch_comparison_gather(vec3 r)
 	vec4 pdiff = poi_patch - gather_offs(r, offsets_sf);
 	return dot(POW2(pdiff) * spatial_p_weights, vec4(1)) / dot(spatial_p_weights, vec4(1));
 }
-#elif (defined(LUMA_gather) || D1W) && PS == 6 && RI == 0 && RFI == 0 && NO_GATHER
+#elif (defined(LUMA_gather) || D1W) && PS == 6 && RI == 0 && RFI == 0 && GATHER
 // tiled even square patch_comparison_gather
 // XXX extend to support odd square?
 float patch_comparison_gather(vec3 r)
@@ -2143,7 +2131,40 @@ float patch_comparison_gather(vec3 r)
 }
 #else
 #define patch_comparison_gather patch_comparison
+#define STORE_POI_PATCH 1
+val poi_patch[p_area];
 #endif
+
+val patch_comparison(vec3 r)
+{
+	vec3 p;
+	val min_rot = val(p_area);
+
+	FOR_ROTATION FOR_REFLECTION {
+		val pdiff_sq = val(0);
+		val total_weight = val(0);
+
+		int p_index = 0;
+		FOR_PATCH(p) {
+#ifdef STORE_POI_PATCH
+			val poi_p = poi_patch[p_index++];
+#else
+			val poi_p = GET_RF(p);
+#endif
+			vec3 transformed_p = SF * vec3(ref(rot(p.xy, ri), rfi), p.z);
+			val diff_sq = poi_p - GET_RF(transformed_p + r);
+			diff_sq *= diff_sq;
+
+			float weight = spatial_p(p.xy);
+			pdiff_sq += diff_sq * weight;
+			total_weight += weight;
+		}
+
+		min_rot = min(min_rot, pdiff_sq / max(val(EPSILON),total_weight));
+	}
+
+	return min_rot;
+}
 
 vec4 hook()
 {
@@ -2177,6 +2198,13 @@ vec4 hook()
 	int r_index = 0;
 	val_packed all_weights[r_area];
 	val_packed all_pixels[r_area];
+#endif
+
+#ifdef STORE_POI_PATCH
+	vec3 p;
+	int p_index = 0;
+	FOR_PATCH(p)
+		poi_patch[p_index++] = GET_RF(p);
 #endif
 	
 #if WD == 1 // weight discard (moving cumulative average)
