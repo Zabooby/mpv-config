@@ -202,8 +202,8 @@ vec4 hook() {
 //!BIND HOOKED
 //!BIND LINESOBEL
 
-#define STRENGTH 0.6 //Strength of warping for each iteration
-#define ITERATIONS 1 //Number of iterations for the forwards solver, decreasing strength and increasing iterations improves quality at the cost of speed.
+#define STRENGTH 0.01 //Strength of warping for each iteration
+#define ITERATIONS 20 //Number of iterations for the forwards solver, decreasing strength and increasing iterations improves quality at the cost of speed.
 
 vec4 hook() {
 	vec2 d = HOOKED_pt;

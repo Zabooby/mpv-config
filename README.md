@@ -1,7 +1,7 @@
 # Personal mpv Configuration for Windows
 
-<p align="center"><img width=100% src="https://github.com/Zabooby/mpv-config/assets/78969986/e1acacc3-e861-42dd-9a68-465bb73feab0" alt="mpv screenshot"></p>
-<p align="center"><img width=100% src="https://github.com/Zabooby/mpv-config/assets/78969986/9f514484-6011-473f-a225-7e8569bdbcd8" alt="mpv screenshot"></p>
+<p align="center"><img width=100% src="https://github.com/Zabooby/mpv-config/assets/78969986/256694db-c5ce-450c-8179-c700dbee6822" alt="mpv screenshot"></p>
+<p align="center"><img width=100% src="https://github.com/Zabooby/mpv-config/assets/78969986/680aba31-e4b9-4d31-82d0-a7dbcb181bba" alt="mpv screenshot"></p>
 
 ## Overview
 Just my personal config files for use in [mpv,](https://mpv.io/) a free, open-source, & cross-platform media player, with a focus on quality and a practical yet comfortable viewing experience. Contains tuned profiles (for up/downscaling, live action & anime), custom key bindings, a GUI, as well as multiple scripts, shaders & filters serving different functions. Suitable for both high and low-end computers (with some tweaks).
@@ -130,10 +130,11 @@ mpv
 │   │   ├── F8_LA.glsl
 │   │   ├── FSR.glsl
 │   │   ├── krigbl.glsl          
-│   │   ├── nlmeans_hqx.glsl
+│   │   ├── nlmeans_HQ.glsl
+│   │   ├── nlmeans_L_HQ.glsl
 │   │   ├── NVSharpen.glsl
-│   │   ├── ravu_L_r4.hook
-│   │   ├── ravu_Z_r3.hook
+│   │   ├── ravu_L_ar_r4.hook
+│   │   ├── ravu_Z_ar_r3.hook
 │   │   ├── ssimds.glsl
 │   │   └── ssimsr.glsl
 │   │

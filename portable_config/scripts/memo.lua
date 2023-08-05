@@ -233,7 +233,7 @@ function menu_json(menu_items, native)
     local title = search_query or "History"
     local menu = {
         type = "memo-history",
-        title = title .. " (memo)",
+        title = title .. "",
         items = menu_items,
         selected_index = 1,
         on_close = {"script-message-to", script_name, "memo-clear"}
