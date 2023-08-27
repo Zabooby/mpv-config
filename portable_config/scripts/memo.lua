@@ -229,22 +229,29 @@ function shallow_copy(t)
     return t2
 end
 
-function menu_json(menu_items, native)
-    local title = search_query or "History"
+function has_protocol(path)
+    return path:find("^%a[%w.+-]-://") or path:find("^%a[%w.+-]-:%?")
+end
+
+function menu_json(menu_items, page)
+    local title = (search_query or "History") .. ""
+    if options.pagination or page ~= 1 then
+        title = title .. " - Page " .. page
+    end
+
     local menu = {
         type = "memo-history",
-        title = title .. "",
+        title = title,
         items = menu_items,
-        selected_index = 1,
         on_close = {"script-message-to", script_name, "memo-clear"}
     }
 
-    if native then
-        return menu
-    end
+    return menu
+end
 
-    local json = mp.utils.format_json(menu)
-    return json or "{}"
+function uosc_update(menu_override)
+    local json = mp.utils.format_json(menu_override or menu_data) or "{}"
+    mp.commandv("script-message-to", "uosc", menu_shown and "update-menu" or "open-menu", json)
 end
 
 function update_dimensions()
@@ -326,15 +333,15 @@ function open_menu()
     mp.observe_property("shared-script-properties", "native", update_margins)
 
     bind_keys(options.up_binding, "move_up", function()
-        menu_data.selected_index = math.max(menu_data.selected_index - 1, 1)
+        last_state.selected_index = math.max(last_state.selected_index - 1, 1)
         draw_menu()
     end, { repeatable = true })
     bind_keys(options.down_binding, "move_down", function()
-        menu_data.selected_index = math.min(menu_data.selected_index + 1, #menu_data.items)
+        last_state.selected_index = math.min(last_state.selected_index + 1, #menu_data.items)
         draw_menu()
     end, { repeatable = true })
     bind_keys(options.select_binding, "select", function()
-        local item = menu_data.items[menu_data.selected_index]
+        local item = menu_data.items[last_state.selected_index]
         if not item then return end
         if not item.keep_open then
             close_menu()
@@ -342,7 +349,7 @@ function open_menu()
         mp.commandv(unpack(item.value))
     end)
     bind_keys(options.append_binding, "append", function()
-        local item = menu_data.items[menu_data.selected_index]
+        local item = menu_data.items[last_state.selected_index]
         if not item then return end
         if not item.keep_open then
             close_menu()
@@ -353,7 +360,9 @@ function open_menu()
             local playlist = mp.get_property_native("playlist", {})
             for i = 1, #playlist do
                 local playlist_file = playlist[i].filename
-                playlist_file = mp.utils.join_path(playlist_file:find("^%a[%a%d-_]+:") == nil and directory or "", playlist_file)
+                if not has_protocol(playlist_file) then
+                    playlist_file = mp.utils.join_path(directory, playlist_file)
+                end
                 if item.value[2] == playlist_file then
                     return
                 end
@@ -374,13 +383,13 @@ function draw_menu(delay)
     end
 
     local num_options = #menu_data.items > 0 and #menu_data.items + 1 or 1
-    menu_data.selected_index = math.min(menu_data.selected_index, #menu_data.items)
+    last_state.selected_index = math.min(last_state.selected_index, #menu_data.items)
 
     local function get_scrolled_lines()
         local output_height = height - margin_top * height - margin_bottom * height
         local screen_lines = math.max(math.floor(output_height / font_size), 1)
         local max_scroll = math.max(num_options - screen_lines, 0)
-        return math.min(math.max(menu_data.selected_index - math.ceil(screen_lines / 2), 0), max_scroll) - 1
+        return math.min(math.max(last_state.selected_index - math.ceil(screen_lines / 2), 0), max_scroll) - 1
     end
 
     local ass = assdraw.ass_new()
@@ -408,15 +417,15 @@ function draw_menu(delay)
             local item = menu_data.items[i]
             if item.title then
                 local icon
-                local separator = menu_data.selected_index == i and "{\\alpha&HFF&}●{\\alpha&H00&}  - " or "{\\alpha&HFF&}●{\\alpha&H00&} - "
+                local separator = last_state.selected_index == i and "{\\alpha&HFF&}●{\\alpha&H00&}  - " or "{\\alpha&HFF&}●{\\alpha&H00&} - "
                 if item.icon == "spinner" then
                     separator = "⟳ "
                 elseif item.icon == "navigate_next" then
-                    icon = menu_data.selected_index == i and "▶" or "▷"
+                    icon = last_state.selected_index == i and "▶" or "▷"
                 elseif item.icon == "navigate_before" then
-                    icon = menu_data.selected_index == i and "◀" or "◁"
+                    icon = last_state.selected_index == i and "◀" or "◁"
                 else
-                    icon = menu_data.selected_index == i and "●" or "○"
+                    icon = last_state.selected_index == i and "●" or "○"
                 end
                 ass:new_event()
                 ass:pos(0.3 * font_size, pos_y + menu_index * font_size)
@@ -444,17 +453,18 @@ function get_full_path()
     local path = mp.get_property("path")
     if path == nil or path == "-" or path == "/dev/stdin" then return end
 
-    local directory = path:find("^%a[%a%d-_]+:") == nil and mp.get_property("working-directory", "") or ""
-    local full_path = mp.utils.join_path(directory, path)
+    if not has_protocol(path) then
+        local directory = mp.get_property("working-directory", "")
+        path = mp.utils.join_path(directory, path)
+    end
 
-    return full_path
+
+    return path
 end
 
 function path_info(full_path)
-    local protocol_regex = "^(%a[%a%d_-]+):[/\\]?[/\\]?"
-
-    function resolve(effective_path, display_path, last_protocol, is_remote)
-        local protocol_start, protocol_end, protocol = display_path:find(protocol_regex)
+    local function resolve(effective_path, display_path, last_protocol, is_remote)
+        local protocol_start, protocol_end, protocol = display_path:find("^(%a[%w.+-]-)://")
 
         if protocol == "ytdl" then
             -- for direct video access ytdl://videoID and ytsearch:
@@ -462,11 +472,15 @@ function path_info(full_path)
         elseif protocol and not stacked_protocols[protocol] then
             local input_path, file_options
             if device_protocols[protocol] then
-                if protocol == "dvb" then
-                    is_remote = true
-                end
                 input_path, file_options = display_path:match("(.-) %-%-opt=(.+)")
                 effective_path = file_options and file_options:match(".+=(.*)")
+                if protocol == "dvb" then
+                    is_remote = true
+                    if not effective_path then
+                        effective_path = display_path
+                        input_path = display_path:sub(protocol_end + 1)
+                    end
+                end
                 display_path = input_path or display_path:sub(protocol_start, protocol_end)
             else
                 is_remote = true
@@ -502,22 +516,34 @@ function path_info(full_path)
         return resolve(effective_path, display_path, protocol, is_remote)
     end
 
+    -- don't resolve magnet-style paths
+    local protocol_start, protocol_end, protocol = full_path:find("^(%a[%w.+-]-):%?")
+    if protocol_end then
+        return full_path, full_path, protocol, true, nil
+    end
+
     local display_path, effective_path, effective_protocol, is_remote, file_options = resolve(nil, full_path, nil, false)
     effective_path = effective_path or display_path
 
     return display_path, effective_path, effective_protocol, is_remote, file_options
 end
 
-function write_history()
+function write_history(display)
     local full_path = get_full_path()
     if full_path == nil then
         mp.msg.debug("cannot get full path to file")
+        if display then
+            mp.osd_message("[memo] cannot get full path to file")
+        end
         return
     end
 
     local display_path, effective_path, effective_protocol, is_remote, file_options = path_info(full_path)
     if data_protocols[effective_protocol] then
         mp.msg.debug("not logging file with " .. effective_protocol .. " protocol")
+        if display then
+            mp.osd_message("[memo] not logging file with " .. effective_protocol .. " protocol")
+        end
         return
     end
 
@@ -535,6 +561,9 @@ function write_history()
     end
 
     mp.msg.debug("logging file " .. full_path)
+    if display then
+        mp.osd_message("[memo] logging file " .. full_path)
+    end
 
     local playlist_pos = mp.get_property_number("playlist-pos") or -1
     local title = playlist_pos > -1 and mp.get_property("playlist/"..playlist_pos.."/title") or ""
@@ -572,7 +601,8 @@ function show_history(entries, next_page, prev_page, update, return_items)
         cursor = history:seek("end"),
         retry = 0,
         pages = {},
-        current_page = 1
+        current_page = 1,
+        selected_index = 1
     }
 
     if update then
@@ -589,14 +619,14 @@ function show_history(entries, next_page, prev_page, update, return_items)
         end
     end
 
+    last_state = state
+
     if state.pages[state.current_page] then
+        menu_data = menu_json(state.pages[state.current_page], state.current_page)
+
         if uosc_available then
-            mp.commandv("script-message-to", "uosc", menu_shown and "update-menu" or "open-menu", menu_json(state.pages[state.current_page]))
-        elseif menu_data then
-            menu_data.items = state.pages[state.current_page]
-            draw_menu()
+            uosc_update()
         else
-            menu_data = menu_json(state.pages[state.current_page], true)
             draw_menu()
         end
         return
@@ -785,18 +815,16 @@ function show_history(entries, next_page, prev_page, update, return_items)
 
             table.insert(temp_items, {title = "Loading...", value = {"ignore"}, italic = "true", muted = "true", icon = "spinner", keep_open = true})
 
-            if next_page and last_state then
+            if next_page and state.current_page ~= 1 then
                 table.insert(temp_items, {value = {"ignore"}, keep_open = true})
             end
 
+            menu_data = menu_json(temp_items, state.current_page)
+
             if uosc_available then
-                mp.commandv("script-message-to", "uosc", menu_shown and "update-menu" or "open-menu", menu_json(temp_items))
+                uosc_update()
                 menu_shown = true
-            elseif menu_data then
-                menu_data.items = temp_items
-                osd_update = mp.get_time() + 0.1
             else
-                menu_data = menu_json(temp_items, true)
                 osd_update = mp.get_time() + 0.1
             end
         end
@@ -819,16 +847,13 @@ function show_history(entries, next_page, prev_page, update, return_items)
         end
     end
 
+    menu_data = menu_json(menu_items, state.current_page)
     state.pages[state.current_page] = menu_items
     last_state = state
 
     if uosc_available then
-        mp.commandv("script-message-to", "uosc", menu_shown and "update-menu" or "open-menu", menu_json(menu_items))
-    elseif menu_data then
-        menu_data.items = menu_items
-        draw_menu()
+        uosc_update()
     else
-        menu_data = menu_json(menu_items, true)
         draw_menu()
     end
 
@@ -875,7 +900,7 @@ end)
 function memo_close()
     menu_shown = false
     if uosc_available then
-        mp.commandv("script-message-to", "uosc", "open-menu", menu_json({}))
+        uosc_update(menu_json({}, 0))
     else
         close_menu()
     end
@@ -922,6 +947,13 @@ mp.command_native_async({"script-message-to", "uosc", "get-version", script_name
 
 mp.add_key_binding(nil, "memo-next", memo_next)
 mp.add_key_binding(nil, "memo-prev", memo_prev)
+mp.add_key_binding(nil, "memo-log", function()
+    write_history(true)
+
+    if menu_shown and last_state and last_state.current_page == 1 then
+        show_history(options.entries, false, false, true)
+    end
+end)
 mp.add_key_binding(nil, "memo-last", function()
     if event_loop_exhausted then return end
 

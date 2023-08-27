@@ -4,18 +4,20 @@
 <p align="center"><img width=100% src="https://github.com/Zabooby/mpv-config/assets/78969986/680aba31-e4b9-4d31-82d0-a7dbcb181bba" alt="mpv screenshot"></p>
 
 ## Overview
-Just my personal config files for use in [mpv,](https://mpv.io/) a free, open-source, & cross-platform media player, with a focus on quality and a practical yet comfortable viewing experience. Contains tuned profiles (for up/downscaling, live action & anime), custom key bindings, a GUI, as well as multiple scripts, shaders & filters serving different functions. Suitable for both high and low-end computers (with some tweaks).
+Just my personal config files for use in [mpv](https://mpv.io/), a free, open-source, & cross-platform media player, with a focus on quality and a practical yet comfortable viewing experience. Contains tuned profiles (for up/downscaling, live action & anime), custom key bindings, a GUI, as well as multiple scripts, shaders & filters serving different functions. Suitable for both high and low-end computers (with some tweaks).
 
 ## Scripts and Shaders
-- [uosc](https://github.com/darsain/uosc) - Adds a minimalist but highly customizable gui.
+- [uosc](https://github.com/darsain/uosc) - Adds a minimalist but highly customisable gui.
 - [evafast](https://github.com/po5/evafast) - Fast-forwarding and seeking on a single key.
 - [thumbfast](https://github.com/po5/thumbfast) - High-performance on-the-fly thumbnailer.
 - [memo](https://github.com/po5/memo) - Saves watch history, and displays it in a nice menu, integrated with uosc. 
 - [sview](https://github.com/he2a/mpv-scripts/blob/main/scripts/sview.lua) - Show shaders currently running, triggered on shader activation or by key bind.
 - [autoload](https://github.com/mpv-player/mpv/blob/master/TOOLS/lua/autoload.lua) - Automatically load playlist entries before and after the currently playing file, by scanning the directory.
 - [autodeint](https://github.com/mpv-player/mpv/blob/master/TOOLS/lua/autodeint.lua) - Automatically insert the appropriate deinterlacing filter based on a short section of the current video, triggered by key bind. 
+- [autosub](https://github.com/davidde/mpv-autosub) - Automatically downloads subtitles, triggered by key bind. 
+    - **Download the dependencies mentioned [here](https://github.com/davidde/mpv-autosub#dependencies), and copy the subliminal path in your system into [autosub.lua](https://github.com/Zabooby/mpv-config/tree/main/portable_config/scripts/autosub.lua) (see File Structure section below)**. 
 - [webtorrent-mpv-hook](https://github.com/mrxdst/webtorrent-mpv-hook) - Adds a hook that allows mpv to stream torrents. It provides an osd overlay to show info/progress.
-    - **This script needs some extra setup, follow the simple installation steps [here](https://github.com/mrxdst/webtorrent-mpv-hook#install)**.
+    - **This script also needs some extra setup, follow the simple installation steps [here](https://github.com/mrxdst/webtorrent-mpv-hook#install)**.
     - **Point to the same location in the File Structure section below when installing the webtorrent.js file.**
 - - - 
 - [nlmeans ](https://github.com/AN3223/dotfiles/tree/master/.config/mpv/shaders) - Highly configurable and featureful denoiser.
@@ -99,9 +101,10 @@ mpv
 |   |       ├── intl
 |   |           ├── de.lua
 |   |           ├── es.lua
-|   |           ├── fr.lua
-|   |           ├── ro.lua
-|   |           └── zh-hans.lua
+|   |           ├── fr.json
+|   |           ├── ro.json
+|   |           ├── ru.json
+|   |           └── zh-hans.json
 |   |       ├── lib
 |   |           ├── ass.lua
 |   |           ├── intl.lua
@@ -113,6 +116,7 @@ mpv
 │   │
 │   │   ├── autodeint.lua
 │   │   ├── autoload.lua 
+│   │   ├── autosub.lua                   # Specify the subliminal path here 
 │   │   ├── evafast.lua                   # Activated by holding right arrow key
 |   |   ├── memo.lua
 |   |   ├── sview.lua
@@ -157,7 +161,7 @@ Custom key bindings can be added/edited in the [input.conf](https://github.com/Z
 
 * [mpv wiki](https://github.com/mpv-player/mpv/wiki) - Official wiki with links to user scripts, FAQ's and much more.
 * [Mathematical evaluation of various scalers](https://artoriuz.github.io/blog/mpv_upscaling.html) - My config uses (mostly) the best scalers/settings from this analysis.
-* [mpv manual](https://mpv.io/manual/master/) - Lists all the settings and configuration options available including video/audio filters, scripting, and countless other customizations.
+* [mpv manual](https://mpv.io/manual/master/) - Lists all the settings and configuration options available including video/audio filters, scripting, and countless other customisations.
 * [To-do's](https://github.com/users/Zabooby/projects/1) - Just a list of things I'm currently testing, tracking or improving as well as major changes/improvements I've already implemented (click on items for more information).
 
 Huge shoutout to [@he2a](https://github.com/he2a) for their [config,](https://github.com/he2a/mpv-config) lots of my setup is inspired by it.
