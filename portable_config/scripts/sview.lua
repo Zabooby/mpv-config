@@ -1,30 +1,57 @@
 -- A simple script to show multiple shaders running, in a clean list. Also hides osd messages of shader changes.
 
-local function osd_f(shdr)
-  if shdr ~= '' then
-    shdr = shdr:gsub(',', '\n• ')
-    shdr = shdr:gsub('~~/', '')
-    shdr = shdr:gsub('/', ' - ')
-    mp.osd_message('Shader:\n• ' .. shdr)
-  else
-    mp.osd_message('')
-  end
-end 
+sview_ov = mp.create_osd_overlay("ass-events")
+shader_t = false
 
-local function shader_watch()
-  s = mp.get_property_osd('glsl-shaders')
-  if s ~= '' then
-      osd_f(s)
-  else
-    mp.osd_message('')
-  end
+function slist(input)
+    local fileNames = {}
+    local paths = {}
+	if input ~= '' then
+		for path in input:gmatch("[^,]+") do
+			table.insert(paths, path)
+		end
+
+		for _, path in ipairs(paths) do
+			local fileName = path:match(".+/(.+)$") or path:match(".+\\(.+)$")
+			if fileName then
+				table.insert(fileNames, fileName)
+			end
+		end
+		
+		local listString = "{\\b1}Shaders loaded:{\\b0}"
+		for i, fileName in ipairs(fileNames) do
+			listString = listString .. "\n" .. i .. ") " .. fileName
+		end
+		sview_ov.data = listString
+	else
+		sview_ov.data = "{\\b1}No shaders loaded.{\\b0}"
+	end
 end
 
-local function hide_msg()
-  mp.osd_message('')
+function toggle_sview()
+	if shader_t then
+		shader_t = false
+		sview_ov:remove()
+	else
+		shader_t = true
+		update_list()
+	end
 end
 
-mp.add_key_binding('x', 'shader-view', shader_watch)
-mp.observe_property('glsl-shaders', nil, hide_msg)
+function update_list()
+	mp.osd_message('')
+	if shader_t then
+		slist(mp.get_property('glsl-shaders'))
+		sview_ov:update()
+	end
+end
 
--- [ \w-]+\.+\w+(\n|\Z)
+function clear_shaders()
+	if mp.get_property('glsl-shaders') ~= '' then
+		mp.command('change-list glsl-shaders clr all')
+	end
+end
+
+mp.add_key_binding(nil, 'shader-view', toggle_sview)
+mp.add_key_binding(nil, 'shader-clear', clear_shaders)
+mp.observe_property('glsl-shaders', nil, update_list)

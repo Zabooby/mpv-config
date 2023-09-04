@@ -6,6 +6,8 @@
 ## Overview
 Just my personal config files for use in [mpv](https://mpv.io/), a free, open-source, & cross-platform media player, with a focus on quality and a practical yet comfortable viewing experience. Contains tuned profiles (for up/downscaling, live action & anime), custom key bindings, a GUI, as well as multiple scripts, shaders & filters serving different functions. Suitable for both high and low-end computers (with some tweaks).
 
+Before installing, please take your time to read this whole README as common issues can be easily solved by simply reading carefully.
+
 ## Scripts and Shaders
 - [uosc](https://github.com/darsain/uosc) - Adds a minimalist but highly customisable gui.
 - [evafast](https://github.com/po5/evafast) - Fast-forwarding and seeking on a single key.
@@ -40,8 +42,8 @@ Just my personal config files for use in [mpv](https://mpv.io/), a free, open-so
 * Download the latest 64bit (or 64bit-v3 for newer CPUs) mpv Windows build by shinchiro [here](https://mpv.io/installation/) or directly from [here](https://sourceforge.net/projects/mpv-player-windows/files/) and extract its contents into a folder of your choice (mine is called mpv). This is now your mpv folder and can be placed wherever you want. 
 * Run `mpv-install.bat`, which is located in the `installer` folder (see File Structure section), with administrator privileges by right-clicking and selecting run as administrator, after it's done, you'll get a prompt to open Control Panel and set mpv as the default player.
 * Download and extract the `portable_config` folder from this repo to the mpv folder you just made. 
-* Change file paths, in [mpv.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/mpv.conf) and 2 other files in the [script-opts](https://github.com/Zabooby/mpv-config/tree/main/portable_config/script-opts) folder (detailed below), to match where the relevant files/folders exist on your pc. 
-* **Adjust any settings in [mpv.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/mpv.conf) to fit your system, use the [manual](https://mpv.io/manual/master/) to find out what different options do or open an issue if you need any help.**
+* Change/add file paths, in [mpv.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/mpv.conf) and 3 other files in the [script-opts](https://github.com/Zabooby/mpv-config/tree/main/portable_config/script-opts)/[scripts](https://github.com/Zabooby/mpv-config/tree/main/portable_config/scripts) folder (detailed below), to match where the relevant files/folders exist on your pc. 
+* **Adjust relevant settings in [mpv.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/mpv.conf) to fit your system, use the [manual](https://mpv.io/manual/master/) to find out what different options do or open an issue if you need any help.**
 * You're all set up. Go watch some videos!
 
 After following the steps above, your mpv folder should have the following structure:
@@ -121,7 +123,7 @@ mpv
 |   |   ├── memo.lua
 |   |   ├── sview.lua
 │   │   ├── thumbfast.lua                     
-│   │   └── webtorrent.js                 # Point here when setting up webtorrent script
+│   │   └── webtorrent.js                 # Point here when setting up the webtorrent script
 │   │
 │   ├── shaders                          
 │   │   ├── A4K_Dark.glsl                         
@@ -143,10 +145,10 @@ mpv
 │   │   └── ssimsr.glsl
 │   │
 |   ├── watch_later                       # Video timestamps saved here (created automatically)
-|   ├── fonts.conf                        # Delete the duplicate made when installing
-│   ├── input.conf                        # Tweak uosc right click menu here
-│   ├── mpv.conf                          # General anime profile here 
-|   └── profiles.conf                     # Up/downscale and more anime profiles here
+|   ├── fonts.conf                        # Delete the duplicate made when installing mpv
+│   ├── input.conf                        # Customise uosc right click menu here
+│   ├── mpv.conf                          
+|   └── profiles.conf                     
 |   
 ├── d3dcompiler_43.dll
 ├── mpv.com
@@ -155,7 +157,7 @@ mpv
 ```
 
 ## Key Bindings
-Custom key bindings can be added/edited in the [input.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/input.conf) file. Refer to the [manual](https://mpv.io/manual/master/) and [uosc](https://github.com/tomasklaen/uosc#commands) commands for making any changes. Default key bindings can be seen from the [input.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/input.conf) file but most of the player functions can be used through the menu accessed by `Right Click` and the buttons above the timeline as seen in the image above.
+Custom key bindings can be added/edited in the [input.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/input.conf) file. Refer to the [manual](https://mpv.io/manual/master/) and [uosc](https://github.com/tomasklaen/uosc#commands) commands for making any changes. Default key bindings can be seen from the [input.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/input.conf) file but most of the player functions can be used through the menu accessed by `Right Click` and the buttons above the timeline as seen in the images above.
 
 ## Useful Links
 
@@ -163,5 +165,3 @@ Custom key bindings can be added/edited in the [input.conf](https://github.com/Z
 * [Mathematical evaluation of various scalers](https://artoriuz.github.io/blog/mpv_upscaling.html) - My config uses (mostly) the best scalers/settings from this analysis.
 * [mpv manual](https://mpv.io/manual/master/) - Lists all the settings and configuration options available including video/audio filters, scripting, and countless other customisations.
 * [To-do's](https://github.com/users/Zabooby/projects/1) - Just a list of things I'm currently testing, tracking or improving as well as major changes/improvements I've already implemented (click on items for more information).
-
-Huge shoutout to [@he2a](https://github.com/he2a) for their [config,](https://github.com/he2a/mpv-config) lots of my setup is inspired by it.

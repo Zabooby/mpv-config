@@ -51,6 +51,8 @@
 //!DESC Non-local means (nlmeans.glsl)
 //!SAVE G
 
+
+
 // User variables
 
 // It is generally preferable to denoise luma and chroma differently, so the 
@@ -58,9 +60,9 @@
 
 // Denoising factor (sigma, higher means more blur)
 #ifdef LUMA_raw
-#define S 2.4568983002402605
+#define S 2.2727641053003422
 #else
-#define S 3.1977747825848186
+#define S 2.541932232127336
 #endif
 
 /* Noise resistant adaptive sharpening
@@ -98,9 +100,9 @@
  * AKA the center weight, the weight of the pixel-of-interest.
  */
 #ifdef LUMA_raw
-#define SW 1.2404096108379181
+#define SW 0.38438989654960287
 #else
-#define SW 0.726372481763592
+#define SW 0.4998447187063041
 #endif
 
 /* Spatial kernel
@@ -117,12 +119,12 @@
  */
 #ifdef LUMA_raw
 #define SST 1
-#define SS 1.1361354181582806
+#define SS 1.4430941851001529
 #define PST 0
 #define PSS 0.0
 #else
 #define SST 1
-#define SS 1.30305305186629
+#define SS 1.2699872219453079
 #define PST 0
 #define PSS 0.0
 #endif
@@ -232,15 +234,34 @@
  * WDS (not for WDK=is_zero): Higher numbers are more eager to reduce weights
  */
 #ifdef LUMA_raw
-#define WD 1
-#define WDT 0.3657641692527864
-#define WDP 7.148247288533693
+#define WD 2
+#define WDT 0.8324422316745451
+#define WDP 0.0
 #define WDS 1.0
 #else
 #define WD 0
 #define WDT 0.0
 #define WDP 0.0
 #define WDS 1.0
+#endif
+
+/* Connectivity
+ *
+ * Increases weights that are near high weights, decreases weights that are 
+ * near low weights.
+ *
+ * C: Number of passes to do, more increases the effect, 0 does nothing
+ * CD: Distance between each pixel and its furthest neighbor
+ * CS: Strength of effect, higher is more
+ */
+#ifdef LUMA_raw
+#define C 0
+#define CD 1.0
+#define CS 1.0
+#else
+#define C 0
+#define CD 1.0
+#define CS 1.0
 #endif
 
 /* Rotational/reflectional invariance
@@ -359,7 +380,7 @@
  * RO: range kernel (takes patch differences)
  */
 #ifdef LUMA_raw
-#define RO 1.4693228839883246e-05
+#define RO 0.00011671492602357283
 #else
 #define RO 9.773746446023492e-05
 #endif
@@ -419,6 +440,13 @@
 #define V 0
 #endif
 
+// Fast approximate division
+#ifdef LUMA_raw
+#define FAST_DIV 0
+#else
+#define FAST_DIV 0
+#endif
+
 // Force disable textureGather
 #ifdef LUMA_raw
 #define NG 0
@@ -450,6 +478,7 @@
 // Shader code
 
 #define EPSILON 1.2e-38
+#define FLT_EPSILON 1.19209290E-07
 #define M_PI 3.14159265358979323846
 #define POW2(x) ((x)*(x))
 #define POW3(x) ((x)*(x)*(x))
@@ -457,6 +486,26 @@
 // pow() implementation that gives -pow() when x<0
 // avoids actually calling pow() since apparently it's buggy on nvidia
 #define POW(x,y) (exp(log(abs(x)) * y) * sign(x))
+
+// boolean logic w/ vectors
+// from hdeband
+#define NOT(x) (1 - (x))
+#define AND *
+#define TERNARY(cond, x, y) ((x)*(cond) + (y)*NOT(cond))
+
+// from FSR
+#if FAST_DIV
+#define RECIPROCAL(x) uintBitsToFloat(uint(0x7ef07ebb) - floatBitsToUint(x))
+#define DIV(x,y) ((x) * RECIPROCAL(y))
+#define MED_RCP_B(x) uintBitsToFloat(uint(0x7ef19fff) - floatBitsToUint(x))
+#define MED_RECIPROCAL(x) (MED_RCP_B(x) * (-MED_RCP_B(x) * x + 2))
+#define MED_DIV(x,y) ((x) * MED_RECIPROCAL(y))
+#else
+#define RECIPROCAL(x) (1.0/(x))
+#define MED_RECIPROCAL(x) (1.0/(x))
+#define DIV(x,y) ((x)/(y))
+#define MED_DIV(x,y) ((x)/(y))
+#endif
 
 // XXX make this capable of being set per-kernel, e.g., RK0, SK0...
 #define K0 1.0
@@ -470,12 +519,12 @@
 #define is_zero(x) int(x == 0)
 #define lanczos(x) (sinc3(x) * sinc(x))
 #define quadratic(x) quadratic_(clamp((x), 0.0, 1.5))
-#define quadratic_(x) ((x) < 0.5 ? 0.75 - POW2(x) : 0.5 * POW2((x) - 1.5))
+#define quadratic_(x) TERNARY(step(x, 0.5), 0.75 - POW2(x), 0.5 * POW2((x) - 1.5))
 #define sinc(x) sinc_(clamp((x), 0.0, 1.0))
 #define sinc3(x) sinc_(clamp((x), 0.0, 3.0))
-#define sinc_(x) ((x) < 1e-3 ? 1.0 : sin((x)*M_PI) / ((x)*M_PI))
+#define sinc_(x) TERNARY(step(x, 1e-3), 1.0, DIV(sin((x)*M_PI), ((x)*M_PI)))
 #define sphinx(x) sphinx_(clamp((x), 0.0, 1.4302966531242027))
-#define sphinx_(x) ((x) < 1e-3 ? 1.0 : 3.0 * (sin((x)*M_PI) - (x)*M_PI * cos((x)*M_PI)) / POW3((x)*M_PI))
+#define sphinx_(x) TERNARY(step(x, 1e-3), 1.0, DIV(3.0 * (sin((x)*M_PI) - (x)*M_PI * cos((x)*M_PI)), POW3((x)*M_PI)))
 #define triangle(x) triangle_(clamp((x), 0.0, 1.0))
 #define triangle_(x) (1 - (x))
 
@@ -656,7 +705,7 @@ const int r_area = R_AREA(R*R);
 #define RFI1 (RFI+1)
 
 #if RI
-#define FOR_ROTATION for (float ri = 0;  ri < 360;  ri+=360.0/RI1)
+#define FOR_ROTATION for (float ri = 0;  ri < 360;  ri += DIV(360.0, RI1))
 #else
 #define FOR_ROTATION
 #endif
@@ -709,6 +758,7 @@ const int p_area = P_AREA(P*P);
 #endif
 
 const float r_scale = 1.0/r_area; 
+const float r1_scale = 1.0/(r_area+1); 
 const float p_scale = 1.0/p_area; 
 const float hr_scale = 1.0/hr; 
 
@@ -812,17 +862,17 @@ float spatial_as(vec3 v)
 
 #if PST && P >= PST
 #define spatial_p(v) PSK(length(v)*PSS)
-#define normalize_p(x,expr) ((x) / (expr))
+#define normalize_p(x,expr) DIV((x), (expr))
 #else
 #define spatial_p(v) (1)
 #define normalize_p(x,expr) ((x) * p_scale)
 #endif
 
+const float pdiff_scale = 1.0/max(EPSILON,POW2(S*0.013)); 
 val_guide range(val_guide pdiff_sq)
 {
-	 const float pdiff_scale = 1.0/max(EPSILON,POW2(S*0.013)); 
 	 pdiff_sq = sqrt(abs(pdiff_sq - max(EPSILON, RO)) * pdiff_scale); 
-	 return MAP_GUIDE(RK, pdiff_sq); 
+	 return RK(pdiff_sq); 
 }
 
 #define GATHER (PD == 0 && NG == 0 && SAMPLE == 0) // never textureGather if any of these conditions are false
@@ -999,6 +1049,8 @@ vec4 hook()
 	 vec3 r = vec3(0); 
 	 vec3 me = vec3(0); 
 
+	 float sw = SW * spatial_r(vec3(0)); 
+
 #if T && ME == 1 // temporal & motion estimation
 	 vec3 me_tmp = vec3(0); 
 	 float maxweight = 0; 
@@ -1012,7 +1064,7 @@ vec4 hook()
 	 val sum_as = val(0); 
 #endif
 
-#if WD == 2 || V == 7
+#if WD == 2 || V == 7 || C
 #define STORE_WEIGHTS 1
 #else
 #define STORE_WEIGHTS 0
@@ -1052,7 +1104,7 @@ vec4 hook()
 	 }
 #elif T && ME == 2 // temporal & motion estimation weighted average
 	 if (r.z > 0) {
-	 	 me += round(me_sum / me_weight * MEF); 
+	 	 me += round(DIV(me_sum, me_weight) * MEF); 
 	 	 me_sum = vec3(0); 
 	 	 me_weight = 0; 
 	 }
@@ -1092,7 +1144,7 @@ vec4 hook()
 #endif
 
 #if WD == 1 // weight discard (moving cumulative average)
-	 	 float wd_scale = 1.0/r_iter; 
+	 	 float wd_scale = RECIPROCAL(r_iter); 
 
 	 	 val_guide below_threshold = WDS * abs(min(val_guide(0.0), weight - (total_weight * wd_scale * WDT * WD1TK(sqrt(wd_scale*WDP))))); 
 	 	 val_guide wdkf = MAP_GUIDE(WDK, below_threshold); 
@@ -1128,6 +1180,44 @@ vec4 hook()
 	 return vec4(0.5);  // XXX visualize for chroma
 #endif
 
+#if C
+	 total_weight = val_guide(0); 
+	 sum = val(0); 
+
+	 for (int c = 0;  c <= C;  c++) {
+	 	 val_guide_packed all_weights_update[r_area]; 
+
+	 	 r_index = 0; 
+	 	 FOR_FRAME(r) FOR_RESEARCH(r) {
+	 	 	 val_guide c_sum = val_guide(0); 
+	 	 	 vec3 r2 = vec3(0); 
+	 	 	 int r2_index = 0; 
+	 	 	 FOR_FRAME(r2) FOR_RESEARCH(r2)
+	 	 	 	 if (distance(r, r2) - sqrt(CD) <= FLT_EPSILON)
+	 	 	 	 	 c_sum += val_guide_unpack(all_weights[r2_index++]); 
+	 	 	 if (length(r) - sqrt(CD) <= FLT_EPSILON)
+	 	 	 	 c_sum += sw; 
+	 	 	 all_weights_update[r_index++] = val_guide_pack(c_sum); 
+	 	 }
+
+	 	 r_index = 0; 
+	 	 FOR_FRAME(r) FOR_RESEARCH(r) {
+	 	 	 val_guide old_weight = val_guide_unpack(all_weights[r_index]); 
+	 	 	 val_guide update = val_guide_unpack(all_weights_update[r_index]); 
+	 	 	 val_guide weight = old_weight * RECIPROCAL(max(EPSILON,CS))
+	 	 	                  + old_weight * update * r1_scale * CS; 
+	 	 	 all_weights[r_index] = val_guide_pack(weight); 
+	 	 	 if (c == C) { // only need to update this stuff on the final C iteration
+	 	 	 	 val px = val_unpack(all_pixels[r_index]); 
+	 	 	 	 sum += px * weight; 
+	 	 	 	 total_weight += weight; 
+	 	 	 	 all_pixels[r_index] = val_pack(px); 
+	 	 	 }
+	 	 	 r_index++; 
+	 	 }
+	 } // for C
+#endif
+
 #if WD == 2 // weight discard (mean)
 	 total_weight = val_guide(0); 
 	 sum = val(0); 
@@ -1159,9 +1249,9 @@ vec4 hook()
 	 avg_weight = total_weight * r_scale; 
 #endif
 
-	 total_weight += SW * spatial_r(vec3(0)); 
-	 sum += poi * SW * spatial_r(vec3(0)); 
-	 result = sum / max(val(EPSILON),val(total_weight)); 
+	 total_weight += sw; 
+	 sum += poi * sw; 
+	 result = MED_DIV(sum, max(val(EPSILON),val(total_weight))); 
 
 	 // store frames for temporal
 #if T > 1
@@ -1186,9 +1276,10 @@ vec4 hook()
 #endif
 
 #if AS // sharpening
-	 val usm = AS_input - sum_as/max(EPSILON,total_weight_as); 
+	 val usm = AS_input - MED_DIV(sum_as, max(EPSILON,total_weight_as)); 
 	 usm = POW(usm, ASP); 
-	 usm *= ASAK(abs((AS_base + usm - 0.5) / 1.5) * ASA); 
+	 const float as_scale_15 = 1.0/1.5; 
+	 usm *= ASAK(abs((AS_base + usm - 0.5) * as_scale_15) * ASA); 
 	 usm *= ASF; 
 	 result = AS_base + usm; 
 #endif
@@ -1254,6 +1345,8 @@ vec4 hook()
 //!BIND GC
 //!DESC Non-local means (HQ/nlmeans_light.glsl)
 
+
+
 // User variables
 
 // It is generally preferable to denoise luma and chroma differently, so the 
@@ -1261,9 +1354,9 @@ vec4 hook()
 
 // Denoising factor (sigma, higher means more blur)
 #ifdef LUMA_raw
-#define S 0.6539523999372645
+#define S 0.47241027416666376
 #else
-#define S 0.6063170856716117
+#define S 0.591177899813322
 #endif
 
 /* Noise resistant adaptive sharpening
@@ -1301,9 +1394,9 @@ vec4 hook()
  * AKA the center weight, the weight of the pixel-of-interest.
  */
 #ifdef LUMA_raw
-#define SW 5.972553151321556
+#define SW 2.3413048667402414
 #else
-#define SW 1.0677377301335407
+#define SW 2.1508146686987937
 #endif
 
 /* Spatial kernel
@@ -1320,12 +1413,12 @@ vec4 hook()
  */
 #ifdef LUMA_raw
 #define SST 1
-#define SS -0.00042494197144507523
+#define SS 0.09363102604167671
 #define PST 0
 #define PSS 0.0
 #else
 #define SST 1
-#define SS 0.02206173458908348
+#define SS 0.04185858522314121
 #define PST 0
 #define PSS 0.0
 #endif
@@ -1435,15 +1528,34 @@ vec4 hook()
  * WDS (not for WDK=is_zero): Higher numbers are more eager to reduce weights
  */
 #ifdef LUMA_raw
-#define WD 2
-#define WDT 0.21716724378487143
-#define WDP 0.0
+#define WD 1
+#define WDT 0.07768251183652138
+#define WDP 0.5787522313027192
 #define WDS 1.0
 #else
 #define WD 0
 #define WDT 0.0
 #define WDP 0.0
 #define WDS 1.0
+#endif
+
+/* Connectivity
+ *
+ * Increases weights that are near high weights, decreases weights that are 
+ * near low weights.
+ *
+ * C: Number of passes to do, more increases the effect, 0 does nothing
+ * CD: Distance between each pixel and its furthest neighbor
+ * CS: Strength of effect, higher is more
+ */
+#ifdef LUMA_raw
+#define C 0
+#define CD 1.0
+#define CS 1.0
+#else
+#define C 0
+#define CD 1.0
+#define CS 1.0
 #endif
 
 /* Rotational/reflectional invariance
@@ -1564,7 +1676,7 @@ vec4 hook()
 #ifdef LUMA_raw
 #define RO 2.603846182420303e-05
 #else
-#define RO 1.956097969969742e-05
+#define RO 3.0420254950129188e-05
 #endif
 
 /* Sampling method
@@ -1622,6 +1734,13 @@ vec4 hook()
 #define V 0
 #endif
 
+// Fast approximate division
+#ifdef LUMA_raw
+#define FAST_DIV 0
+#else
+#define FAST_DIV 0
+#endif
+
 // Force disable textureGather
 #ifdef LUMA_raw
 #define NG 0
@@ -1653,6 +1772,7 @@ vec4 hook()
 // Shader code
 
 #define EPSILON 1.2e-38
+#define FLT_EPSILON 1.19209290E-07
 #define M_PI 3.14159265358979323846
 #define POW2(x) ((x)*(x))
 #define POW3(x) ((x)*(x)*(x))
@@ -1660,6 +1780,26 @@ vec4 hook()
 // pow() implementation that gives -pow() when x<0
 // avoids actually calling pow() since apparently it's buggy on nvidia
 #define POW(x,y) (exp(log(abs(x)) * y) * sign(x))
+
+// boolean logic w/ vectors
+// from hdeband
+#define NOT(x) (1 - (x))
+#define AND *
+#define TERNARY(cond, x, y) ((x)*(cond) + (y)*NOT(cond))
+
+// from FSR
+#if FAST_DIV
+#define RECIPROCAL(x) uintBitsToFloat(uint(0x7ef07ebb) - floatBitsToUint(x))
+#define DIV(x,y) ((x) * RECIPROCAL(y))
+#define MED_RCP_B(x) uintBitsToFloat(uint(0x7ef19fff) - floatBitsToUint(x))
+#define MED_RECIPROCAL(x) (MED_RCP_B(x) * (-MED_RCP_B(x) * x + 2))
+#define MED_DIV(x,y) ((x) * MED_RECIPROCAL(y))
+#else
+#define RECIPROCAL(x) (1.0/(x))
+#define MED_RECIPROCAL(x) (1.0/(x))
+#define DIV(x,y) ((x)/(y))
+#define MED_DIV(x,y) ((x)/(y))
+#endif
 
 // XXX make this capable of being set per-kernel, e.g., RK0, SK0...
 #define K0 1.0
@@ -1673,12 +1813,12 @@ vec4 hook()
 #define is_zero(x) int(x == 0)
 #define lanczos(x) (sinc3(x) * sinc(x))
 #define quadratic(x) quadratic_(clamp((x), 0.0, 1.5))
-#define quadratic_(x) ((x) < 0.5 ? 0.75 - POW2(x) : 0.5 * POW2((x) - 1.5))
+#define quadratic_(x) TERNARY(step(x, 0.5), 0.75 - POW2(x), 0.5 * POW2((x) - 1.5))
 #define sinc(x) sinc_(clamp((x), 0.0, 1.0))
 #define sinc3(x) sinc_(clamp((x), 0.0, 3.0))
-#define sinc_(x) ((x) < 1e-3 ? 1.0 : sin((x)*M_PI) / ((x)*M_PI))
+#define sinc_(x) TERNARY(step(x, 1e-3), 1.0, DIV(sin((x)*M_PI), ((x)*M_PI)))
 #define sphinx(x) sphinx_(clamp((x), 0.0, 1.4302966531242027))
-#define sphinx_(x) ((x) < 1e-3 ? 1.0 : 3.0 * (sin((x)*M_PI) - (x)*M_PI * cos((x)*M_PI)) / POW3((x)*M_PI))
+#define sphinx_(x) TERNARY(step(x, 1e-3), 1.0, DIV(3.0 * (sin((x)*M_PI) - (x)*M_PI * cos((x)*M_PI)), POW3((x)*M_PI)))
 #define triangle(x) triangle_(clamp((x), 0.0, 1.0))
 #define triangle_(x) (1 - (x))
 
@@ -1859,7 +1999,7 @@ const int r_area = R_AREA(R*R);
 #define RFI1 (RFI+1)
 
 #if RI
-#define FOR_ROTATION for (float ri = 0; ri < 360; ri+=360.0/RI1)
+#define FOR_ROTATION for (float ri = 0; ri < 360; ri += DIV(360.0, RI1))
 #else
 #define FOR_ROTATION
 #endif
@@ -1912,6 +2052,7 @@ const int p_area = P_AREA(P*P);
 #endif
 
 const float r_scale = 1.0/r_area;
+const float r1_scale = 1.0/(r_area+1);
 const float p_scale = 1.0/p_area;
 const float hr_scale = 1.0/hr;
 
@@ -2015,17 +2156,17 @@ float spatial_as(vec3 v)
 
 #if PST && P >= PST
 #define spatial_p(v) PSK(length(v)*PSS)
-#define normalize_p(x,expr) ((x) / (expr))
+#define normalize_p(x,expr) DIV((x), (expr))
 #else
 #define spatial_p(v) (1)
 #define normalize_p(x,expr) ((x) * p_scale)
 #endif
 
+const float pdiff_scale = 1.0/max(EPSILON,POW2(S*0.013));
 val_guide range(val_guide pdiff_sq)
 {
-	const float pdiff_scale = 1.0/max(EPSILON,POW2(S*0.013));
 	pdiff_sq = sqrt(abs(pdiff_sq - max(EPSILON, RO)) * pdiff_scale);
-	return MAP_GUIDE(RK, pdiff_sq);
+	return RK(pdiff_sq);
 }
 
 #define GATHER (PD == 0 && NG == 0 && SAMPLE == 0) // never textureGather if any of these conditions are false
@@ -2202,6 +2343,8 @@ vec4 hook()
 	vec3 r = vec3(0);
 	vec3 me = vec3(0);
 
+	float sw = SW * spatial_r(vec3(0));
+
 #if T && ME == 1 // temporal & motion estimation
 	vec3 me_tmp = vec3(0);
 	float maxweight = 0;
@@ -2215,7 +2358,7 @@ vec4 hook()
 	val sum_as = val(0);
 #endif
 
-#if WD == 2 || V == 7
+#if WD == 2 || V == 7 || C
 #define STORE_WEIGHTS 1
 #else
 #define STORE_WEIGHTS 0
@@ -2255,7 +2398,7 @@ vec4 hook()
 	}
 #elif T && ME == 2 // temporal & motion estimation weighted average
 	if (r.z > 0) {
-		me += round(me_sum / me_weight * MEF);
+		me += round(DIV(me_sum, me_weight) * MEF);
 		me_sum = vec3(0);
 		me_weight = 0;
 	}
@@ -2295,7 +2438,7 @@ vec4 hook()
 #endif
 
 #if WD == 1 // weight discard (moving cumulative average)
-		float wd_scale = 1.0/r_iter;
+		float wd_scale = RECIPROCAL(r_iter);
 
 		val_guide below_threshold = WDS * abs(min(val_guide(0.0), weight - (total_weight * wd_scale * WDT * WD1TK(sqrt(wd_scale*WDP)))));
 		val_guide wdkf = MAP_GUIDE(WDK, below_threshold);
@@ -2331,6 +2474,44 @@ vec4 hook()
 	return vec4(0.5); // XXX visualize for chroma
 #endif
 
+#if C
+	total_weight = val_guide(0);
+	sum = val(0);
+
+	for (int c = 0; c <= C; c++) {
+		val_guide_packed all_weights_update[r_area];
+
+		r_index = 0;
+		FOR_FRAME(r) FOR_RESEARCH(r) {
+			val_guide c_sum = val_guide(0);
+			vec3 r2 = vec3(0);
+			int r2_index = 0;
+			FOR_FRAME(r2) FOR_RESEARCH(r2)
+				if (distance(r, r2) - sqrt(CD) <= FLT_EPSILON)
+					c_sum += val_guide_unpack(all_weights[r2_index++]);
+			if (length(r) - sqrt(CD) <= FLT_EPSILON)
+				c_sum += sw;
+			all_weights_update[r_index++] = val_guide_pack(c_sum);
+		}
+
+		r_index = 0;
+		FOR_FRAME(r) FOR_RESEARCH(r) {
+			val_guide old_weight = val_guide_unpack(all_weights[r_index]);
+			val_guide update = val_guide_unpack(all_weights_update[r_index]);
+			val_guide weight = old_weight * RECIPROCAL(max(EPSILON,CS))
+			                 + old_weight * update * r1_scale * CS;
+			all_weights[r_index] = val_guide_pack(weight);
+			if (c == C) { // only need to update this stuff on the final C iteration
+				val px = val_unpack(all_pixels[r_index]);
+				sum += px * weight;
+				total_weight += weight;
+				all_pixels[r_index] = val_pack(px);
+			}
+			r_index++;
+		}
+	} // for C
+#endif
+
 #if WD == 2 // weight discard (mean)
 	total_weight = val_guide(0);
 	sum = val(0);
@@ -2362,9 +2543,9 @@ vec4 hook()
 	avg_weight = total_weight * r_scale;
 #endif
 
-	total_weight += SW * spatial_r(vec3(0));
-	sum += poi * SW * spatial_r(vec3(0));
-	result = sum / max(val(EPSILON),val(total_weight));
+	total_weight += sw;
+	sum += poi * sw;
+	result = MED_DIV(sum, max(val(EPSILON),val(total_weight)));
 
 	// store frames for temporal
 #if T > 1
@@ -2389,9 +2570,10 @@ vec4 hook()
 #endif
 
 #if AS // sharpening
-	val usm = AS_input - sum_as/max(EPSILON,total_weight_as);
+	val usm = AS_input - MED_DIV(sum_as, max(EPSILON,total_weight_as));
 	usm = POW(usm, ASP);
-	usm *= ASAK(abs((AS_base + usm - 0.5) / 1.5) * ASA);
+	const float as_scale_15 = 1.0/1.5;
+	usm *= ASAK(abs((AS_base + usm - 0.5) * as_scale_15) * ASA);
 	usm *= ASF;
 	result = AS_base + usm;
 #endif
