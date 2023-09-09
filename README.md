@@ -4,7 +4,7 @@
 <p align="center"><img width=100% src="https://github.com/Zabooby/mpv-config/assets/78969986/680aba31-e4b9-4d31-82d0-a7dbcb181bba" alt="mpv screenshot"></p>
 
 ## Overview
-Just my personal config files for use in [mpv](https://mpv.io/), a free, open-source, & cross-platform media player, with a focus on quality and a practical yet comfortable viewing experience. Contains tuned profiles (for up/downscaling, live action & anime), custom key bindings, a GUI, as well as multiple scripts, shaders & filters serving different functions. Suitable for both high and low-end computers (with some tweaks).
+Just my personal config files for use in [mpv](https://mpv.io/), a free, open-source, & cross-platform media player, with a focus on quality and a practical yet comfortable viewing experience. Contains tuned profiles (for up/downscaling, live action & anime), custom key bindings, a GUI, as well as multiple scripts, shaders & filters all serving different functions. Suitable for both high and low-end computers (with some tweaks).
 
 Before installing, please take your time to read this whole README as common issues can be easily solved by simply reading carefully.
 
@@ -17,10 +17,10 @@ Before installing, please take your time to read this whole README as common iss
 - [autoload](https://github.com/mpv-player/mpv/blob/master/TOOLS/lua/autoload.lua) - Automatically load playlist entries before and after the currently playing file, by scanning the directory.
 - [autodeint](https://github.com/mpv-player/mpv/blob/master/TOOLS/lua/autodeint.lua) - Automatically insert the appropriate deinterlacing filter based on a short section of the current video, triggered by key bind. 
 - [autosub](https://github.com/davidde/mpv-autosub) - Automatically downloads subtitles, triggered by key bind. 
-    - **Download the dependencies mentioned [here](https://github.com/davidde/mpv-autosub#dependencies), and copy the subliminal path in your system into [autosub.lua](https://github.com/Zabooby/mpv-config/tree/main/portable_config/scripts/autosub.lua) (see File Structure section below)**. 
+    - **Download the dependencies mentioned [here](https://github.com/davidde/mpv-autosub#dependencies), and copy the [Subliminal path](https://github.com/davidde/mpv-autosub#setup) for your system into autosub.lua (see File Structure section below)**. 
 - [webtorrent-mpv-hook](https://github.com/mrxdst/webtorrent-mpv-hook) - Adds a hook that allows mpv to stream torrents. It provides an osd overlay to show info/progress.
     - **This script also needs some extra setup, follow the simple installation steps [here](https://github.com/mrxdst/webtorrent-mpv-hook#install)**.
-    - **Point to the same location in the File Structure section below when installing the webtorrent.js file.**
+    - **Point to the same location specified in the File Structure section below when installing the webtorrent.js file.**
 - - - 
 - [nlmeans ](https://github.com/AN3223/dotfiles/tree/master/.config/mpv/shaders) - Highly configurable and featureful denoiser.
 - [NVIDIA Image Sharpening](https://gist.github.com/agyild/7e8951915b2bf24526a9343d951db214) - An adaptive-directional sharpening algorithm shaders.
@@ -42,7 +42,7 @@ Before installing, please take your time to read this whole README as common iss
 * Download the latest 64bit (or 64bit-v3 for newer CPUs) mpv Windows build by shinchiro [here](https://mpv.io/installation/) or directly from [here](https://sourceforge.net/projects/mpv-player-windows/files/) and extract its contents into a folder of your choice (mine is called mpv). This is now your mpv folder and can be placed wherever you want. 
 * Run `mpv-install.bat`, which is located in the `installer` folder (see File Structure section), with administrator privileges by right-clicking and selecting run as administrator, after it's done, you'll get a prompt to open Control Panel and set mpv as the default player.
 * Download and extract the `portable_config` folder from this repo to the mpv folder you just made. 
-* Change/add file paths, in [mpv.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/mpv.conf) and 3 other files in the [script-opts](https://github.com/Zabooby/mpv-config/tree/main/portable_config/script-opts)/[scripts](https://github.com/Zabooby/mpv-config/tree/main/portable_config/scripts) folder (detailed below), to match where the relevant files/folders exist on your pc. 
+* Change/add file paths, in [profiles.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/profiles.conf) and 3 other files in the [script-opts](https://github.com/Zabooby/mpv-config/tree/main/portable_config/script-opts)/[scripts](https://github.com/Zabooby/mpv-config/tree/main/portable_config/scripts) folders (detailed in the File Structure section), to match where the relevant files/folders exist on your pc. 
 * **Adjust relevant settings in [mpv.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/mpv.conf) to fit your system, use the [manual](https://mpv.io/manual/master/) to find out what different options do or open an issue if you need any help.**
 * You're all set up. Go watch some videos!
 
@@ -118,7 +118,7 @@ mpv
 │   │
 │   │   ├── autodeint.lua
 │   │   ├── autoload.lua 
-│   │   ├── autosub.lua                   # Specify the subliminal path here 
+│   │   ├── autosub.lua                   # Specify the Subliminal path here 
 │   │   ├── evafast.lua                   # Activated by holding right arrow key
 |   |   ├── memo.lua
 |   |   ├── sview.lua
