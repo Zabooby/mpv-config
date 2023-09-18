@@ -75,7 +75,7 @@ function TopBar:decide_enabled()
 	else
 		self.enabled = options.top_bar == 'always'
 	end
-	self.enabled = self.enabled and (options.top_bar_controls or options.top_bar_title)
+	self.enabled = self.enabled and (options.top_bar_controls or options.top_bar_title ~= 'no' or state.has_playlist)
 	for _, element in ipairs(self.buttons) do
 		element.enabled = self.enabled and options.top_bar_controls
 	end
@@ -121,7 +121,7 @@ function TopBar:update_dimensions()
 	self.bx = display.width - Elements.window_border.size
 	self.by = self.size + Elements.window_border.size
 	self.title_bx = self.bx - (options.top_bar_controls and (self.button_width * 3) or 0)
-	self.ax = options.top_bar_title and Elements.window_border.size or self.title_bx
+	self.ax = (options.top_bar_title ~= 'no' or state.has_playlist) and Elements.window_border.size or self.title_bx
 
 	local button_bx = self.bx
 	for _, element in pairs(self.buttons) do
@@ -154,7 +154,17 @@ function TopBar:on_prop_maximized()
 	self:update_dimensions()
 end
 
+function TopBar:on_prop_has_playlist()
+	self:decide_enabled()
+	self:update_dimensions()
+end
+
 function TopBar:on_display() self:update_dimensions() end
+
+function TopBar:on_options()
+	self:decide_enabled()
+	self:update_dimensions()
+end
 
 function TopBar:render()
 	local visibility = self:get_visibility()
@@ -162,7 +172,7 @@ function TopBar:render()
 	local ass = assdraw.ass_new()
 
 	-- Window title
-	if options.top_bar_title and (state.title or state.has_playlist) then
+	if state.title or state.has_playlist then
 		local bg_margin = math.floor((self.size - self.font_size) / 4)
 		local padding = self.font_size / 2
 		local title_ax = self.ax + bg_margin
@@ -175,19 +185,24 @@ function TopBar:render()
 			local formatted_text = '{\\b1}' .. state.playlist_pos .. '{\\b0\\fs' .. self.font_size * 0.9 .. '}/'
 				.. state.playlist_count
 			local opts = {size = self.font_size, wrap = 2, color = fgt, opacity = visibility}
-			local bx = round(title_ax + text_width(text, opts) + padding * 2)
-			ass:rect(title_ax, title_ay, bx, self.by - bg_margin, {color = fg, opacity = visibility, radius = 2})
-			ass:txt(title_ax + (bx - title_ax) / 2, self.ay + (self.size / 2), 5, formatted_text, opts)
-			title_ax = bx + bg_margin
-			local rect = {ax = self.ax, ay = self.ay, bx = bx, by = self.by}
+			local rect = {
+				ax = title_ax,
+				ay = title_ay,
+				bx = round(title_ax + text_width(text, opts) + padding * 2),
+				by = self.by - bg_margin
+			}
+			ass:rect(rect.ax, rect.ay, rect.bx, rect.by, {color = fg, opacity = visibility, radius = 2})
+			ass:txt(rect.ax + (rect.bx - rect.ax) / 2, rect.ay + (rect.by - rect.ay) / 2, 5, formatted_text, opts)
+			title_ax = rect.bx + bg_margin
 
+			-- Click action
 			if get_point_to_rectangle_proximity(cursor, rect) == 0 then
 				cursor.on_primary_down = function() mp.command('script-binding uosc/playlist') end
 			end
 		end
 
 		-- Skip rendering titles if there's not enough horizontal space
-		if max_bx - title_ax > self.font_size * 3 then
+		if max_bx - title_ax > self.font_size * 3 and options.top_bar_title ~= 'no' then
 			-- Main title
 			local main_title = self.show_alt_title and self.alt_title or self.main_title
 			if main_title then
@@ -234,18 +249,27 @@ function TopBar:render()
 				local font_size = self.font_size * 0.8
 				local height = font_size * 1.3
 				local text = '└ ' .. state.current_chapter.index .. ': ' .. state.current_chapter.title
-				local by = title_ay + height
 				local opts = {
 					size = font_size, italic = true, wrap = 2, color = bgt,
 					border = 1, border_color = bg, opacity = visibility * 0.8,
 				}
-				local bx = math.min(max_bx, title_ax + text_width(text, opts) + padding * 2)
-				opts.clip = string.format('\\clip(%d, %d, %d, %d)', title_ax, title_ay, bx, by)
-				ass:rect(title_ax, title_ay, bx, by, {
+				local rect = {
+					ax = title_ax,
+					ay = title_ay,
+					bx = math.min(max_bx, title_ax + text_width(text, opts) + padding * 2),
+					by = title_ay + height
+				}
+				opts.clip = string.format('\\clip(%d, %d, %d, %d)', title_ax, title_ay, rect.bx, rect.by)
+				ass:rect(rect.ax, rect.ay, rect.bx, rect.by, {
 					color = bg, opacity = visibility * options.top_bar_title_opacity, radius = 2,
 				})
-				ass:txt(title_ax + padding, title_ay + height / 2, 4, text, opts)
-				title_ay = by + 1
+				ass:txt(rect.ax + padding, rect.ay + height / 2, 4, text, opts)
+				title_ay = rect.by + 1
+
+				-- Click action
+				if get_point_to_rectangle_proximity(cursor, rect) == 0 then
+					cursor.on_primary_down = function() mp.command('script-binding uosc/chapters') end
+				end
 			end
 		end
 		self.title_by = title_ay - 1
