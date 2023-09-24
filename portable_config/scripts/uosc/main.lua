@@ -56,6 +56,7 @@ defaults = {
 	menu_min_width_fullscreen = 360,
 	menu_opacity = 1,
 	menu_parent_opacity = 0.4,
+	menu_type_to_search = true,
 
 	top_bar = 'no-border',
 	top_bar_size = 40,
@@ -66,6 +67,7 @@ defaults = {
 	top_bar_alt_title = '',
 	top_bar_alt_title_place = 'below',
 	top_bar_title_opacity = 0.8,
+	top_bar_flash_on = 'video,audio',
 
 	window_border_size = 1,
 	window_border_opacity = 0.8,
@@ -102,6 +104,7 @@ defaults = {
 	image_types= 'apng,avif,bmp,gif,j2k,jp2,jfif,jpeg,jpg,jxl,mj2,png,svg,tga,tif,tiff,webp',
 	subtitle_types = 'aqt,ass,gsub,idx,jss,lrc,mks,pgs,pjs,psb,rt,slt,smi,sub,sup,srt,ssa,ssf,ttxt,txt,usf,vt,vtt',
 	default_directory = '~/',
+	show_hidden_files = false,
 	use_trash = false,
 	adjust_osd_margins = true,
 	chapter_ranges = 'openings:30abf964,endings:30abf964,ads:c54e4e80',
@@ -199,6 +202,7 @@ config = {
 		end)(),
 	},
 	stream_quality_options = split(options.stream_quality_options, ' *, *'),
+	top_bar_flash_on = split(options.top_bar_flash_on, ' *, *'),
 	menu_items = (function()
 		local input_conf_property = mp.get_property_native('input-conf')
 		local input_conf_path = mp.command_native({
@@ -463,6 +467,7 @@ state = {
 	current_chapter = nil,
 	chapter_ranges = {},
 	border = mp.get_property_native('border'),
+	title_bar = mp.get_property_native('title-bar'),
 	fullscreen = mp.get_property_native('fullscreen'),
 	maximized = mp.get_property_native('window-maximized'),
 	fullormaxed = mp.get_property_native('fullscreen') or mp.get_property_native('window-maximized'),
@@ -481,6 +486,9 @@ state = {
 	has_chapter = false,
 	has_playlist = false,
 	shuffle = options.shuffle,
+	---@type nil|{pos: number; paths: string[]}
+	shuffle_history = nil,
+	on_shuffle = function() state.shuffle_history = nil end,
 	mouse_bindings_enabled = false,
 	uncached_ranges = nil,
 	cache = nil,
@@ -585,7 +593,9 @@ function update_margins()
 	state.margin_left = left
 	state.margin_right = right
 
-	utils.shared_script_property_set('osc-margins', string.format('%f,%f,%f,%f', 0, 0, top, bottom))
+	if utils.shared_script_property_set then
+		utils.shared_script_property_set('osc-margins', string.format('%f,%f,%f,%f', 0, 0, top, bottom))
+	end
 	mp.set_property_native('user-data/osc/margins', { l = left, r = right, t = top, b = bottom })
 
 	if not options.adjust_osd_margins then return end
@@ -607,6 +617,7 @@ end
 
 function set_state(name, value)
 	state[name] = value
+	call_maybe(state['on_' .. name], value)
 	Elements:trigger('prop_' .. name, value)
 end
 
@@ -627,7 +638,10 @@ function load_file_index_in_current_directory(index)
 
 	local serialized = serialize_path(state.path)
 	if serialized and serialized.dirname then
-		local files = read_directory(serialized.dirname, config.types.autoload)
+		local files = read_directory(serialized.dirname, {
+			types = config.types.autoload,
+			hidden = options.show_hidden_files
+		})
 
 		if not files then return end
 		sort_filenames(files)
@@ -699,7 +713,14 @@ mp.register_event('file-loaded', function()
 	itable_delete_value(state.history, path)
 	state.history[#state.history + 1] = path
 	set_state('path', path)
-	Elements:flash({'top_bar'})
+
+	-- Flash top bar on requested file types
+	for _, type in ipairs(config.top_bar_flash_on) do
+		if state['is_'..type] then
+			Elements:flash({'top_bar'})
+			break
+		end
+	end
 end)
 mp.register_event('end-file', function(event)
 	set_state('path', nil)
@@ -805,6 +826,7 @@ mp.observe_property('chapter-list', 'native', function(_, chapters)
 	Elements:trigger('dispositions')
 end)
 mp.observe_property('border', 'bool', create_state_setter('border'))
+mp.observe_property('title-bar', 'bool', create_state_setter('title_bar'))
 mp.observe_property('loop-file', 'native', create_state_setter('loop_file'))
 mp.observe_property('ab-loop-a', 'number', create_state_setter('ab_loop_a'))
 mp.observe_property('ab-loop-b', 'number', create_state_setter('ab_loop_b'))
@@ -1077,12 +1099,10 @@ bind_command('stream-quality', function()
 		-- Reload the video to apply new format
 		-- This is taken from https://github.com/jgreco/mpv-youtube-quality
 		-- which is in turn taken from https://github.com/4e6/mpv-reload/
-		-- Dunno if playlist_pos shenanigans below are necessary.
-		local playlist_pos = mp.get_property_number('playlist-pos')
 		local duration = mp.get_property_native('duration')
 		local time_pos = mp.get_property('time-pos')
 
-		mp.set_property_number('playlist-pos', playlist_pos)
+		mp.command('playlist-play-index current')
 
 		-- Tries to determine live stream vs. pre-recorded VOD. VOD has non-zero
 		-- duration property. When reloading VOD, to keep the current time position
@@ -1182,7 +1202,10 @@ bind_command('delete-file-next', function()
 		mp.commandv('playlist-remove', 'current')
 	else
 		if is_local_file then
-			local paths, current_index = get_adjacent_files(state.path, config.types.autoload)
+			local paths, current_index = get_adjacent_files(state.path, {
+				types = config.types.autoload,
+				hidden = options.show_hidden_files
+			})
 			if paths and current_index then
 				local index, path = decide_navigation_in_list(paths, current_index, 1)
 				if path then next_file = path end

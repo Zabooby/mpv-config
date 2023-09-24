@@ -70,7 +70,6 @@ mpv
 │   ├── fonts
 │   │   ├── ClearSans-Bold.ttf
 │   │   ├── JetBrainsMono-Regular.ttf
-│   │   ├── MotivaSans-Bold.ttf
 |   |   ├── uosc-icons.otf
 |   |   └── uosc-textures.ttf
 │   │

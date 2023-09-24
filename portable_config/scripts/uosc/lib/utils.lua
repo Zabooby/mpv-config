@@ -337,10 +337,11 @@ end
 
 -- Reads items in directory and splits it into directories and files tables.
 ---@param path string
----@param allowed_types? string[] Filter `files` table to contain only files with these extensions.
+---@param opts? {types?: string[], hidden?: boolean}
 ---@return string[]|nil files
 ---@return string[]|nil directories
-function read_directory(path, allowed_types)
+function read_directory(path, opts)
+	opts = opts or {}
 	local items, error = utils.readdir(path, 'all')
 
 	if not items then
@@ -351,11 +352,11 @@ function read_directory(path, allowed_types)
 	local files, directories = {}, {}
 
 	for _, item in ipairs(items) do
-		if item ~= '.' and item ~= '..' then
+		if item ~= '.' and item ~= '..' and (opts.hidden or item:sub(1, 1) ~= ".") then
 			local info = utils.file_info(join_path(path, item))
 			if info then
 				if info.is_file then
-					if not allowed_types or has_any_extension(item, allowed_types) then
+					if not opts.types or has_any_extension(item, opts.types) then
 						files[#files + 1] = item
 					end
 				else directories[#directories + 1] = item end
@@ -370,18 +371,19 @@ end
 -- and index of the current file in the table.
 -- Returned table will always contain `file_path`, regardless of `allowed_types`.
 ---@param file_path string
----@param allowed_types? string[] Filter adjacent file types. Does NOT filter out the `file_path`.
-function get_adjacent_files(file_path, allowed_types)
+---@param opts? {types?: string[], hidden?: boolean}
+function get_adjacent_files(file_path, opts)
+	opts = opts or {}
 	local current_meta = serialize_path(file_path)
 	if not current_meta then return end
-	local files = read_directory(current_meta.dirname)
+	local files = read_directory(current_meta.dirname, {hidden = opts.hidden})
 	if not files then return end
 	sort_filenames(files)
 	local current_file_index
 	local paths = {}
 	for _, file in ipairs(files) do
 		local is_current_file = current_meta.basename == file
-		if is_current_file or not allowed_types or has_any_extension(file, allowed_types) then
+		if is_current_file or not opts.types or has_any_extension(file, opts.types) then
 			paths[#paths + 1] = join_path(current_meta.dirname, file)
 			if is_current_file then current_file_index = #paths end
 		end
@@ -394,14 +396,31 @@ end
 -- randomness to determine the next item. Loops around if `loop-playlist` is enabled.
 ---@param paths table
 ---@param current_index number
----@param delta number
+---@param delta number 1 or -1 for forward or backward
 function decide_navigation_in_list(paths, current_index, delta)
 	if #paths < 2 then return #paths, paths[#paths] end
+	delta = delta < 0 and -1 or 1
 
 	-- Shuffle looks at the played files history trimmed to 80% length of the paths
 	-- and removes all paths in it from the potential shuffle pool. This guarantees
 	-- no path repetition until at least 80% of the playlist has been exhausted.
 	if state.shuffle then
+		state.shuffle_history = state.shuffle_history or {
+			pos = #state.history,
+			paths = itable_slice(state.history)
+		}
+		state.shuffle_history.pos = state.shuffle_history.pos + delta
+		local history_path = state.shuffle_history.paths[state.shuffle_history.pos]
+		local next_index = history_path and itable_index_of(paths, history_path)
+		if next_index then
+			return next_index, history_path
+		end
+		if delta < 0 then
+			state.shuffle_history.pos = state.shuffle_history.pos - delta
+		else
+			state.shuffle_history.pos = math.min(state.shuffle_history.pos, #state.shuffle_history.paths + 1)
+		end
+
 		local trimmed_history = itable_slice(state.history, -math.floor(#paths * 0.8))
 		local shuffle_pool = {}
 
@@ -413,7 +432,9 @@ function decide_navigation_in_list(paths, current_index, delta)
 
 		math.randomseed(os.time())
 		local next_index = shuffle_pool[math.random(#shuffle_pool)]
-		return next_index, paths[next_index]
+		local next_path = paths[next_index]
+		table.insert(state.shuffle_history.paths, state.shuffle_history.pos, next_path)
+		return next_index, next_path
 	end
 
 	local new_index = current_index + delta
@@ -430,7 +451,10 @@ end
 ---@param delta number
 function navigate_directory(delta)
 	if not state.path or is_protocol(state.path) then return false end
-	local paths, current_index = get_adjacent_files(state.path, config.types.autoload)
+	local paths, current_index = get_adjacent_files(state.path, {
+		types = config.types.autoload,
+		hidden = options.show_hidden_files
+	})
 	if paths and current_index then
 		local _, path = decide_navigation_in_list(paths, current_index, delta)
 		if path then mp.commandv('loadfile', path) return true end
@@ -444,7 +468,10 @@ function navigate_playlist(delta)
 	if playlist and #playlist > 1 and pos then
 		local paths = itable_map(playlist, function(item) return normalize_path(item.filename) end)
 		local index = decide_navigation_in_list(paths, pos, delta)
-		if index then mp.commandv('playlist-play-index', index - 1) return true end
+		if index then
+			mp.commandv('playlist-play-index', index - 1)
+			return true
+		end
 	end
 	return false
 end
