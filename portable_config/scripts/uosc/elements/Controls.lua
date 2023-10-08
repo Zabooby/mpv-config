@@ -225,14 +225,14 @@ end
 
 function Controls:update_dimensions()
 	local window_border = Elements.window_border.size
-	local size = state.fullormaxed and options.controls_size_fullscreen or options.controls_size
-	local spacing = options.controls_spacing
-	local margin = options.controls_margin
+	local size = round(options.controls_size * state.scale)
+	local spacing = round(options.controls_spacing * state.scale)
+	local margin = round(options.controls_margin * state.scale)
 
 	-- Disable when not enough space
 	local available_space = display.height - Elements.window_border.size * 2
 	if Elements.top_bar.enabled then available_space = available_space - Elements.top_bar.size end
-	if Elements.timeline.enabled then available_space = available_space - Elements.timeline.size_max end
+	if Elements.timeline.enabled then available_space = available_space - Elements.timeline.size end
 	self.enabled = available_space > size + 10
 
 	-- Reset hide/enabled flags
