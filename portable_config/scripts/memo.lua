@@ -39,13 +39,46 @@ local options = {
     select_binding = "RIGHT ENTER",
     append_binding = "Shift+RIGHT Shift+ENTER",
     close_binding = "LEFT ESC",
+
+    -- Path prefixes for the recent directory menu
+    -- This can be used to restrict the parent directory relative to which the
+    -- directories are shown.
+    -- Syntax
+    --   Prefixes are separated by | and can use Lua patterns by prefixing
+    --   them with "pattern:", otherwise they will be treated as plain text.
+    --   Pattern syntax can be found here https://www.lua.org/manual/5.1/manual.html#5.4.1
+    -- Example
+    --   "path_prefixes=My-Movies|pattern:TV Shows/.-/|Anime" will show directories
+    --   that are direct subdirectories of directories named "My-Movies" as well as
+    --   "Anime", while for TV Shows the shown directories are one level below that.
+    --   Opening the file "/data/TV Shows/Comedy/Curb Your Enthusiasm/S4/E06.mkv" will
+    --   lead to "Curb Your Enthusiasm" to be shown in the directory menu. Opening
+    --   of that entry will then open that file again.
+    path_prefixes = "pattern:.*"
 }
+
+function parse_path_prefixes(path_prefixes)
+    local patterns = {}
+    for prefix in path_prefixes:gmatch("([^|]+)") do
+        if prefix:find("pattern:", 1, true) == 1 then
+            patterns[#patterns + 1] = {pattern = prefix:sub(9)}
+        else
+            patterns[#patterns + 1] = {pattern = prefix, plain = true}
+        end
+    end
+    return patterns
+end
 
 local script_name = mp.get_script_name()
 
 mp.utils = require "mp.utils"
 mp.options = require "mp.options"
-mp.options.read_options(options, "memo", function(list) end)
+mp.options.read_options(options, "memo", function(list)
+    if list.path_prefixes then
+        options.path_prefixes = parse_path_prefixes(options.path_prefixes)
+    end
+end)
+options.path_prefixes = parse_path_prefixes(options.path_prefixes)
 
 local assdraw = require "mp.assdraw"
 
@@ -64,7 +97,6 @@ end
 function fakeio:read(format)
     local out = ""
     if self.cursor < self.offset then
-        local memory_side = self.offset - self.cursor
         self.file:seek("set", self.cursor)
         out = self.file:read(format)
         format = format - #out
@@ -116,8 +148,11 @@ local uosc_available = false
 local menu_shown = false
 local last_state = nil
 local menu_data = nil
+local palette = false
 local search_words = nil
 local search_query = nil
+local dir_menu = false
+local dir_menu_prefixes = nil
 
 local data_protocols = {
     edl = true,
@@ -234,7 +269,7 @@ function has_protocol(path)
 end
 
 function menu_json(menu_items, page)
-    local title = (search_query or "History") .. ""
+    local title = (search_query or (dir_menu and "Directories" or "History")) .. ""
     if options.pagination or page ~= 1 then
         title = title .. " - Page " .. page
     end
@@ -243,14 +278,17 @@ function menu_json(menu_items, page)
         type = "memo-history",
         title = title,
         items = menu_items,
-        on_close = {"script-message-to", script_name, "memo-clear"}
+        on_search = {"script-message-to", script_name, "memo-search-uosc:"},
+        on_close = {"script-message-to", script_name, "memo-clear"},
+        palette = palette, -- TODO: remove on next uosc release
+        search_style = palette and "palette" or nil
     }
 
     return menu
 end
 
-function uosc_update(menu_override)
-    local json = mp.utils.format_json(menu_override or menu_data) or "{}"
+function uosc_update()
+    local json = mp.utils.format_json(menu_data) or "{}"
     mp.commandv("script-message-to", "uosc", menu_shown and "update-menu" or "open-menu", json)
 end
 
@@ -261,23 +299,37 @@ function update_dimensions()
     draw_menu()
 end
 
-function update_margins()
-    local shared_props = mp.get_property_native("shared-script-properties")
-    local val = shared_props["osc-margins"]
-    if val then
-        -- formatted as "%f,%f,%f,%f" with left, right, top, bottom, each
-        -- value being the border size as ratio of the window size (0.0-1.0)
-        local vals = {}
-        for v in string.gmatch(val, "[^,]+") do
-            vals[#vals + 1] = tonumber(v)
+if mp.utils.shared_script_property_set then
+    function update_margins()
+        local shared_props = mp.get_property_native("shared-script-properties")
+        local val = shared_props["osc-margins"]
+        if val then
+            -- formatted as "%f,%f,%f,%f" with left, right, top, bottom, each
+            -- value being the border size as ratio of the window size (0.0-1.0)
+            local vals = {}
+            for v in string.gmatch(val, "[^,]+") do
+                vals[#vals + 1] = tonumber(v)
+            end
+            margin_top = vals[3] -- top
+            margin_bottom = vals[4] -- bottom
+        else
+            margin_top = 0
+            margin_bottom = 0
         end
-        margin_top = vals[3] -- top
-        margin_bottom = vals[4] -- bottom
-    else
-        margin_top = 0
-        margin_bottom = 0
+        draw_menu()
     end
-    draw_menu()
+else
+    function update_margins()
+        local val = mp.get_property_native("user-data/osc/margins")
+        if val then
+            margin_top = val.t
+            margin_bottom = val.b
+        else
+            margin_top = 0
+            margin_bottom = 0
+        end
+        draw_menu()
+    end
 end
 
 function bind_keys(keys, name, func, opts)
@@ -318,7 +370,9 @@ function close_menu()
     menu_data = nil
     search_words = nil
     search_query = nil
+    dir_menu = false
     menu_shown = false
+    palette = false
     osd:update()
     osd.hidden = true
     osd:update()
@@ -330,31 +384,16 @@ function open_menu()
     update_dimensions()
     mp.observe_property("osd-dimensions", "native", update_dimensions)
     mp.observe_property("video-out-params", "native", update_dimensions)
-    mp.observe_property("shared-script-properties", "native", update_margins)
+    local margin_prop = mp.utils.shared_script_property_set and "shared-script-properties" or "user-data/osc/margins"
+    mp.observe_property(margin_prop, "native", update_margins)
 
-    bind_keys(options.up_binding, "move_up", function()
-        last_state.selected_index = math.max(last_state.selected_index - 1, 1)
-        draw_menu()
-    end, { repeatable = true })
-    bind_keys(options.down_binding, "move_down", function()
-        last_state.selected_index = math.min(last_state.selected_index + 1, #menu_data.items)
-        draw_menu()
-    end, { repeatable = true })
-    bind_keys(options.select_binding, "select", function()
+    local function select_item(append)
         local item = menu_data.items[last_state.selected_index]
         if not item then return end
         if not item.keep_open then
             close_menu()
         end
-        mp.commandv(unpack(item.value))
-    end)
-    bind_keys(options.append_binding, "append", function()
-        local item = menu_data.items[last_state.selected_index]
-        if not item then return end
-        if not item.keep_open then
-            close_menu()
-        end
-        if item.value[1] == "loadfile" then
+        if append and item.value[1] == "loadfile" then
             -- bail if file is already in playlist
             local directory = mp.get_property("working-directory", "")
             local playlist = mp.get_property_native("playlist", {})
@@ -370,13 +409,26 @@ function open_menu()
             item.value[3] = "append-play"
         end
         mp.commandv(unpack(item.value))
+    end
+
+    bind_keys(options.up_binding, "move_up", function()
+        last_state.selected_index = math.max(last_state.selected_index - 1, 1)
+        draw_menu()
+    end, { repeatable = true })
+    bind_keys(options.down_binding, "move_down", function()
+        last_state.selected_index = math.min(last_state.selected_index + 1, #menu_data.items)
+        draw_menu()
+    end, { repeatable = true })
+    bind_keys(options.select_binding, "select", select_item)
+    bind_keys(options.append_binding, "append", function()
+        select_item(true)
     end)
     bind_keys(options.close_binding, "close", close_menu)
     osd.hidden = false
     draw_menu()
 end
 
-function draw_menu(delay)
+function draw_menu()
     if not menu_data then return end
     if not menu_shown then
         open_menu()
@@ -396,13 +448,13 @@ function draw_menu(delay)
     local curtain_opacity = 0.7
 
     local alpha = 255 - math.ceil(255 * curtain_opacity)
-    ass.text = string.format("{\\pos(0,0)\\r\\an1\\1c&H000000&\\alpha&H%X&}", alpha)
+    ass.text = string.format("{\\pos(0,0)\\rDefault\\an7\\1c&H000000&\\alpha&H%X&}", alpha)
     ass:draw_start()
     ass:rect_cw(0, 0, width, height)
     ass:draw_stop()
     ass:new_event()
 
-    ass:append("{\\pos("..(0.3 * font_size).."," .. (margin_top * height + 0.1 * font_size) .. ")\\an7\\fs" .. font_size .. "\\bord2\\q2\\b1}" .. ass_clean(menu_data.title) .. "{\\b0}")
+    ass:append("{\\rDefault\\pos("..(0.3 * font_size).."," .. (margin_top * height + 0.1 * font_size) .. ")\\an7\\fs" .. font_size .. "\\bord2\\q2\\b1}" .. ass_clean(menu_data.title) .. "{\\b0}")
     ass:new_event()
 
     local scrolled_lines = get_scrolled_lines() - 1
@@ -429,18 +481,18 @@ function draw_menu(delay)
                 end
                 ass:new_event()
                 ass:pos(0.3 * font_size, pos_y + menu_index * font_size)
-                ass:append("{\\fnmonospace\\an1\\fs" .. font_size .. "\\bord2\\q2\\clip(" .. clipping_coordinates .. ")}"..separator.."{\\r\\an7\\fs" .. font_size .. "\\bord2\\q2}" .. ass_clean(item.title))
+                ass:append("{\\rDefault\\fnmonospace\\an1\\fs" .. font_size .. "\\bord2\\q2\\clip(" .. clipping_coordinates .. ")}"..separator.."{\\rDefault\\an7\\fs" .. font_size .. "\\bord2\\q2}" .. ass_clean(item.title))
                 if icon then
                     ass:new_event()
                     ass:pos(0.6 * font_size, pos_y + menu_index * font_size)
-                    ass:append("{\\fnmonospace\\an2\\fs" .. font_size .. "\\bord2\\q2\\clip(" .. clipping_coordinates .. ")}" .. icon)
+                    ass:append("{\\rDefault\\fnmonospace\\an2\\fs" .. font_size .. "\\bord2\\q2\\clip(" .. clipping_coordinates .. ")}" .. icon)
                 end
                 menu_index = menu_index + 1
             end
         end
     else
         ass:pos(0.3 * font_size, pos_y)
-        ass:append("{\\an1\\fs" .. font_size .. "\\bord2\\q2\\clip(" .. clipping_coordinates .. ")}")
+        ass:append("{\\rDefault\\an1\\fs" .. font_size .. "\\bord2\\q2\\clip(" .. clipping_coordinates .. ")}")
         ass:append("No entries")
     end
 
@@ -615,6 +667,7 @@ function show_history(entries, next_page, prev_page, update, return_items)
             state.current_page = state.current_page - 1
         elseif next_page then
             if state.cursor == 0 and not state.pages[state.current_page + 1] then return end
+            if options.entries < 1 then return end
             state.current_page = state.current_page + 1
         end
     end
@@ -630,6 +683,15 @@ function show_history(entries, next_page, prev_page, update, return_items)
             draw_menu()
         end
         return
+    end
+
+    local function find_path_prefix(path, path_prefixes)
+        for _, prefix in ipairs(path_prefixes) do
+            local start, stop = path:find(prefix.pattern, 1, prefix.plain)
+            if start then
+                return start, stop
+            end
+        end
     end
 
     -- all of these error cases can only happen if the user messes with the history file externally
@@ -693,6 +755,10 @@ function show_history(entries, next_page, prev_page, update, return_items)
             return
         end
 
+        if dir_menu and is_remote then
+            return
+        end
+
         if search_words and not options.use_titles then
             for _, word in ipairs(search_words) do
                 if display_path:lower():find(word, 1, true) == nil then
@@ -706,8 +772,21 @@ function show_history(entries, next_page, prev_page, update, return_items)
         if is_remote then
             state.existing_files[cache_key] = true
             state.known_files[cache_key] = true
-        elseif options.hide_same_dir then
+        elseif options.hide_same_dir or dir_menu then
             dirname, basename = mp.utils.split_path(display_path)
+            if dir_menu then
+                if dirname == "." then return end
+                local unix_dirname = dirname:gsub("\\", "/")
+                local parent, _ = mp.utils.split_path(unix_dirname:sub(1, -2))
+                local start, stop = find_path_prefix(parent, dir_menu_prefixes)
+                if not start then
+                    return
+                end
+                basename = unix_dirname:match("/(.-)/", stop)
+                if basename == nil then return end
+                start, stop = dirname:find(basename, stop, true)
+                dirname = dirname:sub(1, stop + 1)
+            end
             if state.known_dirs[dirname] then
                 return
             end
@@ -724,6 +803,18 @@ function show_history(entries, next_page, prev_page, update, return_items)
                 local stat = mp.utils.file_info(effective_path)
                 if stat then
                     state.existing_files[cache_key] = true
+                elseif dir_menu then
+                    state.known_files[cache_key] = true
+                    local dir = mp.utils.split_path(effective_path)
+                    if dir == "." then
+                        return
+                    end
+                    stat = mp.utils.readdir(dir, "files")
+                    if stat and next(stat) ~= nil then
+                        full_path = dir
+                    else
+                        return
+                    end
                 else
                     state.known_files[cache_key] = true
                     return
@@ -736,7 +827,10 @@ function show_history(entries, next_page, prev_page, update, return_items)
             title = ""
         end
 
-        if title == "" then
+
+        if dir_menu then
+            title = basename
+        elseif title == "" then
             if is_remote then
                 title = display_path
             else
@@ -806,7 +900,7 @@ function show_history(entries, next_page, prev_page, update, return_items)
             end
         end
 
-        if not return_items and attempts > 0 and attempts % options.entries == 0 and #menu_items ~= item_count then
+        if not return_items and (attempts > 0 or not (prev_page or next_page)) and attempts % options.entries == 0 and #menu_items ~= item_count then
             item_count = #menu_items
             local temp_items = {unpack(menu_items)}
             for i = 1, options.entries - item_count do
@@ -838,8 +932,8 @@ function show_history(entries, next_page, prev_page, update, return_items)
         return menu_items
     end
 
-    if options.pagination and #menu_items > 0 then
-        if state.cursor - max_digits_length > 0 then
+    if options.pagination then
+        if #menu_items > 0 and state.cursor - max_digits_length > 0 then
             table.insert(menu_items, {title = "Older entries", value = {"script-binding", "memo-next"}, italic = "true", muted = "true", icon = "navigate_next", keep_open = true})
         end
         if state.current_page ~= 1 then
@@ -893,25 +987,27 @@ mp.register_script_message("uosc-version", function(version)
         return false
     end
 
-    local min_version = "4.6.0"
+    local min_version = "5.0.0"
     uosc_available = not semver_comp(version, min_version)
 end)
 
 function memo_close()
     menu_shown = false
+    palette = false
     if uosc_available then
-        uosc_update(menu_json({}, 0))
+        mp.commandv("script-message-to", "uosc", "close-menu", "memo-history")
     else
         close_menu()
     end
 end
 
 function memo_clear()
-    if event_loop_exhausted then return end
     last_state = nil
     search_words = nil
     search_query = nil
     menu_shown = false
+    palette = false
+    dir_menu = false
 end
 
 function memo_prev()
@@ -928,22 +1024,59 @@ function memo_search(...)
 
     local words = {...}
     if #words > 0 then
-        search_query = table.concat(words, " ")
+        query = table.concat(words, " ")
 
-        -- escape keywords
-        for i, word in ipairs(words) do
-            words[i] = word:lower()
+        if query ~= "" then
+            for i, word in ipairs(words) do
+                words[i] = word:lower()
+            end
+            search_query = query
+            search_words = words
+        else
+            search_query = nil
+            search_words = nil
         end
-        search_words = words
     end
 
     show_history(options.entries, false)
 end
 
+function parse_query_parts(query)
+    local pos, len, parts = query:find("%S"), query:len(), {}
+    while pos and pos <= len do
+        local first_char, part, pos_end = query:sub(pos, pos)
+        if first_char == '"' or first_char == "'" then
+            pos_end = query:find(first_char, pos + 1, true)
+            if not pos_end or pos_end ~= len and not query:find("^%s", pos_end + 1) then
+                parts[#parts + 1] = query:sub(pos + 1)
+                return parts
+            end
+            part = query:sub(pos + 1, pos_end - 1)
+        else
+            pos_end = query:find("%S%s", pos) or len
+            part = query:sub(pos, pos_end)
+        end
+        parts[#parts + 1] = part
+        pos = query:find("%S", pos_end + 2)
+    end
+    return parts
+end
+
+function memo_search_uosc(query)
+    if query ~= "" then
+        search_query = query
+        search_words = parse_query_parts(query:lower())
+    else
+        search_query = nil
+        search_words = nil
+    end
+    event_loop_exhausted = false
+    show_history(options.entries, false, false, menu_shown and last_state)
+end
+
 mp.register_script_message("memo-clear", memo_clear)
 mp.register_script_message("memo-search:", memo_search)
-
-mp.command_native_async({"script-message-to", "uosc", "get-version", script_name}, function() end)
+mp.register_script_message("memo-search-uosc:", memo_search_uosc)
 
 mp.add_key_binding(nil, "memo-next", memo_next)
 mp.add_key_binding(nil, "memo-prev", memo_prev)
@@ -958,7 +1091,7 @@ mp.add_key_binding(nil, "memo-last", function()
     if event_loop_exhausted then return end
 
     local items
-    if last_state and last_state.current_page == 1 and options.hide_duplicates and options.hide_deleted and options.entries >= 2 and not search_words then
+    if last_state and last_state.current_page == 1 and options.hide_duplicates and options.hide_deleted and options.entries >= 2 and not search_words and not dir_menu then
         -- menu is open and we for sure have everything we need
         items = last_state.pages[1]
         last_state = nil
@@ -971,6 +1104,7 @@ mp.add_key_binding(nil, "memo-last", function()
         options.hide_deleted = true
         last_state = nil
         search_words = nil
+        dir_menu = false
         items = show_history(2, false, false, false, true)
         options = options_bak
     end
@@ -993,6 +1127,11 @@ mp.add_key_binding(nil, "memo-last", function()
     mp.osd_message("[memo] no recent files to open")
 end)
 mp.add_key_binding(nil, "memo-search", function()
+    if uosc_available then
+        palette = true
+        show_history(options.entries, false, false, true)
+        return
+    end
     if menu_shown then
         memo_close()
     end
@@ -1002,6 +1141,19 @@ mp.add_key_binding("h", "memo-history", function()
     if event_loop_exhausted then return end
     last_state = nil
     search_words = nil
+    dir_menu = false
+    show_history(options.entries, false)
+end)
+mp.register_script_message("memo-dirs", function(path_prefixes)
+    if event_loop_exhausted then return end
+    last_state = nil
+    search_words = nil
+    dir_menu = true
+    if path_prefixes then
+        dir_menu_prefixes = parse_path_prefixes(path_prefixes)
+    else
+        dir_menu_prefixes = options.path_prefixes
+    end
     show_history(options.entries, false)
 end)
 

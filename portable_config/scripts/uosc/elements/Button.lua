@@ -34,9 +34,7 @@ end
 function Button:render()
 	local visibility = self:get_visibility()
 	if visibility <= 0 then return end
-	if self.proximity_raw == 0 then
-		cursor.on_primary_down = function() self:handle_cursor_down() end
-	end
+	cursor:zone('primary_down', self, function() self:handle_cursor_down() end)
 
 	local ass = assdraw.ass_new()
 	local is_hover = self.proximity_raw == 0
@@ -45,10 +43,11 @@ function Button:render()
 	local background = self.active and self.foreground or self.background
 
 	-- Background
-	if is_hover_or_active then
+	if is_hover_or_active or config.opacity.controls > 0 then
 		ass:rect(self.ax, self.ay, self.bx, self.by, {
-			color = self.active and background or foreground, radius = state.radius,
-			opacity = visibility * (self.active and 1 or 0.3),
+			color = (self.active or not is_hover) and background or foreground,
+			radius = state.radius,
+			opacity = visibility * (self.active and 1 or (is_hover and 0.3 or config.opacity.controls)),
 		})
 	end
 
@@ -64,8 +63,11 @@ function Button:render()
 		local width, height = math.ceil(badge_width + (badge_font_size / 7) * 2), math.ceil(badge_font_size * 0.93)
 		local bx, by = self.bx - 1, self.by - 1
 		ass:rect(bx - width, by - height, bx, by, {
-			color = foreground, radius = state.radius, opacity = visibility,
-			border = self.active and 0 or 1, border_color = background,
+			color = foreground,
+			radius = state.radius,
+			opacity = visibility,
+			border = self.active and 0 or 1,
+			border_color = background,
 		})
 		ass:txt(bx - width / 2, by - height / 2, 5, self.badge, badge_opts)
 
@@ -80,8 +82,11 @@ function Button:render()
 	-- Icon
 	local x, y = round(self.ax + (self.bx - self.ax) / 2), round(self.ay + (self.by - self.ay) / 2)
 	ass:icon(x, y, self.font_size, self.icon, {
-		color = foreground, border = self.active and 0 or options.text_border * state.scale, border_color = background,
-		opacity = visibility, clip = icon_clip,
+		color = foreground,
+		border = self.active and 0 or options.text_border * state.scale,
+		border_color = background,
+		opacity = visibility,
+		clip = icon_clip,
 	})
 
 	return ass

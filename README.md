@@ -1,7 +1,7 @@
 # Personal mpv Configuration for Windows
 
-<p align="center"><img width=100% src="https://github.com/Zabooby/mpv-config/assets/78969986/256694db-c5ce-450c-8179-c700dbee6822" alt="mpv screenshot"></p>
-<p align="center"><img width=100% src="https://github.com/Zabooby/mpv-config/assets/78969986/680aba31-e4b9-4d31-82d0-a7dbcb181bba" alt="mpv screenshot"></p>
+<p align="center"><img width=100% src="https://github.com/Zabooby/mpv-config/assets/78969986/332fa0e6-ae88-4dfc-89f2-8f53231dba5a" alt="mpv screenshot"></p>
+<p align="center"><img width=100% src="https://github.com/Zabooby/mpv-config/assets/78969986/e4dec0a5-fb4a-438e-96f0-4b87a0f59d34" alt="mpv screenshot"></p>
 
 ## Overview
 Just my personal config files for use in [mpv](https://mpv.io/), a free, open-source, & cross-platform media player, with a focus on quality and a practical yet comfortable viewing experience. Contains tuned profiles (for up/downscaling, live action & anime), custom key bindings, a GUI, as well as multiple scripts, shaders & filters, all serving different functions. Suitable for both high and low-end computers (with some tweaks).
@@ -9,25 +9,23 @@ Just my personal config files for use in [mpv](https://mpv.io/), a free, open-so
 Before installing, please take your time to read this whole README as common issues can be easily solved by simply reading carefully.
 
 ## Scripts and Shaders
-- [uosc](https://github.com/darsain/uosc) - Adds a minimalist but highly customisable gui.
+- [uosc](https://github.com/darsain/uosc) - Adds a minimalist but highly customisable GUI.
 - [evafast](https://github.com/po5/evafast) - Fast-forwarding and seeking on a single key.
 - [thumbfast](https://github.com/po5/thumbfast) - High-performance on-the-fly thumbnailer.
 - [memo](https://github.com/po5/memo) - Saves watch history, and displays it in a nice menu, integrated with uosc. 
 - [sview](https://github.com/he2a/mpv-scripts/blob/main/scripts/sview.lua) - Show shaders currently running, triggered on shader activation or by key bind.
 - [autoload](https://github.com/mpv-player/mpv/blob/master/TOOLS/lua/autoload.lua) - Automatically load playlist entries before and after the currently playing file, by scanning the directory.
 - [autodeint](https://github.com/mpv-player/mpv/blob/master/TOOLS/lua/autodeint.lua) - Automatically insert the appropriate deinterlacing filter based on a short section of the current video, triggered by key bind. 
-- [autosub](https://github.com/davidde/mpv-autosub) - Automatically downloads subtitles, triggered by key bind. 
-    - **Download the dependencies mentioned [here](https://github.com/davidde/mpv-autosub#dependencies), and copy the [Subliminal path](https://github.com/davidde/mpv-autosub#setup) for your system into autosub.lua (see File Structure section below)**. 
 - [webtorrent-mpv-hook](https://github.com/mrxdst/webtorrent-mpv-hook) - Adds a hook that allows mpv to stream torrents. It provides an osd overlay to show info/progress.
     - **This script also needs some extra setup, follow the simple installation steps [here](https://github.com/mrxdst/webtorrent-mpv-hook#install)**.
     - **Point to the same location specified in the File Structure section below when installing the webtorrent.js file.**
 - - - 
-- [nlmeans ](https://github.com/AN3223/dotfiles/tree/master/.config/mpv/shaders) - Highly configurable and featureful denoiser.
+- [nlmeans](https://github.com/AN3223/dotfiles/tree/master/.config/mpv/shaders) - Highly configurable and featureful denoiser.
 - [NVIDIA Image Sharpening](https://gist.github.com/agyild/7e8951915b2bf24526a9343d951db214) - An adaptive-directional sharpening algorithm shaders.
 - [FidelityFX CAS](https://gist.github.com/agyild/bbb4e58298b2f86aa24da3032a0d2ee6) - Sharpening shader that provides an even level of sharpness across the frame. 
 - [FSRCNNX-TensorFlow](https://github.com/igv/FSRCNN-TensorFlow) - Very resource intensive upscaler that uses a neural network to upscale accurately.
 - [Anime4k](https://github.com/bloc97/Anime4K) - Shaders designed to scale and enhance anime. Includes shaders for line sharpening and upscaling.
-- [AMD FidelityFX Super Resolution](https://gist.github.com/agyild/82219c545228d70c5604f865ce0b0ce5) - A spatial upscaler which provides consistent upscaling quality regardless of whether the frame is in movement.
+- [AMD FidelityFX Super Resolution EASU](https://gist.github.com/agyild/82219c545228d70c5604f865ce0b0ce5) (FSR without RCAS) - A spatial upscaler which provides consistent upscaling quality regardless of whether the frame is in movement.
 - [mpv-prescalers](https://github.com/bjin/mpv-prescalers) - RAVU (Rapid and Accurate Video Upscaling) is a set of prescalers with an overall performance consumption design slightly higher than the built-in ewa scaler, while providing much better results. 
 - [SSimDownscaler, SSimSuperRes, KrigBilateral, Adaptive Sharpen](https://gist.github.com/igv) 
     - Adaptive Sharpen: Another sharpening shader.
@@ -42,7 +40,7 @@ Before installing, please take your time to read this whole README as common iss
 * Download the latest 64bit (or 64bit-v3 for newer CPUs) mpv Windows build by shinchiro [here](https://mpv.io/installation/) or directly from [here](https://sourceforge.net/projects/mpv-player-windows/files/) and extract its contents into a folder of your choice (mine is called mpv). This is now your mpv folder and can be placed wherever you want. 
 * Run `mpv-install.bat`, which is located in the `installer` folder (see File Structure section), with administrator privileges by right-clicking and selecting run as administrator, after it's done, you'll get a prompt to open Control Panel and set mpv as the default player.
 * Download and extract the `portable_config` folder from this repo to the mpv folder you just made. 
-* Change/add file paths, in [profiles.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/profiles.conf) and 3 other files in the [script-opts](https://github.com/Zabooby/mpv-config/tree/main/portable_config/script-opts)/[scripts](https://github.com/Zabooby/mpv-config/tree/main/portable_config/scripts) folders (detailed in the File Structure section), to match where the relevant files/folders exist on your pc. 
+* Add/change file paths, in [profiles.conf](https://github.com/Zabooby/mpv-config/blob/6bd416d614754f23b2d2ff1631e026994298c785/portable_config/profiles.conf#L74) and 2 other files in the [script-opts](https://github.com/Zabooby/mpv-config/tree/main/portable_config/script-opts) folder (detailed in the File Structure section), to match where the relevant files/folders exist on your pc. 
 * **Adjust relevant settings in [mpv.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/mpv.conf) to fit your system, use the [manual](https://mpv.io/manual/master/) to find out what different options do or open an issue if you need any help.**
 * You're all set up. Go watch some videos!
 
@@ -58,7 +56,6 @@ mpv
 │   └── mpbindings.png                    # Default key bindings if not overridden in input.conf
 │
 ├── installer
-│   ├── configure-opengl-hq.bat
 │   ├── mpv-icon.ico
 │   ├── mpv-install.bat                   # Run with administrator priviledges to install mpv
 │   ├── mpv-uninstall.bat                 # Run with administrator priviledges to uninstall mpv
@@ -84,6 +81,10 @@ mpv
 │   │
 │   ├── scripts      
 │   │   ├── uosc              
+│   │       ├── bin 
+|   |           ├── ziggy-darwin
+|   |           ├── ziggy-linux
+|   |           ├── ziggy-windows.exe
 │   │       ├── elements 
 |   |           ├── BufferingIndicator.lua
 |   |           ├── Button.lua
@@ -97,6 +98,7 @@ mpv
 |   |           ├── Speed.lua
 |   |           ├── Timeline.lua
 |   |           ├── TopBar.lua
+|   |           ├── Updater.lua
 |   |           ├── Volume.lua
 |   |           └── WindowBorder.lua
 |   |       ├── intl
@@ -105,9 +107,11 @@ mpv
 |   |           ├── fr.json
 |   |           ├── ro.json
 |   |           ├── ru.json
+|   |           ├── uk.json
 |   |           └── zh-hans.json
 |   |       ├── lib
 |   |           ├── ass.lua
+|   |           ├── cursor.lua
 |   |           ├── intl.lua
 |   |           ├── menus.lua
 |   |           ├── std.lua
@@ -117,7 +121,6 @@ mpv
 │   │
 │   │   ├── autodeint.lua
 │   │   ├── autoload.lua 
-│   │   ├── autosub.lua                   # Specify the Subliminal path here 
 │   │   ├── evafast.lua                   # Activated by holding right arrow key
 |   |   ├── memo.lua
 |   |   ├── sview.lua
@@ -133,7 +136,7 @@ mpv
 │   │   ├── CAS.glsl
 │   │   ├── F8.glsl
 │   │   ├── F8_LA.glsl
-│   │   ├── FSR.glsl
+│   │   ├── FSR_EASU.glsl
 │   │   ├── krigbl.glsl          
 │   │   ├── nlmeans_HQ.glsl
 │   │   ├── nlmeans_L_HQ.glsl
@@ -145,7 +148,7 @@ mpv
 │   │
 |   ├── watch_later                       # Video timestamps saved here (created automatically)
 |   ├── fonts.conf                        # Delete the duplicate made when installing mpv
-│   ├── input.conf                        # Customise uosc right click menu here
+│   ├── input.conf                        # Customise uosc menu here
 │   ├── mpv.conf                          
 |   └── profiles.conf                     
 |   
@@ -162,5 +165,5 @@ Custom key bindings can be added/edited in the [input.conf](https://github.com/Z
 
 * [mpv wiki](https://github.com/mpv-player/mpv/wiki) - Official wiki with links to all user scripts/shaders, FAQ's and much more.
 * [Mathematical evaluation of various scalers](https://artoriuz.github.io/blog/mpv_upscaling.html) - My config uses (mostly) the best scalers/settings from this analysis.
-* [mpv manual](https://mpv.io/manual/master/) - Lists all the settings and configuration options available including video/audio filters, scripting, and countless other customisations.
+* [mpv manual](https://mpv.io/manual/master/) - Lists all the settings and configuration options available including video/audio settings, scripting, and countless other customisations.
 * [To-do's](https://github.com/users/Zabooby/projects/1) - Just a list of things I'm currently testing, tracking or improving as well as major changes/improvements I've already implemented (click on items for more information).
