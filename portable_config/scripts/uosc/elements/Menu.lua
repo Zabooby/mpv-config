@@ -770,6 +770,7 @@ end
 ---@return MenuStackItem[]
 function search_items(items, query, recursive, prefix)
 	local result = {}
+	local concat = table.concat
 	for _, item in ipairs(items) do
 		if item.selectable ~= false then
 			local prefixed_title = prefix and prefix .. ' / ' .. (item.title or '') or item.title
@@ -778,9 +779,18 @@ function search_items(items, query, recursive, prefix)
 			else
 				local title = item.title and item.title:lower()
 				local hint = item.hint and item.hint:lower()
-				if title and title:find(query, 1, true) or hint and hint:find(query, 1, true) or
-					title and table.concat(initials(title)):find(query, 1, true) or
-					hint and table.concat(initials(hint)):find(query, 1, true) then
+				local initials_title = title and concat(initials(title))
+				local romanization = need_romanization()
+				if romanization then
+					ligature_conv_title = title and char_conv(title, true)
+					initials_conv_title = title and concat(initials(char_conv(title, false)))
+				end
+				if title and title:find(query, 1, true) or
+					title and romanization and ligature_conv_title:find(query, 1, true) or
+					hint and hint:find(query, 1, true) or
+					title and initials_title:find(query, 1, true) or
+					title and romanization and initials_conv_title:find(query, 1, true) or
+					hint and concat(initials(hint)):find(query, 1, true) then
 					item = table_assign({}, item)
 					item.title = prefixed_title
 					item.ass_safe_title = nil
@@ -1016,7 +1026,7 @@ function Menu:enable_key_bindings()
 		self:create_key_action('open_selected_item_soft', {shift = true}))
 	self:add_key_binding('shift+mbtn_left', 'menu-select3', self:create_modified_mbtn_left_handler({shift = true}))
 	self:add_key_binding('ctrl+mbtn_left', 'menu-select4', self:create_modified_mbtn_left_handler({ctrl = true}))
-	self:add_key_binding('alt+mbtn_left', 'menu-select4', self:create_modified_mbtn_left_handler({alt = true}))
+	self:add_key_binding('alt+mbtn_left', 'menu-select5', self:create_modified_mbtn_left_handler({alt = true}))
 	self:add_key_binding('mbtn_back', 'menu-back-alt3', self:create_key_action('back'))
 	self:add_key_binding('bs', 'menu-back-alt4', self:create_key_action('key_bs'), {repeatable = true, complex = true})
 	self:add_key_binding('shift+bs', 'menu-clear-query', self:create_key_action('key_bs', {shift = true}),

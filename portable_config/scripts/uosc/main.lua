@@ -71,7 +71,7 @@ defaults = {
 	color = '',
 	opacity = '',
 	animation_duration = 100,
-	text_width_estimation = true,
+	refine = '',
 	pause_on_click_shorter_than = 0, -- deprecated by below
 	click_threshold = 0,
 	click_command = 'cycle pause; script-binding uosc/flash-pause-indicator',
@@ -102,7 +102,10 @@ defaults = {
 	disable_elements = '',
 }
 options = table_copy(defaults)
-opt.read_options(options, 'uosc', function(_)
+opt.read_options(options, 'uosc', function(changed_options)
+	if changed_options.time_precision then
+		timestamp_zero_rep_clear_cache()
+	end
 	update_config()
 	update_human_times()
 	Manager:disable('user', options.disable_elements)
@@ -129,6 +132,7 @@ if options.autoload then mp.commandv('set', 'keep-open-pause', 'no') end
 --[[ INTERNATIONALIZATION ]]
 local intl = require('lib/intl')
 t = intl.t
+require('lib/char_conv')
 
 --[[ CONFIG ]]
 local config_defaults = {
@@ -174,6 +178,7 @@ config = {
 	osd_margin_y = mp.get_property('osd-margin-y'),
 	osd_alignment_x = mp.get_property('osd-align-x'),
 	osd_alignment_y = mp.get_property('osd-align-y'),
+	refine = create_set(comma_split(options.refine)),
 	types = {
 		video = comma_split(options.video_types),
 		audio = comma_split(options.audio_types),
@@ -396,7 +401,7 @@ require('lib/menus')
 -- Determine path to ziggy
 do
 	local bin = 'ziggy-' .. (state.platform == 'windows' and 'windows.exe' or state.platform)
-	config.ziggy_path = join_path(mp.get_script_directory(), join_path('bin', bin))
+	config.ziggy_path = os.getenv('MPV_UOSC_ZIGGY') or join_path(mp.get_script_directory(), join_path('bin', bin))
 end
 
 --[[ STATE UPDATERS ]]
@@ -541,7 +546,7 @@ function load_file_index_in_current_directory(index)
 		})
 
 		if not files then return end
-		sort_filenames(files)
+		sort_strings(files)
 		if index < 0 then index = #files + index + 1 end
 
 		if files[index] then
@@ -826,6 +831,7 @@ bind_command('flash-top-bar', function() Elements:flash({'top_bar'}) end)
 bind_command('flash-volume', function() Elements:flash({'volume'}) end)
 bind_command('flash-speed', function() Elements:flash({'speed'}) end)
 bind_command('flash-pause-indicator', function() Elements:flash({'pause_indicator'}) end)
+bind_command('flash-progress', function() Elements:flash({'progress'}) end)
 bind_command('toggle-progress', function() Elements:maybe('timeline', 'toggle_progress') end)
 bind_command('toggle-title', function() Elements:maybe('top_bar', 'toggle_title') end)
 bind_command('decide-pause-indicator', function() Elements:maybe('pause_indicator', 'decide') end)
@@ -926,7 +932,7 @@ bind_command('show-in-directory', function()
 	if not state.path or is_protocol(state.path) then return end
 
 	if state.platform == 'windows' then
-		utils.subprocess_detached({args = {'explorer', '/select,', state.path}, cancellable = false})
+		utils.subprocess_detached({args = {'explorer', '/select,', state.path .. ' '}, cancellable = false})
 	elseif state.platform == 'darwin' then
 		utils.subprocess_detached({args = {'open', '-R', state.path}, cancellable = false})
 	elseif state.platform == 'linux' then

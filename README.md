@@ -1,6 +1,6 @@
 # Personal mpv Configuration for Windows
 
-<p align="center"><img width=100% src="https://github.com/Zabooby/mpv-config/assets/78969986/332fa0e6-ae88-4dfc-89f2-8f53231dba5a" alt="mpv screenshot"></p>
+<p align="center"><img width=100% src="https://github.com/Zabooby/mpv-config/assets/78969986/6c70c8c3-82c8-4d9c-867e-170391ed6ef6" alt="mpv screenshot"></p>
 <p align="center"><img width=100% src="https://github.com/Zabooby/mpv-config/assets/78969986/e4dec0a5-fb4a-438e-96f0-4b87a0f59d34" alt="mpv screenshot"></p>
 
 ## Overview
@@ -13,7 +13,6 @@ Before installing, please take your time to read this whole README as common iss
 - [evafast](https://github.com/po5/evafast) - Fast-forwarding and seeking on a single key.
 - [thumbfast](https://github.com/po5/thumbfast) - High-performance on-the-fly thumbnailer.
 - [memo](https://github.com/po5/memo) - Saves watch history, and displays it in a nice menu, integrated with uosc. 
-- [sview](https://github.com/he2a/mpv-scripts/blob/main/scripts/sview.lua) - Show shaders currently running, triggered on shader activation or by key bind.
 - [autoload](https://github.com/mpv-player/mpv/blob/master/TOOLS/lua/autoload.lua) - Automatically load playlist entries before and after the currently playing file, by scanning the directory.
 - [autodeint](https://github.com/mpv-player/mpv/blob/master/TOOLS/lua/autodeint.lua) - Automatically insert the appropriate deinterlacing filter based on a short section of the current video, triggered by key bind. 
 - [webtorrent-mpv-hook](https://github.com/mrxdst/webtorrent-mpv-hook) - Adds a hook that allows mpv to stream torrents. It provides an osd overlay to show info/progress.
@@ -25,12 +24,12 @@ Before installing, please take your time to read this whole README as common iss
 - [FidelityFX CAS](https://gist.github.com/agyild/bbb4e58298b2f86aa24da3032a0d2ee6) - Sharpening shader that provides an even level of sharpness across the frame. 
 - [FSRCNNX-TensorFlow](https://github.com/igv/FSRCNN-TensorFlow) - Very resource intensive upscaler that uses a neural network to upscale accurately.
 - [Anime4k](https://github.com/bloc97/Anime4K) - Shaders designed to scale and enhance anime. Includes shaders for line sharpening and upscaling.
+- [CfL-Prediction](https://github.com/Artoriuz/glsl-chroma-from-luma-prediction) - Shader thst implement chroma upscaling based on the closed least squares solution for linear regression.
 - [AMD FidelityFX Super Resolution EASU](https://gist.github.com/agyild/82219c545228d70c5604f865ce0b0ce5) (FSR without RCAS) - A spatial upscaler which provides consistent upscaling quality regardless of whether the frame is in movement.
 - [mpv-prescalers](https://github.com/bjin/mpv-prescalers) - RAVU (Rapid and Accurate Video Upscaling) is a set of prescalers with an overall performance consumption design slightly higher than the built-in ewa scaler, while providing much better results. 
 - [SSimDownscaler, SSimSuperRes, KrigBilateral, Adaptive Sharpen](https://gist.github.com/igv) 
     - Adaptive Sharpen: Another sharpening shader.
     - SSimDownscaler: Perceptually based downscaler.
-    - KrigBilateral: Chroma scaler that uses luma information for high quality upscaling.
     - SSimSuperRes: Make corrections to the image upscaled by mpv built-in scaler (removes ringing artifacts and restores original  sharpness).
    
 ## Installation (on Windows)
@@ -85,6 +84,8 @@ mpv
 |   |           ├── ziggy-darwin
 |   |           ├── ziggy-linux
 |   |           ├── ziggy-windows.exe
+│   │       ├── char_conv
+|   |           ├── zh.json
 │   │       ├── elements 
 |   |           ├── BufferingIndicator.lua
 |   |           ├── Button.lua
@@ -111,6 +112,7 @@ mpv
 |   |           └── zh-hans.json
 |   |       ├── lib
 |   |           ├── ass.lua
+|   |           ├── char_conv.lua
 |   |           ├── cursor.lua
 |   |           ├── intl.lua
 |   |           ├── menus.lua
@@ -123,7 +125,6 @@ mpv
 │   │   ├── autoload.lua 
 │   │   ├── evafast.lua                   # Activated by holding right arrow key
 |   |   ├── memo.lua
-|   |   ├── sview.lua
 │   │   ├── thumbfast.lua                     
 │   │   └── webtorrent.js                 # Point here when setting up the webtorrent script
 │   │
@@ -134,10 +135,10 @@ mpv
 │   │   ├── adasharp.glsl                     
 │   │   ├── adasharpA.glsl                # Adjusted for anime
 │   │   ├── CAS.glsl
+│   │   ├── CfL_P.glsl
 │   │   ├── F8.glsl
 │   │   ├── F8_LA.glsl
-│   │   ├── FSR_EASU.glsl
-│   │   ├── krigbl.glsl          
+│   │   ├── FSR_EASU.glsl       
 │   │   ├── nlmeans_HQ.glsl
 │   │   ├── nlmeans_L_HQ.glsl
 │   │   ├── NVSharpen.glsl

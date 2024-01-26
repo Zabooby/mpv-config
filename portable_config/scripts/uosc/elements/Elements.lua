@@ -70,8 +70,12 @@ end
 -- Toggles passed elements' min visibilities between 0 and 1.
 ---@param ids string[] IDs of elements to peek.
 function Elements:toggle(ids)
-	local has_invisible = itable_find(ids, function(id) return Elements[id] and Elements[id]:get_visibility() ~= 1 end)
+	local has_invisible = itable_find(ids, function(id)
+		return Elements[id] and Elements[id].enabled and Elements[id]:get_visibility() ~= 1
+	end)
+
 	self:set_min_visibility(has_invisible and 1 or 0, ids)
+
 	-- Reset proximities when toggling off. Has to happen after `set_min_visibility`,
 	-- as that is using proximity as a tween starting point.
 	if not has_invisible then
@@ -97,8 +101,13 @@ end
 -- Flash passed elements.
 ---@param ids string[] IDs of elements to peek.
 function Elements:flash(ids)
-	local elements = itable_filter(self._all, function(element) return itable_index_of(ids, element.id) ~= nil end)
+	local elements = itable_filter(self._all, function(element) return itable_has(ids, element.id) end)
 	for _, element in ipairs(elements) do element:flash() end
+
+	-- Special case for 'progress' since it's a state of timeline, not an element
+	if itable_has(ids, 'progress') and not itable_has(ids, 'timeline') then
+		Elements:maybe('timeline', 'flash_progress')
+	end
 end
 
 ---@param name string Event name.
