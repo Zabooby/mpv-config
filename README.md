@@ -1,6 +1,6 @@
 # Personal mpv Configuration for Windows
 
-<p align="center"><img width=100% src="https://github.com/Zabooby/mpv-config/assets/78969986/6c70c8c3-82c8-4d9c-867e-170391ed6ef6" alt="mpv screenshot"></p>
+<p align="center"><img width=100% src="https://github.com/Zabooby/mpv-config/assets/78969986/3d95db6f-4ebd-4e84-94cc-c1825297f18e" alt="mpv screenshot"></p>
 <p align="center"><img width=100% src="https://github.com/Zabooby/mpv-config/assets/78969986/e4dec0a5-fb4a-438e-96f0-4b87a0f59d34" alt="mpv screenshot"></p>
 
 ## Overview
@@ -39,7 +39,7 @@ Before installing, please take your time to read this whole README as common iss
 * Download the latest 64bit (or 64bit-v3 for newer CPUs) mpv Windows build by shinchiro [here](https://mpv.io/installation/) or directly from [here](https://sourceforge.net/projects/mpv-player-windows/files/) and extract its contents into a folder of your choice (mine is called mpv). This is now your mpv folder and can be placed wherever you want. 
 * Run `mpv-install.bat`, which is located in the `installer` folder (see File Structure section), with administrator privileges by right-clicking and selecting run as administrator, after it's done, you'll get a prompt to open Control Panel and set mpv as the default player.
 * Download and extract the `portable_config` folder from this repo to the mpv folder you just made. 
-* Add/change file paths, in [profiles.conf](https://github.com/Zabooby/mpv-config/blob/6bd416d614754f23b2d2ff1631e026994298c785/portable_config/profiles.conf#L74) and 2 other files in the [script-opts](https://github.com/Zabooby/mpv-config/tree/main/portable_config/script-opts) folder (detailed in the File Structure section), to match where the relevant files/folders exist on your pc. 
+* Add file paths, to 2 files in the [script-opts](https://github.com/Zabooby/mpv-config/tree/main/portable_config/script-opts) folder (detailed in the File Structure section), to match your preferences. 
 * **Adjust relevant settings in [mpv.conf](https://github.com/Zabooby/mpv-config/blob/main/portable_config/mpv.conf) to fit your system, use the [manual](https://mpv.io/manual/master/) to find out what different options do or open an issue if you need any help.**
 * You're all set up. Go watch some videos!
 
