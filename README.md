@@ -136,8 +136,8 @@ mpv
 │   │   ├── adasharpA.glsl                # Adjusted for anime
 │   │   ├── CAS.glsl
 │   │   ├── CfL_P.glsl
-│   │   ├── F8.glsl
-│   │   ├── F8_LA.glsl
+│   │   ├── F16.glsl
+│   │   ├── F16_LA.glsl
 │   │   ├── FSR_EASU.glsl       
 │   │   ├── nlmeans_HQ.glsl
 │   │   ├── nlmeans_L_HQ.glsl
