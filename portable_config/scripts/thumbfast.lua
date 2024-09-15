@@ -61,6 +61,7 @@ mp.options.read_options(options, "thumbfast")
 local properties = {}
 local pre_0_30_0 = mp.command_native_async == nil
 local pre_0_33_0 = true
+local support_media_control = mp.get_property_native("media-controls") ~= nil
 
 function subprocess(args, async, callback)
     callback = callback or function() end
@@ -274,6 +275,12 @@ end
 options.scale_factor = math.floor(options.scale_factor)
 
 local mpv_path = options.mpv_path
+local frontend_path
+
+if mpv_path == "mpv" and os_name == "windows" then
+    frontend_path = mp.get_property_native("user-data/frontend/process-path")
+    mpv_path = frontend_path or mpv_path
+end
 
 if mpv_path == "mpv" and os_name == "darwin" and unique then
     -- TODO: look into ~~osxbundle/
@@ -467,6 +474,10 @@ local function spawn(time)
         table.insert(args, "--sws-allow-zimg=no")
     end
 
+    if support_media_control then
+        table.insert(args, "--media-controls=no")
+    end
+
     if os_name == "darwin" and properties["macos-app-activation-policy"] then
         table.insert(args, "--macos-app-activation-policy=accessory")
     end
@@ -520,7 +531,7 @@ local function spawn(time)
                             end
                         else
                             mp.commandv("show-text", "thumbfast: ERROR! cannot create mpv subprocess", 5000)
-                            if os_name == "windows" then
+                            if os_name == "windows" and frontend_path == nil then
                                 mp.commandv("script-message-to", "mpvnet", "show-text", "thumbfast: ERROR! install standalone mpv, see README", 5000, 20)
                                 mp.commandv("script-message", "mpv.net", "show-text", "thumbfast: ERROR! install standalone mpv, see README", 5000, 20)
                             end

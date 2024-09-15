@@ -1,5 +1,5 @@
 --[[ uosc | https://github.com/tomasklaen/uosc ]]
-local uosc_version = '5.1.1'
+local uosc_version = '5.3.1'
 
 mp.commandv('script-message', 'uosc-version', uosc_version)
 
@@ -23,7 +23,7 @@ defaults = {
 	progress_line_width = 20,
 	timeline_persistency = '',
 	timeline_border = 1,
-	timeline_step = 5,
+	timeline_step = '5',
 	timeline_cache = true,
 
 	controls =
@@ -51,7 +51,7 @@ defaults = {
 	top_bar = 'no-border',
 	top_bar_size = 40,
 	top_bar_persistency = '',
-	top_bar_controls = true,
+	top_bar_controls = 'right',
 	top_bar_title = 'yes',
 	top_bar_alt_title = '',
 	top_bar_alt_title_place = 'below',
@@ -92,6 +92,7 @@ defaults = {
 	'aac,ac3,aiff,ape,au,cue,dsf,dts,flac,m4a,mid,midi,mka,mp3,mp4a,oga,ogg,opus,spx,tak,tta,wav,weba,wma,wv',
 	image_types = 'apng,avif,bmp,gif,j2k,jp2,jfif,jpeg,jpg,jxl,mj2,png,svg,tga,tif,tiff,webp',
 	subtitle_types = 'aqt,ass,gsub,idx,jss,lrc,mks,pgs,pjs,psb,rt,sbv,slt,smi,sub,sup,srt,ssa,ssf,ttxt,txt,usf,vt,vtt',
+	playlist_types = 'm3u,m3u8,pls,url,cue',
 	default_directory = '~/',
 	show_hidden_files = false,
 	use_trash = false,
@@ -125,6 +126,9 @@ if options.total_time and options.destination_time == 'playtime-remaining' then
 	options.destination_time = 'total'
 elseif not itable_index_of({'total', 'playtime-remaining', 'time-remaining'}, options.destination_time) then
 	options.destination_time = 'playtime-remaining'
+end
+if not itable_index_of({'left', 'right'}, options.top_bar_controls) then
+	options.top_bar_controls = options.top_bar_controls == 'yes' and 'right' or nil
 end
 -- Ensure required environment configuration
 if options.autoload then mp.commandv('set', 'keep-open-pause', 'no') end
@@ -184,7 +188,11 @@ config = {
 		audio = comma_split(options.audio_types),
 		image = comma_split(options.image_types),
 		subtitle = comma_split(options.subtitle_types),
-		media = comma_split(options.video_types .. ',' .. options.audio_types .. ',' .. options.image_types),
+		playlist = comma_split(options.playlist_types),
+		media = comma_split(options.video_types
+			.. ',' .. options.audio_types
+			.. ',' .. options.image_types
+			.. ',' .. options.playlist_types),
 		autoload = (function()
 			---@type string[]
 			local option_values = {}
@@ -228,6 +236,8 @@ config = {
 	color = table_copy(config_defaults.color),
 	opacity = table_copy(config_defaults.opacity),
 	cursor_leave_fadeout_elements = {'timeline', 'volume', 'top_bar', 'controls'},
+	timeline_step = 5,
+	timeline_step_flag = '',
 }
 
 -- Updates config with values dependent on options
@@ -257,6 +267,13 @@ function update_config()
 	-- Global color shorthands
 	fg, bg = config.color.foreground, config.color.background
 	fgt, bgt = config.color.foreground_text, config.color.background_text
+
+	-- Timeline step
+	do
+		local is_exact = options.timeline_step:sub(-1) == '!'
+		config.timeline_step = tonumber(is_exact and options.timeline_step:sub(1, -2) or options.timeline_step)
+		config.timeline_step_flag = is_exact and 'exact' or ''
+	end
 end
 update_config()
 
@@ -337,11 +354,13 @@ state = {
 	alt_title = nil,
 	time = nil, -- current media playback time
 	speed = 1,
+	---@type number|nil
 	duration = nil, -- current media duration
 	time_human = nil, -- current playback time in human format
 	destination_time_human = nil, -- depends on options.destination_time
 	pause = mp.get_property_native('pause'),
 	chapters = {},
+	---@type {index: number; title: string}|nil
 	current_chapter = nil,
 	chapter_ranges = {},
 	border = mp.get_property_native('border'),
@@ -373,6 +392,7 @@ state = {
 	cache = nil,
 	cache_buffering = 100,
 	cache_underrun = false,
+	cache_duration = nil,
 	core_idle = false,
 	eof_reached = false,
 	render_delay = config.render_delay,
@@ -386,6 +406,7 @@ state = {
 	scale = 1,
 	radius = 0,
 }
+buttons = require('lib/buttons')
 thumbnail = {width = 0, height = 0, disabled = false}
 external = {} -- Properties set by external scripts
 key_binding_overwrites = {} -- Table of key_binding:mpv_command
@@ -430,22 +451,24 @@ function update_fullormaxed()
 end
 
 function update_human_times()
+	state.speed = state.speed or 1
 	if state.time then
-		state.time_human = format_time(state.time, state.duration)
+		local max_seconds = state.duration
 		if state.duration then
-			local speed = state.speed or 1
 			if options.destination_time == 'playtime-remaining' then
-				state.destination_time_human = format_time((state.time - state.duration) / speed, state.duration)
+				max_seconds = state.speed >= 1 and state.duration or state.duration / state.speed
+				state.destination_time_human = format_time((state.time - state.duration) / state.speed, max_seconds)
 			elseif options.destination_time == 'total' then
-				state.destination_time_human = format_time(state.duration, state.duration)
+				state.destination_time_human = format_time(state.duration, max_seconds)
 			else
-				state.destination_time_human = format_time(state.time - state.duration, state.duration)
+				state.destination_time_human = format_time(state.time - state.duration, max_seconds)
 			end
 		else
 			state.destination_time_human = nil
 		end
+		state.time_human = format_time(state.time, max_seconds)
 	else
-		state.time_human = nil
+		state.time_human, state.destination_time_human = nil, nil
 	end
 end
 
@@ -516,7 +539,8 @@ end
 
 function set_state(name, value)
 	state[name] = value
-	call_maybe(state['on_' .. name], value)
+	local state_event = state['on_' .. name]
+	if state_event then state_event(value) end
 	Elements:trigger('prop_' .. name, value)
 end
 
@@ -540,12 +564,16 @@ function load_file_index_in_current_directory(index)
 
 	local serialized = serialize_path(state.path)
 	if serialized and serialized.dirname then
-		local files = read_directory(serialized.dirname, {
+		local files, _dirs, error = read_directory(serialized.dirname, {
 			types = config.types.autoload,
 			hidden = options.show_hidden_files,
 		})
 
-		if not files then return end
+		if error then
+			msg.error(error)
+			return
+		end
+
 		sort_strings(files)
 		if index < 0 then index = #files + index + 1 end
 
@@ -568,11 +596,18 @@ function observe_display_fps(name, fps)
 end
 
 function select_current_chapter()
+	local current_chapter_index = state.current_chapter and state.current_chapter.index
 	local current_chapter
 	if state.time and state.chapters then
 		_, current_chapter = itable_find(state.chapters, function(c) return state.time >= c.time end, #state.chapters, 1)
 	end
-	set_state('current_chapter', current_chapter)
+	local new_chapter_index = current_chapter and current_chapter.index
+	if current_chapter_index ~= new_chapter_index then
+		set_state('current_chapter', current_chapter)
+		if itable_has(config.top_bar_flash_on, 'chapter') then
+			Elements:flash({'top_bar'})
+		end
+	end
 end
 
 --[[ STATE HOOKS ]]
@@ -589,14 +624,17 @@ if options.click_threshold > 0 then
 		if delta > 0 and delta < click_time and delta > 0.02 then mp.command(options.click_command) end
 	end)
 	click_timer:kill()
-	mp.set_key_bindings({{'mbtn_left',
-		function() last_up = mp.get_time() end,
-		function()
-			last_down = mp.get_time()
-			if click_timer:is_enabled() then click_timer:kill() else click_timer:resume() end
-		end,
-	}}, 'mouse_movement', 'force')
-	mp.enable_key_bindings('mouse_movement', 'allow-vo-dragging+allow-hide-cursor')
+	local function handle_up() last_up = mp.get_time() end
+	local function handle_down()
+		last_down = mp.get_time()
+		if click_timer:is_enabled() then click_timer:kill() else click_timer:resume() end
+	end
+	-- If this function exists, it'll be called at the beginning of render().
+	function setup_click_detection()
+		local hitbox = {ax = 0, ay = 0, bx = display.width, by = display.height, window_drag = true}
+		cursor:zone('primary_down', hitbox, handle_down)
+		cursor:zone('primary_up', hitbox, handle_up)
+	end
 end
 
 mp.observe_property('osc', 'bool', function(name, value) if value == true then mp.set_property('osc', 'no') end end)
@@ -761,6 +799,7 @@ mp.observe_property('demuxer-cache-state', 'native', function(prop, cache_state)
 	if cache_state then
 		cached_ranges, bof, eof = cache_state['seekable-ranges'], cache_state['bof-cached'], cache_state['eof-cached']
 		set_state('cache_underrun', cache_state['underrun'])
+		set_state('cache_duration', not cache_state.eof and cache_state['cache-duration'] or nil)
 	else
 		cached_ranges = {}
 	end
@@ -768,6 +807,7 @@ mp.observe_property('demuxer-cache-state', 'native', function(prop, cache_state)
 	if not (state.duration and (#cached_ranges > 0 or state.cache == 'yes' or
 			(state.cache == 'auto' and state.is_stream))) then
 		if state.uncached_ranges then set_state('uncached_ranges', nil) end
+		set_state('cache_duration', nil)
 		return
 	end
 
@@ -841,7 +881,7 @@ bind_command('keybinds', function()
 	if Menu:is_open('keybinds') then
 		Menu:close()
 	else
-		open_command_menu({type = 'keybinds', items = get_keybinds_items(), palette = true})
+		open_command_menu({type = 'keybinds', items = get_keybinds_items(), search_style = 'palette'})
 	end
 end)
 bind_command('download-subtitles', open_subtitle_downloader)
@@ -854,19 +894,26 @@ bind_command('load-audio', create_track_loader_menu_opener({
 bind_command('load-video', create_track_loader_menu_opener({
 	name = 'video', prop = 'video', allowed_types = config.types.video,
 }))
-bind_command('subtitles', create_select_tracklist_type_menu_opener(
-	t('Subtitles'), 'sub', 'sid', 'script-binding uosc/load-subtitles', 'script-binding uosc/download-subtitles'
-))
-bind_command('audio', create_select_tracklist_type_menu_opener(
-	t('Audio'), 'audio', 'aid', 'script-binding uosc/load-audio'
-))
-bind_command('video', create_select_tracklist_type_menu_opener(
-	t('Video'), 'video', 'vid', 'script-binding uosc/load-video'
-))
+bind_command('subtitles', create_select_tracklist_type_menu_opener({
+	title = t('Subtitles'),
+	type = 'sub',
+	prop = 'sid',
+	enable_prop = 'sub-visibility',
+	secondary = {prop = 'secondary-sid', icon = 'vertical_align_top', enable_prop = 'secondary-sub-visibility'},
+	load_command = 'script-binding uosc/load-subtitles',
+	download_command = 'script-binding uosc/download-subtitles',
+}))
+bind_command('audio', create_select_tracklist_type_menu_opener({
+	title = t('Audio'), type = 'audio', prop = 'aid', load_command = 'script-binding uosc/load-audio',
+}))
+bind_command('video', create_select_tracklist_type_menu_opener({
+	title = t('Video'), type = 'video', prop = 'vid', load_command = 'script-binding uosc/load-video',
+}))
 bind_command('playlist', create_self_updating_menu_opener({
 	title = t('Playlist'),
 	type = 'playlist',
 	list_prop = 'playlist',
+	footnote = t('Paste path or url to add.'),
 	serializer = function(playlist)
 		local items = {}
 		for index, item in ipairs(playlist) do
@@ -881,11 +928,13 @@ bind_command('playlist', create_self_updating_menu_opener({
 		end
 		return items
 	end,
-	on_select = function(index) mp.commandv('set', 'playlist-pos-1', tostring(index)) end,
-	on_move_item = function(from, to)
-		mp.commandv('playlist-move', tostring(math.max(from, to) - 1), tostring(math.min(from, to) - 1))
+	on_activate = function(event) mp.commandv('set', 'playlist-pos-1', tostring(event.value)) end,
+	on_paste = function(event) mp.commandv('loadfile', tostring(event.value), 'append') end,
+	on_move = function(event)
+		local from, to = event.from_index, event.to_index
+		mp.commandv('playlist-move', tostring(from - 1), tostring(to - (to > from and 0 or 1)))
 	end,
-	on_delete_item = function(index) mp.commandv('playlist-remove', tostring(index - 1)) end,
+	on_remove = function(event) mp.commandv('playlist-remove', tostring(event.index - 1)) end,
 }))
 bind_command('chapters', create_self_updating_menu_opener({
 	title = t('Chapters'),
@@ -905,7 +954,7 @@ bind_command('chapters', create_self_updating_menu_opener({
 		end
 		return items
 	end,
-	on_select = function(index) mp.commandv('set', 'chapter', tostring(index - 1)) end,
+	on_activate = function(event) mp.commandv('set', 'chapter', tostring(event.value - 1)) end,
 }))
 bind_command('editions', create_self_updating_menu_opener({
 	title = t('Editions'),
@@ -925,7 +974,7 @@ bind_command('editions', create_self_updating_menu_opener({
 		end
 		return items
 	end,
-	on_select = function(id) mp.commandv('set', 'edition', id) end,
+	on_activate = function(event) mp.commandv('set', 'edition', event.value) end,
 }))
 bind_command('show-in-directory', function()
 	-- Ignore URLs
@@ -1006,7 +1055,7 @@ bind_command('audio-device', create_self_updating_menu_opener({
 		end
 		return items
 	end,
-	on_select = function(name) mp.commandv('set', 'audio-device', name) end,
+	on_activate = function(event) mp.commandv('set', 'audio-device', event.value) end,
 }))
 bind_command('open-config-directory', function()
 	local config_path = mp.command_native({'expand-path', '~~/mpv.conf'})
@@ -1053,6 +1102,17 @@ mp.register_script_message('update-menu', function(json)
 	else
 		local menu = data.type and Menu:is_open(data.type)
 		if menu then menu:update(data) end
+	end
+end)
+mp.register_script_message('select-menu-item', function(type, item_index, menu_id)
+	local menu = Menu:is_open(type)
+	local index = tonumber(item_index)
+	if menu and index and not menu.mouse_nav then
+		index = round(index)
+		if index > 0 and index <= #menu.current.items then
+			menu:select_index(index, menu_id)
+			menu:scroll_to_index(index, menu_id, true)
+		end
 	end
 end)
 mp.register_script_message('close-menu', function(type)

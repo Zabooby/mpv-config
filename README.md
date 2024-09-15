@@ -17,20 +17,18 @@ Before installing, please take your time to read this whole README as common iss
 - [autoload](https://github.com/mpv-player/mpv/blob/master/TOOLS/lua/autoload.lua) - Automatically load playlist entries before and after the currently playing file, by scanning the directory.
 - [autodeint](https://github.com/mpv-player/mpv/blob/master/TOOLS/lua/autodeint.lua) - Automatically insert the appropriate deinterlacing filter based on a short section of the current video, triggered by key bind. 
 - [webtorrent-mpv-hook](https://github.com/mrxdst/webtorrent-mpv-hook) - Adds a hook that allows mpv to stream torrents. It provides an osd overlay to show info/progress.
-    - **This script needs some extra setup, follow the simple installation steps [here](https://github.com/mrxdst/webtorrent-mpv-hook#install)**.
-    - **Point to the same location specified in the File Structure section below when installing the webtorrent.js file.**
+    - **This script requires some extra setup, follow the simple installation steps [here](https://github.com/mrxdst/webtorrent-mpv-hook#install)**.
+    - **Point to the same location specified in the File Structure section below, when installing the webtorrent.js file.**
 - - - 
 - [nlmeans](https://github.com/AN3223/dotfiles/tree/master/.config/mpv/shaders) - Highly configurable and featureful denoiser.
-- [NVIDIA Image Sharpening](https://gist.github.com/agyild/7e8951915b2bf24526a9343d951db214) - An adaptive-directional sharpening algorithm shaders.
-- [FidelityFX CAS](https://gist.github.com/agyild/bbb4e58298b2f86aa24da3032a0d2ee6) - Sharpening shader that provides an even level of sharpness across the frame. 
-- [FSRCNNX-TensorFlow](https://github.com/igv/FSRCNN-TensorFlow) - Very resource intensive upscaler that uses a neural network to upscale accurately.
+- [FSRCNNX-TensorFlow](https://github.com/igv/FSRCNN-TensorFlow) - Resource intensive prescaler based on layered convolutional networks.
 - [Anime4k](https://github.com/bloc97/Anime4K) - Shaders designed to scale and enhance anime. Includes shaders for line sharpening and upscaling.
-- [CfL-Prediction](https://github.com/Artoriuz/glsl-chroma-from-luma-prediction) - Shader thst implement chroma upscaling based on the closed least squares solution for linear regression.
 - [AMD FidelityFX Super Resolution EASU](https://gist.github.com/agyild/82219c545228d70c5604f865ce0b0ce5) (FSR without RCAS) - A spatial upscaler which provides consistent upscaling quality regardless of whether the frame is in movement.
 - [mpv-prescalers](https://github.com/bjin/mpv-prescalers) - RAVU (Rapid and Accurate Video Upscaling) is a set of prescalers with an overall performance consumption design slightly higher than the built-in ewa scaler, while providing much better results. 
 - [SSimDownscaler, SSimSuperRes, KrigBilateral, Adaptive Sharpen](https://gist.github.com/igv) 
     - Adaptive Sharpen: Another sharpening shader.
     - SSimDownscaler: Perceptually based downscaler.
+    - KrigBilateral: Chroma scaler that uses luma information for high quality upscaling.
     - SSimSuperRes: Make corrections to the image upscaled by mpv built-in scaler (removes ringing artifacts and restores original  sharpness).
    
 ## Installation (on Windows)
@@ -62,13 +60,14 @@ mpv
 │   └── updater.ps1
 │
 ├── portable_config                       # This is where my config is placed
-│   ├── cache                             # Created automatically   
-│   │ 
+│   ├── cache                             # Created automatically  
+│   │   ├──  watch_later                  # Video timestamps saved here (created automatically)
+│   │
 │   ├── fonts
 │   │   ├── ClearSans-Bold.ttf
 │   │   ├── JetBrainsMono-Regular.ttf
-|   |   ├── uosc-icons.otf
-|   |   └── uosc-textures.ttf
+|   |   ├── uosc_icons.otf
+|   |   └── uosc_textures.ttf
 │   │
 │   ├── script-opts                       # Contains configuration files for scripts
 |   |   ├── console.conf
@@ -149,7 +148,6 @@ mpv
 │   │   ├── ssimds.glsl
 │   │   └── ssimsr.glsl
 │   │
-|   ├── watch_later                       # Video timestamps saved here (created automatically)
 |   ├── fonts.conf                        # Delete the duplicate made when installing mpv
 │   ├── input.conf                        # Customise uosc menu here
 │   ├── mpv.conf                          
@@ -167,6 +165,6 @@ Custom key bindings can be added/edited in the [input.conf](https://github.com/Z
 ## Useful Links
 
 * [mpv wiki](https://github.com/mpv-player/mpv/wiki) - Official wiki with links to all user scripts/shaders, FAQ's and much more.
-* [Mathematical evaluation of various scalers](https://artoriuz.github.io/blog/mpv_upscaling.html) - My config uses (mostly) the best scalers/settings from this analysis.
+    * [Awesome mpv](https://github.com/stax76/awesome-mpv) -  A curated list of the user resources in the wiki, listed in distinct sections for easier browsing.
 * [mpv manual](https://mpv.io/manual/master/) - Lists all the settings and configuration options available including video/audio settings, scripting, and countless other customisations.
 * [To-do's](https://github.com/users/Zabooby/projects/1) - Just a list of things I'm currently testing, tracking or improving as well as major changes/improvements I've already implemented (click on items for more information).

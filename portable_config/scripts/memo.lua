@@ -85,7 +85,7 @@ local assdraw = require "mp.assdraw"
 local osd = mp.create_osd_overlay("ass-events")
 osd.z = 2000
 local osd_update = nil
-local width, height
+local width, height = 0, 0
 local margin_top, margin_bottom = 0, 0
 local font_size = mp.get_property_number("osd-font-size") or 55
 
@@ -145,6 +145,7 @@ history:setvbuf("full")
 
 local event_loop_exhausted = false
 local uosc_available = false
+local dyn_menu = nil
 local menu_shown = false
 local last_state = nil
 local menu_data = nil
@@ -153,6 +154,8 @@ local search_words = nil
 local search_query = nil
 local dir_menu = false
 local dir_menu_prefixes = nil
+local new_loadfile = nil
+local normalize_path = nil
 
 local data_protocols = {
     edl = true,
@@ -178,8 +181,6 @@ local device_protocols = {
     bd = true,
     br = true,
     bluray = true,
-    bdnav = true,
-    bluraynav = true,
     cdda = true,
     dvb = true,
     dvd = true,
@@ -249,11 +250,116 @@ function utf8_subwidth_back(t, num_chars)
     return substr
 end
 
+function utf8_to_unicode(str, i)
+    local byte_count = utf8_char_bytes(str, i)
+    local char_byte = str:byte(i)
+    local unicode = char_byte
+    if byte_count ~= 1 then
+        local shift = 2 ^ (8 - byte_count)
+        char_byte = char_byte - math.floor(0xFF / shift) * shift
+        unicode = char_byte * (2 ^ 6) ^ (byte_count - 1)
+    end
+    for j = 2, byte_count do
+        char_byte = str:byte(i + j - 1) - 0x80
+        unicode = unicode + char_byte * (2 ^ 6) ^ (byte_count - j)
+    end
+    return math.floor(unicode + 0.5)
+end
+
 function ass_clean(str)
     str = str:gsub("\\", "\\\239\187\191")
     str = str:gsub("{", "\\{")
     str = str:gsub("}", "\\}")
     return str
+end
+
+-- Extended from https://stackoverflow.com/a/73283799 with zero-width handling from uosc
+function unaccent(str)
+    local unimask = "[%z\1-\127\194-\244][\128-\191]*"
+
+    -- "Basic Latin".."Latin-1 Supplement".."Latin Extended-A".."Latin Extended-B"
+    local charmap =
+    "AÀÁÂÃÄÅĀĂĄǍǞǠǺȀȂȦȺAEÆǢǼ"..
+    "BßƁƂƄɃ"..
+    "CÇĆĈĊČƆƇȻ"..
+    "DÐĎĐƉƊDZƻǄǱDzǅǲ"..
+    "EÈÉÊËĒĔĖĘĚƎƏƐȄȆȨɆ"..
+    "FƑ"..
+    "GĜĞĠĢƓǤǦǴ"..
+    "HĤĦȞHuǶ"..
+    "IÌÍÎÏĨĪĬĮİƖƗǏȈȊIJĲ"..
+    "JĴɈ"..
+    "KĶƘǨ"..
+    "LĹĻĽĿŁȽLJǇLjǈ"..
+    "NÑŃŅŇŊƝǸȠNJǊNjǋ"..
+    "OÒÓÔÕÖØŌŎŐƟƠǑǪǬǾȌȎȪȬȮȰOEŒOIƢOUȢ"..
+    "PÞƤǷ"..
+    "QɊ"..
+    "RŔŖŘȐȒɌ"..
+    "SŚŜŞŠƧƩƪƼȘ"..
+    "TŢŤŦƬƮȚȾ"..
+    "UÙÚÛÜŨŪŬŮŰŲƯƱƲȔȖɄǓǕǗǙǛ"..
+    "VɅ"..
+    "WŴƜ"..
+    "YÝŶŸƳȜȲɎ"..
+    "ZŹŻŽƵƷƸǮȤ"..
+    "aàáâãäåāăąǎǟǡǻȁȃȧaeæǣǽ"..
+    "bƀƃƅ"..
+    "cçćĉċčƈȼ"..
+    "dðƌƋƍȡďđdbȸdzǆǳ"..    
+    "eèéêëēĕėęěǝȅȇȩɇ"..
+    "fƒ"..
+    "gĝğġģƔǥǧǵ"..
+    "hĥħȟhvƕ"..
+    "iìíîïĩīĭįıǐȉȋijĳ"..
+    "jĵǰȷɉ"..
+    "kķĸƙǩ"..
+    "lĺļľŀłƚƛȴljǉ"..
+    "nñńņňŉŋƞǹȵnjǌ"..
+    "oòóôõöøōŏőơǒǫǭǿȍȏȫȭȯȱoeœoiƣouȣ"..
+    "pþƥƿ"..
+    "qɋqpȹ"..
+    "rŕŗřƦȑȓɍ"..
+    "sśŝşšſƨƽșȿ"..
+    "tţťŧƫƭțȶtsƾ"..
+    "uùúûüũūŭůűųưǔǖǘǚǜȕȗ"..
+    "wŵ"..
+    "yýÿŷƴȝȳɏ"..
+    "zźżžƶƹƺǯȥɀ"
+
+    local zero_width_blocks = {
+        {0x0000,  0x001F}, -- C0
+        {0x007F,  0x009F}, -- Delete + C1
+        {0x034F,  0x034F}, -- combining grapheme joiner
+        {0x061C,  0x061C}, -- Arabic Letter Strong
+        {0x200B,  0x200F}, -- {zero-width space, zero-width non-joiner, zero-width joiner, left-to-right mark, right-to-left mark}
+        {0x2028,  0x202E}, -- {line separator, paragraph separator, Left-to-Right Embedding, Right-to-Left Embedding, Pop Directional Format, Left-to-Right Override, Right-to-Left Override}
+        {0x2060,  0x2060}, -- word joiner
+        {0x2066,  0x2069}, -- {Left-to-Right Isolate, Right-to-Left Isolate, First Strong Isolate, Pop Directional Isolate}
+        {0xFEFF,  0xFEFF}, -- zero-width non-breaking space
+        -- Some other characters can also be combined https://en.wikipedia.org/wiki/Combining_character
+        {0x0300,  0x036F}, -- Combining Diacritical Marks    0 BMP  Inherited
+        {0x1AB0,  0x1AFF}, -- Combining Diacritical Marks Extended   0 BMP  Inherited
+        {0x1DC0,  0x1DFF}, -- Combining Diacritical Marks Supplement     0 BMP  Inherited
+        {0x20D0,  0x20FF}, -- Combining Diacritical Marks for Symbols    0 BMP  Inherited
+        {0xFE20,  0xFE2F}, -- Combining Half Marks   0 BMP  Cyrillic (2 characters), Inherited (14 characters)
+        -- Egyptian Hieroglyph Format Controls and Shorthand format Controls
+        {0x13430, 0x1345F}, -- Egyptian Hieroglyph Format Controls   1 SMP  Egyptian Hieroglyphs
+        {0x1BCA0, 0x1BCAF}, -- Shorthand Format Controls     1 SMP  Common
+        -- not sure how to deal with those https://en.wikipedia.org/wiki/Spacing_Modifier_Letters
+        {0x02B0,  0x02FF}, -- Spacing Modifier Letters   0 BMP  Bopomofo (2 characters), Latin (14 characters), Common (64 characters)
+    }
+
+    return str:gsub(unimask, function(unichar) 
+        local unicode = utf8_to_unicode(unichar, 1)
+        for _, block in ipairs(zero_width_blocks) do
+            if unicode >= block[1] and unicode <= block[2] then
+                return ""
+            end
+        end
+
+        return unichar:match("%a") or charmap:match("(%a+)[^%a]-"..(unichar:gsub("[%(%)%.%%%+%-%*%?%[%^%$]", "%%%1")))
+    end)
 end
 
 function shallow_copy(t)
@@ -268,8 +374,71 @@ function has_protocol(path)
     return path:find("^%a[%w.+-]-://") or path:find("^%a[%w.+-]-:%?")
 end
 
+function normalize(path)
+    if normalize_path ~= nil then
+        if normalize_path then
+            -- don't normalize magnet-style paths
+            local protocol_start, protocol_end, protocol = path:find("^(%a[%w.+-]-):%?")
+            if not protocol_end then
+                path = mp.command_native({"normalize-path", path})
+            end
+        else
+            -- TODO: implement the basics of path normalization ourselves for mpv 0.38.0 and under
+            local directory = mp.get_property("working-directory", "")
+            if not has_protocol(path) then
+                path = mp.utils.join_path(directory, path)
+            end
+        end
+        return path
+    end
+
+    normalize_path = false
+
+    local commands = mp.get_property_native("command-list", {})
+    for _, command in ipairs(commands) do
+        if command.name == "loadfile" then
+            for _, arg in ipairs(command.args) do
+                if arg.name == "index" then
+                    new_loadfile = true
+                    break
+                end
+            end
+        end
+        if command.name == "normalize-path" then
+            normalize_path = true
+            break
+        end
+    end
+    return normalize(path)
+end
+
+function loadfile_compat(path)
+    if new_loadfile ~= nil then
+        if new_loadfile then
+            return {"-1", path}
+        end
+        return {path}
+    end
+
+    new_loadfile = false
+
+    local commands = mp.get_property_native("command-list", {})
+    for _, command in ipairs(commands) do
+        if command.name == "loadfile" then
+            for _, arg in ipairs(command.args) do
+                if arg.name == "index" then
+                    new_loadfile = true
+                    return {"-1", path}
+                end
+            end
+            return {path}
+        end
+    end
+    return {path}
+end
+
 function menu_json(menu_items, page)
-    local title = (search_query or (dir_menu and "Directories" or "History")) .. ""
+    local title = (search_query or (dir_menu and "Directories" or "History"))
     if options.pagination or page ~= 1 then
         title = title .. " - Page " .. page
     end
@@ -395,12 +564,12 @@ function open_menu()
         end
         if append and item.value[1] == "loadfile" then
             -- bail if file is already in playlist
-            local directory = mp.get_property("working-directory", "")
             local playlist = mp.get_property_native("playlist", {})
             for i = 1, #playlist do
                 local playlist_file = playlist[i].filename
-                if not has_protocol(playlist_file) then
-                    playlist_file = mp.utils.join_path(directory, playlist_file)
+                local display_path, save_path, effective_path, effective_protocol, is_remote, file_options = path_info(playlist_file)
+                if not is_remote then
+                    playlist_file = normalize(save_path)
                 end
                 if item.value[2] == playlist_file then
                     return
@@ -438,7 +607,7 @@ function draw_menu()
     last_state.selected_index = math.min(last_state.selected_index, #menu_data.items)
 
     local function get_scrolled_lines()
-        local output_height = height - margin_top * height - margin_bottom * height
+        local output_height = height - margin_top * height - margin_bottom * height - 0.2 * font_size + 0.5
         local screen_lines = math.max(math.floor(output_height / font_size), 1)
         local max_scroll = math.max(num_options - screen_lines, 0)
         return math.min(math.max(last_state.selected_index - math.ceil(screen_lines / 2), 0), max_scroll) - 1
@@ -458,7 +627,7 @@ function draw_menu()
     ass:new_event()
 
     local scrolled_lines = get_scrolled_lines() - 1
-    local pos_y = margin_top * height - scrolled_lines * font_size
+    local pos_y = margin_top * height - scrolled_lines * font_size + 0.2 * font_size + 0.5
     local clip_top = math.floor(margin_top * height + font_size + 0.2 * font_size + 0.5)
     local clip_bottom = math.floor((1 - margin_bottom) * height + 0.5)
     local clipping_coordinates = "0," .. clip_top .. "," .. width .. "," .. clip_bottom
@@ -505,17 +674,17 @@ function get_full_path()
     local path = mp.get_property("path")
     if path == nil or path == "-" or path == "/dev/stdin" then return end
 
-    if not has_protocol(path) then
-        local directory = mp.get_property("working-directory", "")
-        path = mp.utils.join_path(directory, path)
+    local display_path, save_path, effective_path, effective_protocol, is_remote, file_options = path_info(path)
+
+    if not is_remote then
+        path = normalize(save_path)
     end
 
-
-    return path
+    return path, display_path, save_path, effective_path, effective_protocol, is_remote, file_options
 end
 
 function path_info(full_path)
-    local function resolve(effective_path, display_path, last_protocol, is_remote)
+    local function resolve(effective_path, save_path, display_path, last_protocol, is_remote)
         local protocol_start, protocol_end, protocol = display_path:find("^(%a[%w.+-]-)://")
 
         if protocol == "ytdl" then
@@ -538,24 +707,36 @@ function path_info(full_path)
                 is_remote = true
                 display_path = display_path:sub(protocol_end + 1)
             end
-            return display_path, effective_path, protocol, is_remote, file_options
+            return display_path, save_path, effective_path, protocol, is_remote, file_options
         end
 
         if not protocol_end then
             if last_protocol == "ytdl" then
                 display_path = "ytdl://" .. display_path
             end
-            return display_path, effective_path, last_protocol, is_remote, nil
+            return display_path, save_path, effective_path, last_protocol, is_remote, nil
         end
 
         display_path = display_path:sub(protocol_end + 1)
 
         if protocol == "archive" then
-            local main_path, filename = display_path:match("(.+)|.+[\\/](.+)")
+            local main_path, archive_path, filename = display_path:gsub("%%7C", "|"):match("(.-)(|.-[\\/])(.+)")
             if not main_path then
-                effective_path = display_path:match("(.+)|") or effective_path
-            elseif filename then
-                effective_path = main_path
+                local main_path = display_path:match("(.-)|")
+                effective_path = normalize(main_path or display_path)
+                _, save_path, effective_path, protocol, is_remote, file_options = resolve(effective_path, save_path, display_path, protocol, is_remote)
+                effective_path = normalize(effective_path)
+                save_path = "archive://" .. (save_path or effective_path)
+                if main_path then
+                    save_path = save_path .. display_path:match("|(.-)")
+                end
+            else
+                display_path, save_path, _, protocol, is_remote, file_options = resolve(main_path, save_path, main_path, protocol, is_remote)
+                effective_path = normalize(display_path)
+                save_path = save_path or effective_path
+                save_path = "archive://" .. save_path .. (save_path:find("archive://") and archive_path:gsub("|", "%%7C") or archive_path) .. filename
+                _, main_path = mp.utils.split_path(main_path)
+                _, filename = mp.utils.split_path(filename)
                 display_path = main_path .. ": " .. filename
             end
         elseif protocol == "slice" then
@@ -565,7 +746,7 @@ function path_info(full_path)
             display_path = display_path:match(".-@(.*)") or display_path
         end
 
-        return resolve(effective_path, display_path, protocol, is_remote)
+        return resolve(effective_path, save_path, display_path, protocol, is_remote)
     end
 
     -- don't resolve magnet-style paths
@@ -574,14 +755,15 @@ function path_info(full_path)
         return full_path, full_path, protocol, true, nil
     end
 
-    local display_path, effective_path, effective_protocol, is_remote, file_options = resolve(nil, full_path, nil, false)
+    local display_path, save_path, effective_path, effective_protocol, is_remote, file_options = resolve(nil, nil, full_path, nil, false)
     effective_path = effective_path or display_path
+    save_path = save_path or effective_path
 
-    return display_path, effective_path, effective_protocol, is_remote, file_options
+    return display_path, save_path, effective_path, effective_protocol, is_remote, file_options
 end
 
 function write_history(display)
-    local full_path = get_full_path()
+    local full_path, display_path, save_path, effective_path, effective_protocol, is_remote, file_options = get_full_path()
     if full_path == nil then
         mp.msg.debug("cannot get full path to file")
         if display then
@@ -590,7 +772,6 @@ function write_history(display)
         return
     end
 
-    local display_path, effective_path, effective_protocol, is_remote, file_options = path_info(full_path)
     if data_protocols[effective_protocol] then
         mp.msg.debug("not logging file with " .. effective_protocol .. " protocol")
         if display then
@@ -599,7 +780,7 @@ function write_history(display)
         return
     end
 
-    if effective_protocol == "bd" or effective_protocol == "br" or effective_protocol == "bluray" or effective_protocol == "bdnav" or effective_protocol == "bluraynav" then
+    if effective_protocol == "bd" or effective_protocol == "br" or effective_protocol == "bluray" then
         full_path = full_path .. " --opt=bluray-device=" .. mp.get_property("bluray-device", "")
     elseif effective_protocol == "cdda" then
         full_path = full_path .. " --opt=cdrom-device=" .. mp.get_property("cdrom-device", "")
@@ -629,6 +810,10 @@ function write_history(display)
     history:seek("end")
     history:write(entry .. "," .. entry_length, "\n")
     history:flush()
+
+    if dyn_menu then
+        dyn_menu_update()
+    end
 end
 
 function show_history(entries, next_page, prev_page, update, return_items)
@@ -748,7 +933,7 @@ function show_history(entries, next_page, prev_page, update, return_items)
         local title_length = title_length_str ~= "" and tonumber(title_length_str) or 0
         local full_path = file_info:sub(title_length + 2)
 
-        local display_path, effective_path, effective_protocol, is_remote, file_options = path_info(full_path)
+        local display_path, save_path, effective_path, effective_protocol, is_remote, file_options = path_info(full_path)
         local cache_key = effective_path .. display_path .. (file_options or "")
 
         if options.hide_duplicates and state.known_files[cache_key] then
@@ -761,7 +946,7 @@ function show_history(entries, next_page, prev_page, update, return_items)
 
         if search_words and not options.use_titles then
             for _, word in ipairs(search_words) do
-                if display_path:lower():find(word, 1, true) == nil then
+                if unaccent(display_path):lower():find(word, 1, true) == nil then
                     return
                 end
             end
@@ -795,7 +980,7 @@ function show_history(entries, next_page, prev_page, update, return_items)
             end
         end
 
-        if options.hide_deleted then
+        if options.hide_deleted and not (search_words and options.use_titles) then
             if state.known_files[cache_key] and not state.existing_files[cache_key] then
                 return
             end
@@ -827,7 +1012,6 @@ function show_history(entries, next_page, prev_page, update, return_items)
             title = ""
         end
 
-
         if dir_menu then
             title = basename
         elseif title == "" then
@@ -845,7 +1029,34 @@ function show_history(entries, next_page, prev_page, update, return_items)
 
         if search_words and options.use_titles then
             for _, word in ipairs(search_words) do
-                if title:lower():find(word, 1, true) == nil then
+                if unaccent(title):lower():find(word, 1, true) == nil then
+                    return
+                end
+            end
+        end
+
+        if options.hide_deleted and (search_words and options.use_titles) then
+            if state.known_files[cache_key] and not state.existing_files[cache_key] then
+                return
+            end
+            if not state.known_files[cache_key] then
+                local stat = mp.utils.file_info(effective_path)
+                if stat then
+                    state.existing_files[cache_key] = true
+                elseif dir_menu then
+                    state.known_files[cache_key] = true
+                    local dir = mp.utils.split_path(effective_path)
+                    if dir == "." then
+                        return
+                    end
+                    stat = mp.utils.readdir(dir, "files")
+                    if stat and next(stat) ~= nil then
+                        full_path = dir
+                    else
+                        return
+                    end
+                else
+                    state.known_files[cache_key] = true
                     return
                 end
             end
@@ -879,7 +1090,9 @@ function show_history(entries, next_page, prev_page, update, return_items)
 
         if file_options then
             command[2] = display_path
-            table.insert(command, file_options)
+            for _, arg in ipairs(loadfile_compat(file_options)) do
+                table.insert(command, arg)
+            end
         end
 
         table.insert(menu_items, {title = title, hint = timestamp, value = command})
@@ -957,6 +1170,8 @@ end
 function file_load()
     if options.enabled then
         write_history()
+    elseif dyn_menu then
+        dyn_menu_update()
     end
 
     if menu_shown and last_state and last_state.current_page == 1 then
@@ -989,6 +1204,11 @@ mp.register_script_message("uosc-version", function(version)
 
     local min_version = "5.0.0"
     uosc_available = not semver_comp(version, min_version)
+end)
+
+mp.register_script_message("menu-ready", function(client_name)
+    dyn_menu = client_name
+    dyn_menu_update()
 end)
 
 function memo_close()
@@ -1028,7 +1248,7 @@ function memo_search(...)
 
         if query ~= "" then
             for i, word in ipairs(words) do
-                words[i] = word:lower()
+                words[i] = unaccent(word):lower()
             end
             search_query = query
             search_words = words
@@ -1065,13 +1285,59 @@ end
 function memo_search_uosc(query)
     if query ~= "" then
         search_query = query
-        search_words = parse_query_parts(query:lower())
+        search_words = parse_query_parts(unaccent(query):lower())
     else
         search_query = nil
         search_words = nil
     end
     event_loop_exhausted = false
     show_history(options.entries, false, false, menu_shown and last_state)
+end
+
+-- update menu in mpv-menu-plugin
+function dyn_menu_update()
+    search_words = nil
+    event_loop_exhausted = false
+    local items = show_history(options.entries, false, false, false, true)
+    event_loop_exhausted = false
+
+    local menu = {
+        type = "submenu",
+        submenu = {}
+    }
+
+    if not options.enabled then
+        menu.submenu = {{title = "Add current file to memo", cmd = "script-binding memo-log"}, {type = "separator"}}
+    end
+
+    if items and #items > 0 then
+        local full_path, display_path, save_path, effective_path, effective_protocol, is_remote, file_options = get_full_path()
+        for _, item in ipairs(items) do
+            local cmd = string.format("%s \"%s\" %s %s %s",
+                item.value[1],
+                item.value[2]:gsub("\\", "\\\\"):gsub("\"", "\\\""),
+                item.value[3],
+                (item.value[4] or ""):gsub("\\", "\\\\"):gsub("\"", "\\\""):gsub("^(.+)$", "\"%1\""),
+                (item.value[5] or ""):gsub("\\", "\\\\"):gsub("\"", "\\\""):gsub("^(.+)$", "\"%1\"")
+            )
+            menu.submenu[#menu.submenu + 1] = {
+                title = item.title,
+                cmd = cmd,
+                shortcut = item.hint,
+                state = full_path == item.value[2] and {"checked"} or {}
+            }
+        end
+        if last_state.cursor > 0 then
+            menu.submenu[#menu.submenu + 1] = {title = "...", cmd = "script-binding memo-next"}
+        end
+    else
+        menu.submenu[#menu.submenu + 1] = {
+            title = "No entries",
+            state = {"disabled"}
+        }
+    end
+
+    mp.commandv("script-message-to", dyn_menu, "update", "memo", mp.utils.format_json(menu))
 end
 
 mp.register_script_message("memo-clear", memo_clear)
@@ -1110,7 +1376,7 @@ mp.add_key_binding(nil, "memo-last", function()
     end
     if items then
         local item
-        local full_path = get_full_path()
+        local full_path, display_path, save_path, effective_path, effective_protocol, is_remote, file_options = get_full_path()
         if #items >= 1 and not items[1].keep_open then
             if items[1].value[2] ~= full_path then
                 item = items[1]
