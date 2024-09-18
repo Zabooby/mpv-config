@@ -306,7 +306,7 @@ function unaccent(str)
     "aàáâãäåāăąǎǟǡǻȁȃȧaeæǣǽ"..
     "bƀƃƅ"..
     "cçćĉċčƈȼ"..
-    "dðƌƋƍȡďđdbȸdzǆǳ"..    
+    "dðƌƋƍȡďđdbȸdzǆǳ"..
     "eèéêëēĕėęěǝȅȇȩɇ"..
     "fƒ"..
     "gĝğġģƔǥǧǵ"..
@@ -350,7 +350,7 @@ function unaccent(str)
         {0x02B0,  0x02FF}, -- Spacing Modifier Letters   0 BMP  Bopomofo (2 characters), Latin (14 characters), Common (64 characters)
     }
 
-    return str:gsub(unimask, function(unichar) 
+    return str:gsub(unimask, function(unichar)
         local unicode = utf8_to_unicode(unichar, 1)
         for _, block in ipairs(zero_width_blocks) do
             if unicode >= block[1] and unicode <= block[2] then
@@ -438,7 +438,7 @@ function loadfile_compat(path)
 end
 
 function menu_json(menu_items, page)
-    local title = (search_query or (dir_menu and "Directories" or "History"))
+    local title = (search_query or (dir_menu and "Directories" or "History")) .. ""
     if options.pagination or page ~= 1 then
         title = title .. " - Page " .. page
     end
@@ -702,7 +702,7 @@ function path_info(full_path)
                         input_path = display_path:sub(protocol_end + 1)
                     end
                 end
-                display_path = input_path or display_path:sub(protocol_start, protocol_end)
+                display_path = input_path or display_path
             else
                 is_remote = true
                 display_path = display_path:sub(protocol_end + 1)
@@ -758,6 +758,11 @@ function path_info(full_path)
     local display_path, save_path, effective_path, effective_protocol, is_remote, file_options = resolve(nil, nil, full_path, nil, false)
     effective_path = effective_path or display_path
     save_path = save_path or effective_path
+    if is_remote and not file_options then
+        display_path = display_path:gsub("%%(%x%x)", function(hex)
+            return string.char(tonumber(hex, 16))
+        end)
+    end
 
     return display_path, save_path, effective_path, effective_protocol, is_remote, file_options
 end
@@ -1018,10 +1023,17 @@ function show_history(entries, next_page, prev_page, update, return_items)
             if is_remote then
                 title = display_path
             else
+                local effective_display_path = display_path
+                if file_options then
+                    effective_display_path = file_options
+                end
                 if not dirname then
-                    dirname, basename = mp.utils.split_path(display_path)
+                    dirname, basename = mp.utils.split_path(effective_display_path)
                 end
                 title = basename ~= "" and basename or display_path
+                if file_options then
+                    title = display_path .. " " .. title
+                end
             end
         end
 

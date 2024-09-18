@@ -76,7 +76,7 @@ mpv
 |   |   ├── memo-history.log              # Created automatically 
 │   │   ├── thumbfast.conf                    
 │   │   ├── uosc.conf                     # Set desired default directory for uosc menu here
-│   │   └── webtorrent.conf               # Specify where to save downloaded videos here
+│   │   └── webtorrent.conf               # Specify where to save downloaded files here
 │   │
 │   ├── scripts      
 │   │   ├── uosc              
@@ -94,6 +94,7 @@ mpv
 |   |           ├── CycleButton.lua
 |   |           ├── Element.lua
 |   |           ├── Elements.lua
+|   |           ├── ManagedButton.lua
 |   |           ├── Menu.lua
 |   |           ├── PauseIndicator.lua
 |   |           ├── Speed.lua
@@ -112,6 +113,7 @@ mpv
 |   |           └── zh-hans.json
 |   |       ├── lib
 |   |           ├── ass.lua
+|   |           ├── buttons.lua
 |   |           ├── char_conv.lua
 |   |           ├── cursor.lua
 |   |           ├── intl.lua
@@ -156,7 +158,9 @@ mpv
 ├── d3dcompiler_43.dll
 ├── mpv.com
 ├── mpv.exe                               # The mpv executable file
-└── updater.bat                           # Run with administrator priviledges to update mpv
+├── settings.xml                          # Created after initial run of updater.bat
+├── updater.bat                           # Run with administrator priviledges to update mpv
+└── yt-dlp.exe                            
 ```
 
 ## Key Bindings

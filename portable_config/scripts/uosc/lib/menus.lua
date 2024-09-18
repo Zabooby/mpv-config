@@ -1,15 +1,16 @@
+---@alias OpenCommandMenuOptions {submenu?: string; mouse_nav?: boolean; on_close?: string | string[]}
 ---@param data MenuData
----@param opts? {submenu?: string; mouse_nav?: boolean; on_close?: string | string[]}
+---@param opts? OpenCommandMenuOptions
 function open_command_menu(data, opts)
 	opts = opts or {}
 	local menu
 
 	local function run_command(command)
-		if type(command) == 'string' then
-			mp.command(command)
-		else
+		if type(command) == 'table' then
 			---@diagnostic disable-next-line: deprecated
 			mp.commandv(unpack(command))
+		else
+			mp.command(tostring(command))
 		end
 	end
 
@@ -18,8 +19,15 @@ function open_command_menu(data, opts)
 			---@diagnostic disable-next-line: deprecated
 			mp.commandv(unpack(itable_join({'script-message-to'}, menu.root.callback, {utils.format_json(event)})))
 		elseif event.type == 'activate' then
-			run_command(event.value)
-			menu:close()
+			-- Modifiers and actions are not available on basic non-callback mode menus
+			if not event.modifiers and not event.action then
+				run_command(event.value)
+			end
+			-- Convention: Only pure item activations should close the menu.
+			-- Using modifiers or triggering item actions should not.
+			if not event.keep_open and not event.modifiers and not event.action then
+				menu:request_close()
+			end
 		end
 	end
 
@@ -30,7 +38,7 @@ function open_command_menu(data, opts)
 	return menu
 end
 
----@param opts? {submenu?: string; mouse_nav?: boolean; on_close?: string | string[]}
+---@param opts? OpenCommandMenuOptions
 function toggle_menu_with_items(opts)
 	if Menu:is_open('menu') then
 		Menu:close()
@@ -39,8 +47,9 @@ function toggle_menu_with_items(opts)
 	end
 end
 
----@alias EventRemove {type: 'remove' | 'delete', index: number; value: any; menu_id: string;}
----@param opts {type: string; title: string; list_prop: string; active_prop?: string; footnote?: string; serializer: fun(list: any, active: any): MenuDataItem[]; actions?: MenuAction[]; on_paste: fun(event: MenuEventPaste); on_move?: fun(event: MenuEventMove); on_activate?: fun(event: MenuEventActivate); on_remove?: fun(event: EventRemove); on_delete?: fun(event: EventRemove);}
+---@alias TrackEventRemove {type: 'remove' | 'delete', index: number; value: any;}
+---@alias TrackEventReload {type: 'reload', index: number; value: any;}
+---@param opts {type: string; title: string; list_prop: string; active_prop?: string; footnote?: string; serializer: fun(list: any, active: any): MenuDataItem[]; actions?: MenuAction[]; actions_place?: 'inside'|'outside'; on_paste: fun(event: MenuEventPaste); on_move?: fun(event: MenuEventMove); on_activate?: fun(event: MenuEventActivate); on_remove?: fun(event: TrackEventRemove); on_delete?: fun(event: TrackEventRemove); on_reload?: fun(event: TrackEventReload); on_key?: fun(event: MenuEventKey, close: fun())}
 function create_self_updating_menu_opener(opts)
 	return function()
 		if Menu:is_open(opts.type) then
@@ -73,17 +82,26 @@ function create_self_updating_menu_opener(opts)
 			end
 		end
 
+		local function cleanup_and_close()
+			mp.unobserve_property(handle_list_prop_change)
+			mp.unobserve_property(handle_active_prop_change)
+			menu:close()
+		end
+
 		local initial_items, selected_index = opts.serializer(list, active)
 
 		---@type MenuAction[]
 		local actions = opts.actions or {}
 		if opts.on_move then
 			actions[#actions + 1] = {
-				name = 'move_up', icon = 'arrow_upward', label = t('Move up') .. ' (ctrl+up/pgup/home)'
+				name = 'move_up', icon = 'arrow_upward', label = t('Move up') .. ' (ctrl+up/pgup/home)',
 			}
 			actions[#actions + 1] = {
-				name = 'move_down', icon = 'arrow_downward', label = t('Move down') .. ' (ctrl+down/pgdwn/end)'
+				name = 'move_down', icon = 'arrow_downward', label = t('Move down') .. ' (ctrl+down/pgdwn/end)',
 			}
+		end
+		if opts.on_reload then
+			actions[#actions + 1] = {name = 'reload', icon = 'refresh', label = t('Reload') .. ' (f5)'}
 		end
 		if opts.on_remove or opts.on_delete then
 			local label = (opts.on_remove and t('Remove') or t('Delete')) .. ' (del)'
@@ -98,13 +116,13 @@ function create_self_updating_menu_opener(opts)
 				local method = modifiers == 'ctrl' and 'delete' or 'remove'
 				local handler = method == 'delete' and opts.on_delete or opts.on_remove
 				if handler then
-					handler({type = method, value = value, index = index, menu_id = menu_id})
+					handler({type = method, value = value, index = index})
 				end
 			elseif opts.on_remove or opts.on_delete then
 				local method = opts.on_delete and 'delete' or 'remove'
 				local handler = opts.on_delete or opts.on_remove
 				if handler then
-					handler({type = method, value = value, index = index, menu_id = menu_id})
+					handler({type = method, value = value, index = index})
 				end
 			end
 		end
@@ -116,7 +134,8 @@ function create_self_updating_menu_opener(opts)
 			title = opts.title,
 			footnote = opts.footnote,
 			items = initial_items,
-			actions = actions,
+			item_actions = actions,
+			item_actions_place = opts.actions_place,
 			selected_index = selected_index,
 			on_move = opts.on_move and 'callback' or nil,
 			on_paste = opts.on_paste and 'callback' or nil,
@@ -133,29 +152,36 @@ function create_self_updating_menu_opener(opts)
 							menu_id = menu.current.id,
 						})
 						menu:select_index(to_index)
-						menu:scroll_to_index(to_index, nil, true)
+						if not event.is_pointer then
+							menu:scroll_to_index(to_index, nil, true)
+						end
 					end
+				elseif event.action == 'reload' and opts.on_reload then
+					opts.on_reload({type = 'reload', index = event.index, value = event.value})
 				elseif event.action == 'remove' and (opts.on_remove or opts.on_delete) then
 					remove_or_delete(event.index, event.value, event.menu_id, event.modifiers)
 				else
 					opts.on_activate(event --[[@as MenuEventActivate]])
-					if not event.modifiers then menu:close() end
+					if not event.modifiers and not event.action then cleanup_and_close() end
 				end
 			elseif event.type == 'key' then
 				local item = event.selected_item
 				if event.id == 'enter' then
-					menu:close()
-				elseif event.key == 'del' and item then
+					-- We get here when there's no selectable item in menu and user presses enter.
+					cleanup_and_close()
+				elseif event.key == 'f5' and opts.on_reload and item then
+					opts.on_reload({type = 'reload', index = item.index, value = item.value})
+				elseif event.key == 'del' and (opts.on_remove or opts.on_delete) and item then
 					if itable_has({nil, 'ctrl'}, event.modifiers) then
 						remove_or_delete(item.index, item.value, event.menu_id, event.modifiers)
 					end
+				elseif opts.on_key then
+					opts.on_key(event --[[@as MenuEventKey]], cleanup_and_close)
 				end
 			elseif event.type == 'paste' and opts.on_paste then
 				opts.on_paste(event --[[@as MenuEventPaste]])
 			elseif event.type == 'close' then
-				mp.unobserve_property(handle_list_prop_change)
-				mp.unobserve_property(handle_active_prop_change)
-				menu:close()
+				cleanup_and_close()
 			elseif event.type == 'move' and opts.on_move then
 				opts.on_move(event --[[@as MenuEventMove]])
 			elseif event.type == 'remove' and opts.on_move then
@@ -196,19 +222,33 @@ function create_select_tracklist_type_menu_opener(opts)
 		end
 
 		local track_prop_index, snd_prop_index = get_props()
+		local filename = mp.get_property_native('filename/no-ext')
+		local escaped_filename = filename and regexp_escape(filename)
 		local first_item_index = #items + 1
 		local active_index = nil
 		local disabled_item = nil
-		local track_actions = snd and {
-			{name = 'as_secondary', icon = snd.icon, label = t('Activate as secondary') .. ' (shift)'},
-		} or nil
+		local track_actions = nil
+		local track_external_actions = {}
+
+		if snd then
+			local action = {
+				name = 'as_secondary', icon = snd.icon, label = t('Use as secondary') .. ' (shift+enter/click)',
+			}
+			track_actions = {action}
+			table.insert(track_external_actions, action)
+		end
+		table.insert(track_external_actions, {name = 'reload', icon = 'refresh', label = t('Reload') .. ' (f5)'})
+		table.insert(track_external_actions, {name = 'remove', icon = 'delete', label = t('Remove') .. ' (del)'})
 
 		for _, track in ipairs(tracklist) do
 			if track.type == opts.type then
 				local hint_values = {}
 				local track_selected = track.selected and track.id == track_prop_index
 				local snd_selected = snd and track.id == snd_prop_index
-				local function h(value) hint_values[#hint_values + 1] = value end
+				local function h(value)
+					value = trim(value)
+					if #value > 0 then hint_values[#hint_values + 1] = value end
+				end
 
 				if track.lang then h(track.lang) end
 				if track['demux-h'] then
@@ -224,7 +264,16 @@ function create_select_tracklist_type_menu_opener(opts)
 				if track['demux-samplerate'] then h(string.format('%.3gkHz', track['demux-samplerate'] / 1000)) end
 				if track.forced then h(t('forced')) end
 				if track.default then h(t('default')) end
-				if track.external then h(t('external')) end
+				if track.external then
+					local extension = track.title:match('%.([^%.]+)$')
+					if track.title and escaped_filename and extension then
+						track.title = trim(track.title:gsub(escaped_filename .. '%.?', ''):gsub('%.?([^%.]+)$', ''))
+						if track.title == '' or track.lang and track.title:lower() == track.lang:lower() then
+							track.title = nil
+						end
+					end
+					h(t('external'))
+				end
 
 				items[#items + 1] = {
 					title = (track.title and track.title or t('Track %s', track.id)),
@@ -233,7 +282,7 @@ function create_select_tracklist_type_menu_opener(opts)
 					active = track_selected or snd_selected,
 					italic = snd_selected,
 					icon = snd and snd_selected and snd.icon or nil,
-					actions = track_actions,
+					actions = track.external and track_external_actions or track_actions,
 				}
 
 				if track_selected then
@@ -244,6 +293,13 @@ function create_select_tracklist_type_menu_opener(opts)
 		end
 
 		return items, active_index or first_item_index
+	end
+
+	local function reload(id)
+		if id then mp.commandv(opts.type .. '-reload', id) end
+	end
+	local function remove(id)
+		if id then mp.commandv(opts.type .. '-remove', id) end
 	end
 
 	---@param event MenuEventActivate
@@ -257,11 +313,26 @@ function create_select_tracklist_type_menu_opener(opts)
 				if snd.enable_prop then
 					mp.commandv('set', snd.enable_prop, 'yes')
 				end
+			elseif event.action == 'reload' then
+				reload(event.value)
+			elseif event.action == 'remove' then
+				remove(event.value)
 			elseif not event.modifiers or event.modifiers == 'alt' then
 				mp.commandv('set', opts.prop, event.value == get_props() and 'no' or event.value)
 				if opts.enable_prop then
 					mp.commandv('set', opts.enable_prop, 'yes')
 				end
+			end
+		end
+	end
+
+	---@param event MenuEventKey
+	local function handle_key(event)
+		if event.selected_item then
+			if event.id == 'f5' then
+				reload(event.selected_item.value)
+			elseif event.id == 'del' then
+				remove(event.selected_item.value)
 			end
 		end
 	end
@@ -273,6 +344,8 @@ function create_select_tracklist_type_menu_opener(opts)
 		list_prop = 'track-list',
 		serializer = serialize_tracklist,
 		on_activate = handle_activate,
+		on_key = handle_key,
+		actions_place = 'outside',
 		on_paste = function(event) load_track(opts.type, event.value) end,
 	})
 end
@@ -301,7 +374,7 @@ function open_file_navigation_menu(directory_path, handle_activate, opts)
 
 	---@param path string Can be path to a directory, or special string `'{drives}'` to get windows drives items.
 	---@param selected_path? string Marks item with this path as active.
-	---@return MenuStackValue[] menu_items
+	---@return MenuStackChild[] menu_items
 	---@return number selected_index
 	---@return string|nil error
 	local function serialize_items(path, selected_path)
@@ -395,7 +468,7 @@ function open_file_navigation_menu(directory_path, handle_activate, opts)
 	local menu_data = {
 		type = opts.type,
 		title = opts.title or '',
-		footnote = t('Paste path or url to open.'),
+		footnote = t('%s to go up in tree.', 'alt+up') .. ' ' .. t('Paste path or url to open.'),
 		items = {},
 		on_close = opts.on_close and 'callback' or nil,
 		on_paste = 'callback',
@@ -463,6 +536,10 @@ function open_file_navigation_menu(directory_path, handle_activate, opts)
 			if back_path then open_directory(back_path) end
 		elseif event.type == 'paste' then
 			handle_activate({type = 'activate', value = event.value})
+		elseif event.type == 'key' then
+			if event.id == 'ctrl+c' and event.selected_item then
+				set_clipboard(event.selected_item.value)
+			end
 		elseif event.type == 'close' then
 			close()
 		end
@@ -744,11 +821,11 @@ function open_open_file_menu()
 			allowed_types = config.types.media,
 			active_path = active_file,
 			directory_actions = {
-				{name = 'add_to_playlist', icon = 'playlist_add', label = t('Add to playlist') .. ' (shift)'},
-				{name = 'force_open', icon = 'folder_open', label = t('Open in mpv') .. ' (ctrl)'},
+				{name = 'add_to_playlist', icon = 'playlist_add', label = t('Add to playlist') .. ' (shift+enter/click)'},
+				{name = 'force_open', icon = 'play_circle_outline', label = t('Open in mpv') .. ' (ctrl+enter/click)'},
 			},
 			file_actions = {
-				{name = 'add_to_playlist', icon = 'playlist_add', label = t('Add to playlist') .. ' (shift)'},
+				{name = 'add_to_playlist', icon = 'playlist_add', label = t('Add to playlist') .. ' (shift+enter/click)'},
 			},
 			keep_open = true,
 			on_close = function() mp.unregister_event(handle_file_loaded) end,
@@ -757,15 +834,9 @@ function open_open_file_menu()
 	if menu then mp.register_event('file-loaded', handle_file_loaded) end
 end
 
----@param opts {name: 'subtitles'|'audio'|'video'; prop: 'sub'|'audio'|'video'; allowed_types: string[]}
+---@param opts {prop: 'sub'|'audio'|'video'; title: string; loaded_message: string; allowed_types: string[]}
 function create_track_loader_menu_opener(opts)
-	local menu_type = 'load-' .. opts.name
-	local title = ({
-		subtitles = t('Load subtitles'),
-		audio = t('Load audio'),
-		video = t('Load video'),
-	})[opts.name]
-
+	local menu_type = 'load-' .. opts.prop
 	return function()
 		if Menu:is_open(menu_type) then
 			Menu:close()
@@ -791,12 +862,12 @@ function create_track_loader_menu_opener(opts)
 			load_track(opts.prop, event.value)
 			local serialized = serialize_path(event.value)
 			local filename = serialized and serialized.basename or event.value
-			mp.commandv('show-text', t('Loaded subtitles') .. ': ' .. filename, 3000)
+			mp.commandv('show-text', opts.loaded_message .. ': ' .. filename, 3000)
 			if not event.alt then menu:close() end
 		end
 
 		menu = open_file_navigation_menu(path, handle_activate, {
-			type = menu_type, title = title, allowed_types = opts.allowed_types,
+			type = menu_type, title = opts.title, allowed_types = opts.allowed_types,
 		})
 	end
 end
@@ -828,49 +899,40 @@ function open_subtitle_downloader()
 		end
 	end
 
-	local handle_select, handle_search
+	local handle_download, handle_search
 
-	-- Ensures response is valid, and returns its payload, or handles error reporting,
-	-- and returns `nil`, indicating the consumer should abort response handling.
-	local function ensure_response_data(success, result, error, check)
-		local data
-		if success and result and result.status == 0 then
-			data = utils.parse_json(result.stdout)
-			if not data or not check(data) then
-				data = (data and data.error == true) and data or {
-					error = true,
-					message = t('invalid response json (see console for details)'),
-					message_verbose = 'invalid response json: ' .. utils.to_string(result.stdout),
-				}
-			end
-		else
-			data = {
-				error = true,
-				message = error or t('process exited with code %s (see console for details)', result.status),
-				message_verbose = result.stdout .. result.stderr,
-			}
-		end
-
-		if data.error then
-			local message, message_verbose = data.message or t('unknown error'), data.message_verbose or data.message
-			if message_verbose then msg.error(message_verbose) end
+	-- Checks if there an error, or data is invalid. If true, reports the error,
+	-- updates menu to inform about it, and returns true.
+	---@param error string|nil
+	---@param data any
+	---@param check_is_valid? fun(data: any):boolean
+	---@return boolean abort Whether the further response handling should be aborted.
+	local function should_abort(error, data, check_is_valid)
+		if error or not data or (not check_is_valid or not check_is_valid(data)) then
 			menu:update_items({
 				{
-					title = message,
-					hint = t('error'),
+					title = t('Something went wrong.'),
+					align = 'center',
+					muted = true,
+					italic = true,
+					selectable = false,
+				},
+				{
+					title = t('See console for details.'),
+					align = 'center',
 					muted = true,
 					italic = true,
 					selectable = false,
 				},
 			})
-			return
+			msg.error(error or ('Invalid response: ' .. (utils.format_json(data) or tostring(data))))
+			return true
 		end
-
-		return data
+		return false
 	end
 
 	---@param data {kind: 'file', id: number}|{kind: 'page', query: string, page: number}
-	handle_select = function(data)
+	handle_download = function(data)
 		if data.kind == 'page' then
 			handle_search(data.query, data.page)
 			return
@@ -886,25 +948,14 @@ function open_subtitle_downloader()
 			end
 		end)
 
-		local args = itable_join({config.ziggy_path, 'download-subtitles'}, credentials, {
+		local args = itable_join({'download-subtitles'}, credentials, {
 			'--file-id', tostring(data.id),
 			'--destination', destination_directory,
 		})
 
-		mp.command_native_async({
-			name = 'subprocess',
-			capture_stderr = true,
-			capture_stdout = true,
-			playback_only = false,
-			args = args,
-		}, function(success, result, error)
+		call_ziggy_async(args, function(error, data)
 			if not menu:is_alive() then return end
-
-			local data = ensure_response_data(success, result, error, function(data)
-				return type(data.file) == 'string'
-			end)
-
-			if not data then return end
+			if should_abort(error, data, function(data) return type(data.file) == 'string' end) then return end
 
 			load_track('sub', data.file)
 
@@ -941,7 +992,7 @@ function open_subtitle_downloader()
 
 		menu:update_items({{icon = 'spinner', align = 'center', selectable = false, muted = true}})
 
-		local args = itable_join({config.ziggy_path, 'search-subtitles'}, credentials)
+		local args = itable_join({'search-subtitles'}, credentials)
 
 		local languages = itable_filter(get_languages(), function(lang) return lang:match('.json$') == nil end)
 		args[#args + 1] = '--languages'
@@ -960,20 +1011,14 @@ function open_subtitle_downloader()
 			args[#args + 1] = query
 		end
 
-		mp.command_native_async({
-			name = 'subprocess',
-			capture_stderr = true,
-			capture_stdout = true,
-			playback_only = false,
-			args = args,
-		}, function(success, result, error)
+		call_ziggy_async(args, function(error, data)
 			if not menu:is_alive() then return end
 
-			local data = ensure_response_data(success, result, error, function(data)
+			local function check_is_valid(data)
 				return type(data.data) == 'table' and data.page and data.total_pages
-			end)
+			end
 
-			if not data then return end
+			if should_abort(error, data, check_is_valid) then return end
 
 			local subs = itable_filter(data.data, function(sub)
 				return sub and sub.attributes and sub.attributes.release and type(sub.attributes.files) == 'table' and
@@ -1064,7 +1109,7 @@ function open_subtitle_downloader()
 						end
 					end)
 				elseif not event.action then
-					handle_select(event.value)
+					handle_download(event.value)
 				end
 			elseif event.type == 'search' then
 				handle_search(event.query)

@@ -1,5 +1,5 @@
 --[[ uosc | https://github.com/tomasklaen/uosc ]]
-local uosc_version = '5.3.1'
+local uosc_version = '5.6.0'
 
 mp.commandv('script-message', 'uosc-version', uosc_version)
 
@@ -450,6 +450,13 @@ function update_fullormaxed()
 	cursor:leave()
 end
 
+function update_duration()
+	local duration = state._duration and ((state.rebase_start_time == false and state.start_time)
+		and (state._duration + state.start_time) or state._duration)
+	set_state('duration', duration)
+	update_human_times()
+end
+
 function update_human_times()
 	state.speed = state.speed or 1
 	if state.time then
@@ -723,7 +730,9 @@ mp.observe_property('playback-time', 'number', create_state_setter('time', funct
 	update_human_times()
 	select_current_chapter()
 end))
-mp.observe_property('duration', 'number', create_state_setter('duration', update_human_times))
+mp.observe_property('rebase-start-time', 'bool', create_state_setter('rebase_start_time', update_duration))
+mp.observe_property('demuxer-start-time', 'number', create_state_setter('start_time', update_duration))
+mp.observe_property('duration', 'number', create_state_setter('_duration', update_duration))
 mp.observe_property('speed', 'number', create_state_setter('speed', update_human_times))
 mp.observe_property('track-list', 'native', function(name, value)
 	-- checks the file dispositions
@@ -816,7 +825,7 @@ mp.observe_property('demuxer-cache-state', 'native', function(prop, cache_state)
 	for _, range in ipairs(cached_ranges) do
 		ranges[#ranges + 1] = {
 			math.max(range['start'] or 0, 0),
-			math.min(range['end'] or state.duration, state.duration),
+			math.min(range['end'] or state.duration --[[@as number]], state.duration),
 		}
 	end
 	table.sort(ranges, function(a, b) return a[1] < b[1] end)
@@ -886,13 +895,22 @@ bind_command('keybinds', function()
 end)
 bind_command('download-subtitles', open_subtitle_downloader)
 bind_command('load-subtitles', create_track_loader_menu_opener({
-	name = 'subtitles', prop = 'sub', allowed_types = itable_join(config.types.video, config.types.subtitle),
+	prop = 'sub',
+	title = t('Load subtitles'),
+	loaded_message = t('Loaded subtitles'),
+	allowed_types = itable_join(config.types.video, config.types.subtitle),
 }))
 bind_command('load-audio', create_track_loader_menu_opener({
-	name = 'audio', prop = 'audio', allowed_types = itable_join(config.types.video, config.types.audio),
+	prop = 'audio',
+	title = t('Load audio'),
+	loaded_message = t('Loaded audio'),
+	allowed_types = itable_join(config.types.video, config.types.audio),
 }))
 bind_command('load-video', create_track_loader_menu_opener({
-	name = 'video', prop = 'video', allowed_types = config.types.video,
+	prop = 'video',
+	title = t('Load video'),
+	loaded_message = t('Loaded video'),
+	allowed_types = config.types.video,
 }))
 bind_command('subtitles', create_select_tracklist_type_menu_opener({
 	title = t('Subtitles'),
@@ -913,7 +931,7 @@ bind_command('playlist', create_self_updating_menu_opener({
 	title = t('Playlist'),
 	type = 'playlist',
 	list_prop = 'playlist',
-	footnote = t('Paste path or url to add.'),
+	footnote = t('Paste path or url to add.') .. ' ' .. t('%s to reorder.', 'ctrl+up/down/pgup/pgdn/home/end'),
 	serializer = function(playlist)
 		local items = {}
 		for index, item in ipairs(playlist) do
@@ -930,6 +948,12 @@ bind_command('playlist', create_self_updating_menu_opener({
 	end,
 	on_activate = function(event) mp.commandv('set', 'playlist-pos-1', tostring(event.value)) end,
 	on_paste = function(event) mp.commandv('loadfile', tostring(event.value), 'append') end,
+	on_key = function(event)
+		if event.id == 'ctrl+c' and event.selected_item then
+			local payload = mp.get_property_native('playlist/' .. (event.selected_item.value - 1) .. '/filename')
+			set_clipboard(payload)
+		end
+	end,
 	on_move = function(event)
 		local from, to = event.from_index, event.to_index
 		mp.commandv('playlist-move', tostring(from - 1), tostring(to - (to > from and 0 or 1)))
@@ -1057,6 +1081,27 @@ bind_command('audio-device', create_self_updating_menu_opener({
 	end,
 	on_activate = function(event) mp.commandv('set', 'audio-device', event.value) end,
 }))
+bind_command('paste', function()
+	local has_playlist = mp.get_property_native('playlist-count') > 1
+	mp.commandv('script-binding', 'uosc/paste-to-' .. (has_playlist and 'playlist' or 'open'))
+end)
+bind_command('paste-to-open', function()
+	local payload = get_clipboard()
+	if payload then mp.commandv('loadfile', payload) end
+end)
+bind_command('paste-to-playlist', function()
+	-- If there's no file loaded, we use `paste-to-open`, which both opens and adds to playlist
+	if state.is_idle then
+		mp.commandv('script-binding', 'uosc/paste-to-open')
+	else
+		local payload = get_clipboard()
+		if payload then
+			mp.commandv('loadfile', payload, 'append')
+			mp.commandv('show-text', t('Added to playlist') .. ': ' .. payload, 3000)
+		end
+	end
+end)
+bind_command('copy-to-clipboard', function() set_clipboard(state.path) end)
 bind_command('open-config-directory', function()
 	local config_path = mp.command_native({'expand-path', '~~/mpv.conf'})
 	local config = serialize_path(normalize_path(config_path))
@@ -1174,6 +1219,7 @@ Manager = {
 ---@param element_ids string|string[]|nil `foo,bar` or `{'foo', 'bar'}`.
 function Manager:disable(client, element_ids)
 	self._disabled_by[client] = comma_split(element_ids)
+	---@diagnostic disable-next-line: deprecated
 	self.disabled = create_set(itable_join(unpack(table_values(self._disabled_by))))
 	self:_commit()
 end
