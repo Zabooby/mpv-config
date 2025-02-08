@@ -1,7 +1,9 @@
 --[[ uosc | https://github.com/tomasklaen/uosc ]]
-local uosc_version = '5.6.0'
+local uosc_version = '5.7.0'
 
 mp.commandv('script-message', 'uosc-version', uosc_version)
+
+mp.set_property('osc', 'no')
 
 assdraw = require('mp.assdraw')
 opt = require('mp.options')
@@ -60,7 +62,6 @@ defaults = {
 	window_border_size = 1,
 
 	autoload = false,
-	autoload_types = 'video,audio,image',
 	shuffle = false,
 
 	scale = 1,
@@ -93,6 +94,7 @@ defaults = {
 	image_types = 'apng,avif,bmp,gif,j2k,jp2,jfif,jpeg,jpg,jxl,mj2,png,svg,tga,tif,tiff,webp',
 	subtitle_types = 'aqt,ass,gsub,idx,jss,lrc,mks,pgs,pjs,psb,rt,sbv,slt,smi,sub,sup,srt,ssa,ssf,ttxt,txt,usf,vt,vtt',
 	playlist_types = 'm3u,m3u8,pls,url,cue',
+	load_types = 'video,audio,image',
 	default_directory = '~/',
 	show_hidden_files = false,
 	use_trash = false,
@@ -100,10 +102,11 @@ defaults = {
 	chapter_ranges = 'openings:30abf964,endings:30abf964,ads:c54e4e80',
 	chapter_range_patterns = 'openings:オープニング;endings:エンディング',
 	languages = 'slang,en',
+	subtitles_directory = '~~/subtitles',
 	disable_elements = '',
 }
 options = table_copy(defaults)
-opt.read_options(options, 'uosc', function(changed_options)
+function handle_options(changed_options)
 	if changed_options.time_precision then
 		timestamp_zero_rep_clear_cache()
 	end
@@ -113,7 +116,8 @@ opt.read_options(options, 'uosc', function(changed_options)
 	Elements:trigger('options')
 	Elements:update_proximities()
 	request_render()
-end)
+end
+opt.read_options(options, 'uosc', handle_options)
 -- Normalize values
 options.proximity_out = math.max(options.proximity_out, options.proximity_in + 1)
 if options.chapter_ranges:sub(1, 4) == '^op|' then options.chapter_ranges = defaults.chapter_ranges end
@@ -130,8 +134,6 @@ end
 if not itable_index_of({'left', 'right'}, options.top_bar_controls) then
 	options.top_bar_controls = options.top_bar_controls == 'yes' and 'right' or nil
 end
--- Ensure required environment configuration
-if options.autoload then mp.commandv('set', 'keep-open-pause', 'no') end
 
 --[[ INTERNATIONALIZATION ]]
 local intl = require('lib/intl')
@@ -193,15 +195,7 @@ config = {
 			.. ',' .. options.audio_types
 			.. ',' .. options.image_types
 			.. ',' .. options.playlist_types),
-		autoload = (function()
-			---@type string[]
-			local option_values = {}
-			for _, name in ipairs(comma_split(options.autoload_types)) do
-				local value = options[name .. '_types']
-				if type(value) == 'string' then option_values[#option_values + 1] = value end
-			end
-			return comma_split(table.concat(option_values, ','))
-		end)(),
+		load = {}, -- populated by update_load_types() below
 	},
 	stream_quality_options = comma_split(options.stream_quality_options),
 	top_bar_flash_on = comma_split(options.top_bar_flash_on),
@@ -240,8 +234,35 @@ config = {
 	timeline_step_flag = '',
 }
 
+function update_load_types()
+	local extensions = {}
+	local types = create_set(comma_split(options.load_types:lower()))
+
+	if types.same then
+		types.same = nil
+		if state and state.type then types[state.type] = true end
+	end
+
+	for _, name in ipairs(table_keys(types)) do
+		local type_extensions = config.types[name]
+		if type(type_extensions) == 'table' then
+			itable_append(extensions, type_extensions)
+		else
+			msg.warn('Unknown load type: ' .. name)
+		end
+	end
+
+	config.types.load = extensions
+end
+
 -- Updates config with values dependent on options
 function update_config()
+	-- Required environment config
+	if options.autoload then
+		mp.commandv('set', 'keep-open', 'yes')
+		mp.commandv('set', 'keep-open-pause', 'no')
+	end
+
 	-- Adds `{element}_persistency` config properties with forced visibility states (e.g.: `{paused = true}`)
 	for _, name in ipairs({'timeline', 'controls', 'volume', 'top_bar', 'speed'}) do
 		local option_name = name .. '_persistency'
@@ -274,6 +295,9 @@ function update_config()
 		config.timeline_step = tonumber(is_exact and options.timeline_step:sub(1, -2) or options.timeline_step)
 		config.timeline_step_flag = is_exact and 'exact' or ''
 	end
+
+	-- Other
+	update_load_types()
 end
 update_config()
 
@@ -373,6 +397,7 @@ state = {
 	volume = nil,
 	volume_max = nil,
 	mute = nil,
+	type = nil, -- video,image,audio
 	is_idle = false,
 	is_video = false,
 	is_audio = false, -- true if file is audio only (mp3, etc)
@@ -572,7 +597,7 @@ function load_file_index_in_current_directory(index)
 	local serialized = serialize_path(state.path)
 	if serialized and serialized.dirname then
 		local files, _dirs, error = read_directory(serialized.dirname, {
-			types = config.types.autoload,
+			types = config.types.load,
 			hidden = options.show_hidden_files,
 		})
 
@@ -644,7 +669,6 @@ if options.click_threshold > 0 then
 	end
 end
 
-mp.observe_property('osc', 'bool', function(name, value) if value == true then mp.set_property('osc', 'no') end end)
 mp.register_event('file-loaded', function()
 	local path = normalize_path(mp.get_property_native('path'))
 	itable_delete_value(state.history, path)
@@ -757,6 +781,8 @@ mp.observe_property('track-list', 'native', function(name, value)
 	set_state('has_many_sub', types.sub > 1)
 	set_state('is_video', types.video > 0)
 	set_state('has_many_video', types.video > 1)
+	set_state('type', state.is_video and 'video' or state.is_audio and 'audio' or state.is_image and 'image' or nil)
+	update_load_types()
 	Elements:trigger('dispositions')
 end)
 mp.observe_property('editions', 'number', function(_, editions)
@@ -934,11 +960,12 @@ bind_command('playlist', create_self_updating_menu_opener({
 	footnote = t('Paste path or url to add.') .. ' ' .. t('%s to reorder.', 'ctrl+up/down/pgup/pgdn/home/end'),
 	serializer = function(playlist)
 		local items = {}
+		local force_filename = mp.get_property_native('osd-playlist-entry') == 'filename'
 		for index, item in ipairs(playlist) do
-			local is_url = is_protocol(item.filename)
-			local item_title = type(item.title) == 'string' and #item.title > 0 and item.title or false
+			local title = type(item.title) == 'string' and #item.title > 0 and item.title or false
 			items[index] = {
-				title = item_title or (is_url and item.filename or serialize_path(item.filename).basename),
+				title = (not force_filename and title) and title
+					or (is_protocol(item.filename) and item.filename or serialize_path(item.filename).basename),
 				hint = tostring(index),
 				active = item.current,
 				value = index,
@@ -958,7 +985,7 @@ bind_command('playlist', create_self_updating_menu_opener({
 		local from, to = event.from_index, event.to_index
 		mp.commandv('playlist-move', tostring(from - 1), tostring(to - (to > from and 0 or 1)))
 	end,
-	on_remove = function(event) mp.commandv('playlist-remove', tostring(event.index - 1)) end,
+	on_remove = function(event) mp.commandv('playlist-remove', tostring(event.value - 1)) end,
 }))
 bind_command('chapters', create_self_updating_menu_opener({
 	title = t('Chapters'),
@@ -1101,7 +1128,13 @@ bind_command('paste-to-playlist', function()
 		end
 	end
 end)
-bind_command('copy-to-clipboard', function() set_clipboard(state.path) end)
+bind_command('copy-to-clipboard', function()
+	if state.path then
+		set_clipboard(state.path)
+	else
+		mp.commandv('show-text', t('Nothing to copy'), 3000)
+	end
+end)
 bind_command('open-config-directory', function()
 	local config_path = mp.command_native({'expand-path', '~~/mpv.conf'})
 	local config = serialize_path(normalize_path(config_path))

@@ -552,7 +552,7 @@ end
 function navigate_directory(delta)
 	if not state.path or is_protocol(state.path) then return false end
 	local paths, current_index = get_adjacent_files(state.path, {
-		types = config.types.autoload,
+		types = config.types.load,
 		hidden = options.show_hidden_files,
 	})
 	if paths and current_index then
@@ -887,7 +887,8 @@ end
 ---@param payload any
 ---@return string|nil payload String that was copied to clipboard.
 function set_clipboard(payload)
-	local err, data = call_ziggy({'set-clipboard', tostring(payload)})
+	payload = tostring(payload)
+	local err, data = call_ziggy({'set-clipboard', payload})
 	if err then
 		mp.commandv('show-text', 'Set clipboard error. See console for details.')
 		msg.error(err)
